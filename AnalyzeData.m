@@ -1,4 +1,5 @@
 %% AnalyzeData.m
+% GIT TEST
 % This script should be used to segment, filter data, select cycles, and
 % parameterize batches of files. 
 % Updated on 2020-11-12
