@@ -1,3 +1,2 @@
-Version, v1.0.0
-Experimenter, AIAyiotis
-Path, /Users/andriannaayiotis/Documents/MATLAB/VOGA
+Version v1.0.0
+Experimenter AIAyiotis
