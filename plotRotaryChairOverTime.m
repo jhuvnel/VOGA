@@ -15,7 +15,7 @@ norm_phase_std = [7.5044	6.526	6.714	8.0519	4.5136	7.6279	6.2448	11.3167];
 % Add to as needed - current as of subject 8 and all visits pre-COVID (May
 % 2020). Any devices that have been mailed to patients are listed as "next"
 % because they don't need to be in these figures.
-Ears = {'L','L','L','L','R','R','L','R','R'};
+Ears = {'L','L','L','L','R','R','L','R','L'};
 %All parameter changes 
 Param_Changes(1) = {datetime([2016,09,07;...
                               2016,09,12;...

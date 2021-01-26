@@ -11,7 +11,7 @@ ind = 1; %Run the start procedure first
 tf1 = 1;
 while tf1
     if strcmp(opts{ind},'Initialize')        
-        code_Path = [userpath,filesep,'VOGA']; %Assumes the scripts are in a folder called VOGA
+        code_Path = [userpath,filesep,'VOGA']; %Don't assume you start in the codepath
         addpath(genpath(code_Path))
     elseif strcmp(opts{ind},'Set Data Path') 
         %% Set Path
@@ -39,10 +39,12 @@ while tf1
         end
     elseif strcmp(opts{ind},'Segment') 
         %% Segment
-        path = cd;
-        Raw_Path = [path,filesep,'Raw Files'];
-        Seg_Path = [path,filesep,'Segmented Files'];
-        Cyc_Path = [path,filesep,'Cycle Averages'];
+        if ~exist(path,'var')
+            path = cd;
+            Raw_Path = [path,filesep,'Raw Files'];
+            Seg_Path = [path,filesep,'Segmented Files'];
+            Cyc_Path = [path,filesep,'Cycle Averages'];
+        end
         % Prepare to Segment
         %Transfer NKI Raw Files from their subfolders if they exist
         moveNKIfiles(Raw_Path)
@@ -66,10 +68,12 @@ while tf1
         end
     elseif strcmp(opts{ind},'Cycle Average')
         %% Filter and select cycles
-        path = cd;
-        Raw_Path = [path,filesep,'Raw Files'];
-        Seg_Path = [path,filesep,'Segmented Files'];
-        Cyc_Path = [path,filesep,'Cycle Averages'];
+        if ~exist(path,'var')
+            path = cd;
+            Raw_Path = [path,filesep,'Raw Files'];
+            Seg_Path = [path,filesep,'Segmented Files'];
+            Cyc_Path = [path,filesep,'Cycle Averages'];
+        end
         % Get version and experimenter info from the file
         try 
             data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
