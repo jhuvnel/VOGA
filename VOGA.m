@@ -83,8 +83,25 @@ while tf1
         version = data{1,2}{:};
         Experimenter = data{2,2}{:};
         done = false;
+        % Experiment types
+        progress_tab = assessProgress(path);
+        all_exp_names = progress_tab{:,1};
+        for i = 1:length(all_exp_names)
+            dash = strfind(all_exp_names{i},'-');
+            all_exp_names{i} = all_exp_names{i}(1:dash(3)-1);
+        end
+        exp_names = unique(all_exp_names);
+        [indx,tf] = nmlistdlg('PromptString','Select experiment types to analyze:',...
+                       'SelectionMode','multiple',...
+                       'ListSize',[350 300],...
+                       'ListString',exp_names); 
+        if tf == 0
+            exp_types = {};
+        else
+            exp_types = exp_names(indx);
+        end
         while(~done) %run until the user hits cancel on analyzing a file
-            done = MakeCycAvg(path,Seg_Path,Cyc_Path,Experimenter,version);
+            done = MakeCycAvg(path,Seg_Path,Cyc_Path,Experimenter,version,exp_types);
         end
     elseif strcmp(opts{ind},'Summary Table')
         %Add here

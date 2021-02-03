@@ -3,7 +3,7 @@
 % LDVOG data sets as much as possible.
 % Cycle average before filtering
 
-function done = MakeCycAvg(path,Seg_Path,Cyc_Path,Experimenter,version)
+function done = MakeCycAvg(path,Seg_Path,Cyc_Path,Experimenter,version,exp_types)
 clc;       
 load('VNELcolors.mat','colors')
 % Fill colors for cycle selection
@@ -15,6 +15,9 @@ colors.cyc_bold_r = [0.85 0.85 0.85];
 %% Load in data
 progress_tab = assessProgress(path);
 progress_i = [find(~progress_tab{:,2}&~progress_tab{:,3});find(progress_tab{:,2}|progress_tab{:,3})]; %put unanalyzed files at the top
+if ~isempty(exp_types)
+    progress_i(ismember(progress_i,find(~contains(progress_tab{:,1},exp_types)))) = [];
+end
 set(0,'units','pixels')  
 Pix_SS = get(0,'MonitorPositions');
 pix_wid = Pix_SS(1,3);
