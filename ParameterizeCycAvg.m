@@ -353,7 +353,7 @@ switch type
         for i = 1:length(traces)
             max_vel(:,i) = CycAvg.([traces{i},'_cyc'])(:,I);
         end
-        MaxVel = reshape([mean(max_vel);std(max_vel)],1,[]);
+        MaxVel = reshape([mean(max_vel);std(max_vel);mean(max_vel);std(max_vel)],1,[]);
         % Misalignment
         A = NaN(1,8);
         [A(1),A(2)] = calc_misalignment(-stim_vect,[CycAvg.ll_cyc(:,I) CycAvg.lr_cyc(:,I) CycAvg.lz_cyc(:,I)]);

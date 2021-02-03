@@ -14,7 +14,7 @@ function Segment(In_Path,Seg_Path)
         fileinfo = importdata([In_Path(1:end-4),'-Notes.txt']);   
     catch
         slash = find(In_Path == filesep,1,'last');
-        makeNotes(In_Path(1:slash-1),{In_Path(slash+1:end)})
+        MakeNotes(In_Path(1:slash-1),{In_Path(slash+1:end)})
         fileinfo = importdata([In_Path(1:end-4),'-Notes.txt']);   
     end
     %Change this to reflect new notes file types when they are created 
@@ -45,37 +45,6 @@ function Segment(In_Path,Seg_Path)
         YAxisAccelHead = -(data.AccelX - median(data.AccelX));
         ZAxisAccelHead = -(data.AccelZ - median(data.AccelZ));
         Fs = 1/median(abs(diff(Time_Eye)));  
-%         % CODED FOR SOME NOISY TRIGGER EXPERIMENTS
-%         plot(100*StimAll,'b')
-%         noisy = questdlg(['Bad trigger?',newline,In_Path],'','Fine','Noisy','Fine');
-%         if strcmp(noisy,'Noisy')
-%             if all(StimAll(1:10)) %Just flipped so starts at 0
-%                 Stim2 = -StimAll+1; 
-%             else
-%                 Stim2 = StimAll;
-%             end   
-%             min_time = 0.1;  %Lets say 100ms is the smallest time frame to expect a change (5Hz)
-%             sus_len = floor(min_time*Fs); % minimum number of expected consecutive zeros
-%             zero_vals = find(Stim2==0);
-%             k = 2;
-%             while(k<length(zero_vals))
-%                 if zero_vals(k+1)-1 == zero_vals(k)
-%                     zero_vals(k) = [];
-%                 else
-%                     k = k+1;
-%                 end
-%             end
-%             start1 = zero_vals(1:end-1);
-%             end1 = zero_vals(2:end);
-%             difference = end1 - start1;
-%             start1(difference < sus_len) = [];
-%             end1(difference < sus_len) = [];
-%             Stim3 = ones(length(Stim2),1);
-%             for i = 1:length(start1)
-%                 Stim3(start1(i):end1(i)) = 0;
-%             end
-%             StimAll = Stim3;
-%         end
         % Load raw eye position data in Fick coordinates [degrees] but
         % adjust for the reverse of the X/Y/Z axes direction. This is validated by
         % experiments done on the aHIT in light on normal subjects:
@@ -535,13 +504,6 @@ function Segment(In_Path,Seg_Path)
                 if Stim(1)==1
                     %Set all leading 1's to 0
                     Stim(1:find(Stim==0,1,'first')) = 0;                    
-                    %Old way that assumes high = off now
-%                     inds = find(Stim==1);
-%                     d_i = diff(inds);
-%                     blip = find(d_i>1);
-%                     ind_diff = blip(2)-blip(1);
-%                     Stim(1:blip(1)) = zeros(length(1:blip(1)),1);
-%                     Stim(blip(1)-ind_diff:blip(1)) = ones(length(blip(1)-ind_diff:blip(1)),1);
                 end
                 inds = find(Stim==1);
                 inds([false;diff(inds)==1]) = []; %Multiple points from same trigger toggle
@@ -627,6 +589,8 @@ function Segment(In_Path,Seg_Path)
                 Data.Fs = Fs;
                 Data.Time_Eye = Time_Eye(i1:i2);
                 Data.Time_Stim = Time_Stim(i1:i2);
+                Data.raw_start_t = Time_Stim(i1);
+                Data.raw_end_t = Time_Stim(i2);
                 Data.Trigger = Stim(i1:i2); % computer trigger
                 Data.LE_Position_X = Torsion_LE_Position(i1:i2);
                 Data.LE_Position_Y = Vertical_LE_Position(i1:i2);
@@ -640,17 +604,16 @@ function Segment(In_Path,Seg_Path)
                 Data.HeadAccel_X = XAxisAccelHead(i1:i2);
                 Data.HeadAccel_Y = YAxisAccelHead(i1:i2);
                 Data.HeadAccel_Z = ZAxisAccelHead(i1:i2);
+                Data.rawfile = {info.rawfile};
                 %Save but make a new ending if there are multiple segments with
                 %the same information
                 fname = [info.subject,'-',info.visit,'-',info.exp_date,'-',info.dataType];
+                save_flag = 1;
                 while exist([Seg_Path,filesep,fname,'.mat'],'file') %Already an instance of this file
-                    disp(fname)
-                    disp('A segment with this name already exists and they will be combined into one.')
-                    combineseg = 'Combine';
-                    %combineseg = questdlg([fname,newline,'A segment with this name already exists. Combine segments or rename current file?'],'Combine Segments','Combine','Rename','Rename');
-                    if strcmp(combineseg,'Combine')
-                        Data2 = Data; %Append the current segment to the previous file
-                        load([Seg_Path,filesep,fname,'.mat'],'Data')
+                    Data2 = Data; %Append the current segment to the previous file
+                    load([Seg_Path,filesep,fname,'.mat'],'Data')
+                    if ~any(ismember(Data.rawfile,Data2.rawfile)&Data.raw_start_t==Data2.raw_start_t)
+                        disp([fname,' already exists in this folder and they were combined.'])
                         %Make the time vectors continuous with the first segment
                         Time_Eye2 = Data2.Time_Eye - Data2.Time_Eye(1) + Data.Time_Eye(end) + mean(diff(Data2.Time_Eye));
                         Time_Stim2 = Data2.Time_Stim - Data2.Time_Stim(1) + Data.Time_Stim(end) + mean(diff(Data2.Time_Stim));
@@ -658,8 +621,11 @@ function Segment(In_Path,Seg_Path)
                         copynum = sum(contains(fieldnames(Data),'info'))+1;
                         %Combine all of the items
                         Data.(['info',num2str(copynum)]) = info; %as many info copies as needed
+                        Data.(['Data',num2str(copynum)]) = Data2;
                         Data.Time_Eye = [reshape(Data.Time_Eye,[],1);reshape(Time_Eye2,[],1)];
                         Data.Time_Stim = [reshape(Data.Time_Stim,[],1);reshape(Time_Stim2,[],1)];
+                        Data.raw_start_t = [Data.raw_start_t;Data2.raw_start_t];
+                        Data.raw_end_t = [Data.raw_end_t;Data.raw_end_t];
                         Data.Trigger = [Data.Trigger;Data2.Trigger];
                         Data.LE_Position_X = [Data.LE_Position_X;Data2.LE_Position_X];
                         Data.LE_Position_Y = [Data.LE_Position_Y;Data2.LE_Position_Y];
@@ -673,17 +639,20 @@ function Segment(In_Path,Seg_Path)
                         Data.HeadAccel_X = [reshape(Data.HeadAccel_X,[],1);reshape(Data2.HeadAccel_X,[],1)];
                         Data.HeadAccel_Y = [reshape(Data.HeadAccel_Y,[],1);reshape(Data2.HeadAccel_Y,[],1)];
                         Data.HeadAccel_Z = [reshape(Data.HeadAccel_Z,[],1);reshape(Data2.HeadAccel_Z,[],1)];
+                        Data.rawfile = [Data.rawfile;Data2.rawfile];
                         delete([Seg_Path,filesep,fname,'.mat'])
                     else
-                        fname = inputdlg('New file name:','Rename',1,{fname});
-                        fname = fname{:};
+                        disp([fname,' already exists in this folder and was ignored.'])
+                        save_flag = 0;
                     end
                 end
                 Data.info.name = [fname,'.mat'];
-                save([Seg_Path,filesep,fname,'.mat'],'Data')   
-                %Plot and save figure of the segment
-                fig = plotSegment(Data);
-                savefig(fig,[Seg_Path,filesep,fname,'.fig'])
+                if save_flag
+                    save([Seg_Path,filesep,fname,'.mat'],'Data')
+                    %Plot and save figure of the segment
+                    fig = plotSegment(Data);
+                    savefig(fig,[Seg_Path,filesep,fname,'.fig'])
+                end
             end
         end
     end

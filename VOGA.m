@@ -1,25 +1,34 @@
 %% VOGA.m
 % This script should be used to segment, filter data, select cycles, and
 % parameterize batches of files. 
-% It needs to initially run from the file that it's in (so that it can add
-% all code to path).
+%
+% To initialize after MATLAB has restarted, navigate to the folder with this
+% function and type either "VOGA" or "allfoldpath" into the command line 
+% to add all functions to the path. If you typed "VOGA", hit cancel now.
+%
+% To analyze data, navivate to the path with the Raw File, Segmented Files,
+% and Cycle Average folders and then run "VOGA."
+%
 % Click cancel to end the loop
-% Updated on 2021-01-25
+%
+% Written by Andrianna Ayiotis
+% Updated on 2021-01-31
 
-opts = {'Initialize','Set Data Path','Segment','Cycle Average','Summary Table','Generate Figures','Set Version'};
+opts = {'Initialize','Make Folders','Segment','Cycle Average',...
+    'Summary Table','Generate Figures','Set Version'};
 ind = 1; %Run the start procedure first
 tf1 = 1;
 while tf1
     if strcmp(opts{ind},'Initialize')        
-        code_Path = [userpath,filesep,'VOGA']; %Don't assume you start in the codepath
-        addpath(genpath(code_Path))
-    elseif strcmp(opts{ind},'Set Data Path') 
-        %% Set Path
-        % Assumes you are in the right directory already
-        path = cd;
-        Raw_Path = [path,filesep,'Raw Files'];
-        Seg_Path = [path,filesep,'Segmented Files'];
-        Cyc_Path = [path,filesep,'Cycle Averages'];
+        code_Path = [userpath,filesep,'VOGA'];
+        addpath(genpath(code_Path));
+        path_folders = extractfield(dir,'name',find(extractfield(dir,'isdir')));
+        expected = [any(contains(path_folders,'Raw Files')),any(contains(path_folders,'Segmented Files')),any(contains(path_folders,'Cycle Averages'))];
+        if ~all(expected)
+            uiwait(msgbox('This directory is missing one or more expected folders. Run "Make Folders" to make the missing folders.'))
+        end
+    elseif strcmp(opts{ind},'Make Folders') 
+        %% Make Folders
         %See if the folders already exist or need to be renamed/created
         path_folders = extractfield(dir,'name',find(extractfield(dir,'isdir')));
         if any(contains(path_folders,'Raw LD VOG Files'))
@@ -39,13 +48,8 @@ while tf1
         end
     elseif strcmp(opts{ind},'Segment') 
         %% Segment
-        if ~exist(path,'var')
-            path = cd;
-            Raw_Path = [path,filesep,'Raw Files'];
-            Seg_Path = [path,filesep,'Segmented Files'];
-            Cyc_Path = [path,filesep,'Cycle Averages'];
-        end
-        % Prepare to Segment
+        Raw_Path = [cd,filesep,'Raw Files'];
+        Seg_Path = [cd,filesep,'Segmented Files'];
         %Transfer NKI Raw Files from their subfolders if they exist
         moveNKIfiles(Raw_Path)
         %Detect and process log files and austoscan files
@@ -68,25 +72,24 @@ while tf1
         end
     elseif strcmp(opts{ind},'Cycle Average')
         %% Filter and select cycles
-        if ~exist(path,'var')
-            path = cd;
-            Raw_Path = [path,filesep,'Raw Files'];
-            Seg_Path = [path,filesep,'Segmented Files'];
-            Cyc_Path = [path,filesep,'Cycle Averages'];
-        end
+        path = cd; % Assumes you are in the right directory already
+        Seg_Path = [path,filesep,'Segmented Files'];
+        Cyc_Path = [path,filesep,'Cycle Averages'];
         % Get version and experimenter info from the file
-        try 
-            data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
-        catch
+        if ~any(contains(extractfield(dir(code_Path),'name'),'VerInfo.txt'))
             writeInfoFile(code_Path);
-            data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
         end
+        data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
         version = data{1,2}{:};
         Experimenter = data{2,2}{:};
         done = false;
         while(~done) %run until the user hits cancel on analyzing a file
             done = MakeCycAvg(path,Seg_Path,Cyc_Path,Experimenter,version);
         end
+    elseif strcmp(opts{ind},'Summary Table')
+        %Add here
+    elseif strcmp(opts{ind},'Generate Figures')
+        %Add here
     elseif strcmp(opts{ind},'Set Version')
         writeInfoFile(code_Path);
     end

@@ -71,14 +71,19 @@ function MakeCycleSummaryTable(out_path,cyc_path)
        a = load(files{i});
        b = fieldnames(a);
        CycAvg = a.(b{1});
+       %save_flag = 0;
        if ~isfield(CycAvg,'name')
           slash = strfind(files{i},filesep); 
           CycAvg.name = files{i}(slash(end)+1:end); 
+          %save_flag = 1;
        end
-       %if ~isfield(CycAvg,'parameterized')
+       %if ~isfield(CycAvg,'lx_cyc_fit') %only run on non-updated files
            CycAvg = ParameterizeCycAvg(CycAvg);
-           save(files{i},'CycAvg')
+           save_flag = 1;
        %end
+       if save_flag
+           save(files{i},'CycAvg')
+       end
        all_results = [all_results;CycAvg.parameterized];
     end   
     %% Save
