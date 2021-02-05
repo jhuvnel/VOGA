@@ -1,5 +1,5 @@
 function [type,starts,ends,stims] = MakeCycAvg__alignCycles(info,Fs,ts,stim)
-    if contains(info.dataType,{'RotaryChair','aHIT'}) %Align based on motion traces
+    if contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
         if contains(info.dataType,'Sine')
             type = 1;
             fparts = split(info.dataType,'-');
@@ -123,7 +123,7 @@ function [type,starts,ends,stims] = MakeCycAvg__alignCycles(info,Fs,ts,stim)
             type=1;
             trig = abs(diff(stim));
             starts = find(trig==1);
-            snip_len = median(diff(starts)); %CHANGE ME
+            snip_len = round(median(diff(starts)),0);
             ends = starts + snip_len - 1;
             fparts = split(info.dataType,'-');
             freq = str2double(strrep(fparts{contains(fparts,'Hz')},'Hz',''));

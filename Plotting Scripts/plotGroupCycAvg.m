@@ -8,26 +8,51 @@
 % Autoscan Current Levels (Autoscan)
 
 function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
+    close all;    
     load('VNELcolors.mat','colors')
-    code_name = 'plotGroupCycAvg.m';
+    code_name = ['Plotting Scripts',filesep,'plotGroupCycAvg.m'];
     switch type
         case 'SineFreq'
+            %%
             cyc_files = extractfield(dir([Cyc_Path,filesep,'*Sine*.mat']),'name');
             cyc_files(contains(cyc_files,'NotAnalyzeable')) = [];
-            file_parts = cell(length(cyc_files),2);
+            file_parts = cell(length(cyc_files),3);
             for i = 1:length(cyc_files)
                 fname = strrep(strrep(cyc_files{i},'CycAvg_',''),'.mat','');
                 fparts = split(fname,'-');
-                file_parts(i,2) = {strrep(fparts{contains(fparts,'Hz')},'p','.')};
+                file_parts(i,2) = fparts(contains(fparts,'Hz'));
                 fparts(contains(fparts,'Hz')) = [];
+                file_parts(i,3) = fparts(contains(fparts,'dps'));
+                fparts(contains(fparts,'dps')) = [];
                 file_parts(i,1) = {strjoin(fparts,' ')};
             end
-            exp_name = unique(file_parts(:,1));
-            enum = length(exp_name);
             [~,indf] = sort(cellfun(@str2double,strrep(unique(file_parts(:,2)),'Hz',''))); %make sure it's in numerical order
             freqs = unique(file_parts(:,2));
             freqs = freqs(indf);
+            [~,indf] = sort(cellfun(@str2double,strrep(unique(file_parts(:,3)),'dps',''))); %make sure it's in numerical order
+            amps = unique(file_parts(:,3));
+            amps = amps(indf);
             fnum = length(freqs);
+            anum = length(amps);
+            exps = false(fnum,anum);
+            for i = 1:length(cyc_files)
+                exps(ismember(freqs,file_parts{i,2}),ismember(amps,file_parts{i,3})) = 1;
+            end
+            exp_name_all = cell(sum(sum(exps,1)>1)*length(unique(file_parts(:,1))),2);
+            exp_name_all(:,1) = repmat(unique(file_parts(:,1)),sum(sum(exps,1)>1),1);
+            exp_name_all(:,2) = repmat(amps(sum(exps,1)>1),length(unique(file_parts(:,1))),1);
+            [indx,tf] = nmlistdlg('PromptString','Select experiment types to graph:',...
+                           'SelectionMode','multiple',...
+                           'ListSize',[350 300],...
+                           'ListString',strcat(exp_name_all(:,1),{' '},exp_name_all(:,2))); 
+            if tf == 0
+                return;
+            end
+            exp_name = exp_name_all(indx,:);
+            enum = size(exp_name,1);
+            %Figure out the google type
+            load([Cyc_Path,filesep,cyc_files{1}],'CycAvg')
+            goggle = CycAvg.info.goggle_ver;
             for j = 1:enum
                 if contains(exp_name{j},{' X ',' Y '})
                     canal = 'XY';
@@ -36,7 +61,7 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 end
                 figure('Units','inches','Position',[0.2778    5.8472   17.2222    3.8333],'Color',[1,1,1])
                 %Title
-                annotation('textbox',[0 .9 1 .1],'String',exp_name{j},'FontSize',14,...
+                annotation('textbox',[0 .9 1 .1],'String',[exp_name{j,1},' ',exp_name{j,2},' ',goggle],'FontSize',14,...
                 'HorizontalAlignment','center','EdgeColor','none');
                 annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
                     code_name,newline,...
@@ -54,8 +79,9 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                     freq = str2double(strrep(freqs{i},'Hz',''));
                     ha(i) = subplot(1000,1000,1);
                     ha(i).Position = [x_pos(i) y_pos x_wid y_height];
-                    if sum(contains(cyc_files,strrep(exp_name{j},' ','-'))&contains(cyc_files,['-',freqs{i}]))==1
-                        load([Cyc_Path,filesep,cyc_files{contains(cyc_files,strrep(exp_name{j},' ','-'))&contains(cyc_files,['-',freqs{i}])}],'CycAvg')
+                    file_match = contains(cyc_files,strrep(exp_name{j,1},' ','-'))&contains(cyc_files,['-',exp_name{j,2}])&contains(cyc_files,['-',freqs{i}]);
+                    if sum(file_match)==1
+                        load([Cyc_Path,filesep,cyc_files{file_match}],'CycAvg')
                         fields = fieldnames(CycAvg);       
                         if ~ismember('t',fields)
                             CycAvg.t = reshape((0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs),[],1);
@@ -174,26 +200,51 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                     end
                 end  
                 legend(ha(1),h,leg_text)
-                fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name{j},' ','-'),'.fig']});
+                fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name{j,1},' ','-'),'-',exp_name{j,2},'-',goggle,'.fig']});
                 savefig([path,filesep,fig_name{:}])
+                close;
             end
         case 'SineAmp'
+            %%
             cyc_files = extractfield(dir([Cyc_Path,filesep,'*Sine*.mat']),'name');
             cyc_files(contains(cyc_files,'NotAnalyzeable')) = [];
-            file_parts = cell(length(cyc_files),2);
+            file_parts = cell(length(cyc_files),3);
             for i = 1:length(cyc_files)
                 fname = strrep(strrep(cyc_files{i},'CycAvg_',''),'.mat','');
                 fparts = split(fname,'-');
-                file_parts(i,2) = fparts(contains(fparts,'dps'));
+                file_parts(i,2) = fparts(contains(fparts,'Hz'));
+                fparts(contains(fparts,'Hz')) = [];
+                file_parts(i,3) = fparts(contains(fparts,'dps'));
                 fparts(contains(fparts,'dps')) = [];
                 file_parts(i,1) = {strjoin(fparts,' ')};
             end
-            exp_name = unique(file_parts(:,1));
-            enum = length(exp_name);
-            [~,indf] = sort(cellfun(@str2double,strrep(unique(file_parts(:,2)),'dps',''))); %make sure it's in numerical order
-            amps = unique(file_parts(:,2));
+            [~,indf] = sort(cellfun(@str2double,strrep(unique(file_parts(:,2)),'Hz',''))); %make sure it's in numerical order
+            freqs = unique(file_parts(:,2));
+            freqs = freqs(indf);
+            [~,indf] = sort(cellfun(@str2double,strrep(unique(file_parts(:,3)),'dps',''))); %make sure it's in numerical order
+            amps = unique(file_parts(:,3));
             amps = amps(indf);
+            fnum = length(freqs);
             anum = length(amps);
+            exps = false(fnum,anum);
+            for i = 1:length(cyc_files)
+                exps(ismember(freqs,file_parts{i,2}),ismember(amps,file_parts{i,3})) = 1;
+            end
+            exp_name_all = cell(sum(sum(exps,2)>1)*length(unique(file_parts(:,1))),2);
+            exp_name_all(:,1) = repmat(unique(file_parts(:,1)),sum(sum(exps,2)>1),1);
+            exp_name_all(:,2) = repmat(freqs(sum(exps,2)>1),length(unique(file_parts(:,1))),1);
+            [indx,tf] = nmlistdlg('PromptString','Select experiment types to graph:',...
+                           'SelectionMode','multiple',...
+                           'ListSize',[350 300],...
+                           'ListString',strcat(exp_name_all(:,1),{' '},exp_name_all(:,2))); 
+            if tf == 0
+                return;
+            end
+            exp_name = exp_name_all(indx,:);
+            enum = size(exp_name,1);
+            %Figure out the google type
+            load([Cyc_Path,filesep,cyc_files{1}],'CycAvg')
+            goggle = CycAvg.info.goggle_ver;
             for j = 1:enum
                 if contains(exp_name{j},{' X ',' Y '})
                     canal = 'XY';
@@ -202,7 +253,7 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 end
                 figure('Units','inches','Position',[0.2778    5.8472   17.2222    3.8333],'Color',[1,1,1])
                 %Title
-                annotation('textbox',[0 .9 1 .1],'String',exp_name{j},'FontSize',14,...
+                annotation('textbox',[0 .9 1 .1],'String',[exp_name{j,1},' ',exp_name{j,2},' ',goggle],'FontSize',14,...
                 'HorizontalAlignment','center','EdgeColor','none');
                 annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
                     code_name,newline,...
@@ -220,8 +271,9 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                     amp = str2double(strrep(amps{i},'dps',''));
                     ha(i) = subplot(1000,1000,1);
                     ha(i).Position = [x_pos(i) y_pos x_wid y_height];
-                    if sum(contains(cyc_files,strrep(exp_name{j},' ','-'))&contains(cyc_files,['-',amps{i}]))==1
-                        load([Cyc_Path,filesep,cyc_files{contains(cyc_files,strrep(exp_name{j},' ','-'))&contains(cyc_files,['-',amps{i}])}],'CycAvg')
+                    file_match = contains(cyc_files,strrep(exp_name{j,1},' ','-'))&contains(cyc_files,['-',exp_name{j,2}])&contains(cyc_files,['-',amps{i}]);
+                    if sum(file_match)==1
+                        load([Cyc_Path,filesep,cyc_files{file_match}],'CycAvg')
                         fields = fieldnames(CycAvg);       
                         if ~ismember('t',fields)
                             CycAvg.t = reshape((0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs),[],1);
@@ -338,14 +390,18 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                     end
                 end  
                 legend(ha(1),h,leg_text)
-                fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name{j},' ','-'),'.fig']});
+                fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name{j,1},' ','-'),'-',exp_name{j,2},'-',goggle,'.fig']});
                 savefig([path,filesep,fig_name{:}])
+                close;
             end
         case 'PFM'
+            %%
             disp('No code written for PFM yet')
         case 'PAM'
+            %%
             disp('No code written for PAM yet')
         case 'Autoscan'
+            %%
             fnames = unique(extractfield([dir([Cyc_Path,filesep,'*CurrentFitting*.mat']);...
             dir([Cyc_Path,filesep,'*Autoscan*.mat'])],'name'));
             %Select Files to Plot

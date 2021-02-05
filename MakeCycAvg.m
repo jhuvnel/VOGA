@@ -51,7 +51,7 @@ delete(findall(gcf,'type','annotation')) %in case there are leftover anotations
 fig.Units = 'inches';
 fig.Position = [0 0 11 10];
 %Title
-annotation('textbox',[0 .9 1 .1],'String',strrep(strrep(Data.info.dataType,'_',' '),'-',' '),'FontSize',14,...
+annotation('textbox',[0 .9 1 .1],'String',strrep(strrep(strrep(In_FileName,'_',' '),'-',' '),'.mat',''),'FontSize',14,...
     'HorizontalAlignment','center','EdgeColor','none');
 %% Extract raw position data
 info = Data.info;
@@ -67,26 +67,30 @@ else
     te = Data.Time_Eye - Data.Time_Eye(1);
     ts = Data.Time_Stim - Data.Time_Stim(1);
 end
-%Trigger multiplier
-if contains(info.dataType,'RotaryChair')
-    if isfield(Data,'HeadVel_Z')
-        stim = Data.HeadVel_Z;
+%Assign Trigger
+if contains(info.goggle_ver,'Moogles') %MOOG room coil system
+    stim = Data.Trigger;
+else %NKI or LDVOG Trigger = internal gyro or comes from the PCU for eeVOR
+    if contains(info.dataType,'RotaryChair')
+        if isfield(Data,'HeadVel_Z')
+            stim = Data.HeadVel_Z;
+        else
+            stim = Data.HeadMPUVel_Z; 
+        end   
+    elseif contains(info.dataType,'aHIT')
+        if contains(info.dataType,'LHRH')
+            stim = Data.HeadVel_Z;
+        elseif contains(info.dataType,'LARP')
+            stim = (Data.HeadVel_X - Data.HeadVel_Y)/sqrt(2);
+        elseif contains(info.dataType,'RALP')
+            stim = (Data.HeadVel_X + Data.HeadVel_Y)/sqrt(2);
+        else
+            stim = Data.Trigger;
+        end    
     else
-        stim = Data.HeadMPUVel_Z; 
-    end   
-elseif contains(info.dataType,'aHIT')
-    if contains(info.dataType,'LHRH')
-        stim = Data.HeadVel_Z;
-    elseif contains(info.dataType,'LARP')
-        stim = (Data.HeadVel_X - Data.HeadVel_Y)/sqrt(2);
-    elseif contains(info.dataType,'RALP')
-        stim = (Data.HeadVel_X + Data.HeadVel_Y)/sqrt(2);
-    else
-        stim = Data.Trigger;
-    end    
-else
-    stim = Data.Trigger; 
-end       
+        stim = Data.Trigger; 
+    end       
+end
 %Fix huge number of NaN values in torsion traces of NKI traces
 if contains(info.goggle_ver,'NKI')
     if sum(isnan(Data.LE_Position_X)) > 0.9*length(te) %less than 10% data integrity
