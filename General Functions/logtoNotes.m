@@ -70,9 +70,15 @@ function logtoNotes(Raw_Path)
             %something in it
             col2ind = find(cellfun(@isempty,data(:,2)));
             while ~isempty(col2ind)
+                rm_row = false(size(data,1),1);
                 for i = 1:length(col2ind)
-                    data(col2ind(i),2:num_cols+1) = [data(col2ind(i),3:num_cols+1),{[]}];
+                    if all(cellfun(@isempty,data(col2ind(i),2:end)))
+                        rm_row(col2ind(i),1) = 1;
+                    else                        
+                        data(col2ind(i),2:num_cols+1) = [data(col2ind(i),3:num_cols+1),{[]}];
+                    end
                 end
+                data(rm_row,:) = [];
                 col2ind = find(cellfun(@isempty,data(:,2)));
             end
             %Lastly remove any extra columns 
@@ -81,7 +87,11 @@ function logtoNotes(Raw_Path)
             %% Find relevant text files and make Notes files
             %Now find which text files may correspond to this log File. 
             %Txt files must already be in the same folder as the log Files.
-            logfile_times = datetime(join([repmat({logFile(1:10)},k,1),data(:,1)]),'InputFormat','yyyy-MM-dd HH:mm:ss.SSS');
+            try 
+                logfile_times = datetime(data(:,1),'InputFormat','yyyy-MM-dd HH:mm:ss.SSS');
+            catch 
+                logfile_times = datetime(join([repmat({logFile(1:10)},k,1),data(:,1)]),'InputFormat','yyyy-MM-dd HH:mm:ss.SSS');
+            end
             logfile_times.Format = 'yyyy-MM-dd HH:mm:ss.SSS';    
             %Some log files span several days so find and account for that
             day_inds = find(diff(logfile_times)<0);

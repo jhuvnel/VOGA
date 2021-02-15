@@ -609,8 +609,8 @@ function Segment(In_Path,Seg_Path)
                 %the same information
                 fname = [info.subject,'-',info.visit,'-',info.exp_date,'-',info.dataType];
                 save_flag = 1;
-                while exist([Seg_Path,filesep,fname,'.mat'],'file') %Already an instance of this file
-                    Data2 = Data; %Append the current segment to the previous file
+                if exist([Seg_Path,filesep,fname,'.mat'],'file') %Already an instance of this file
+                    Data2 = Data; %set the segment to Data 2 to check against current file
                     load([Seg_Path,filesep,fname,'.mat'],'Data')
                     if ~any(ismember(Data.rawfile,Data2.rawfile)&Data.raw_start_t==Data2.raw_start_t)
                         disp([fname,' already exists in this folder and they were combined.'])
@@ -650,8 +650,8 @@ function Segment(In_Path,Seg_Path)
                 if save_flag
                     save([Seg_Path,filesep,fname,'.mat'],'Data')
                     %Plot and save figure of the segment
-                    fig = plotSegment(Data);
-                    savefig(fig,[Seg_Path,filesep,fname,'.fig'])
+%                    fig = plotSegment(Data);
+%                    savefig(fig,[Seg_Path,filesep,fname,'.fig'])
                 end
             end
         end

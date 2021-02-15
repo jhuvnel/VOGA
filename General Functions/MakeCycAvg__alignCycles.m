@@ -60,7 +60,7 @@ function [type,starts,ends,stims] = MakeCycAvg__alignCycles(info,Fs,ts,stim)
             end
             starts = unique(starts); %remove duplicates
             if length(starts) > 1
-                snip_len1 = min(diff(starts));
+                snip_len1 = round(median(diff(starts)));
                 snip_len2 = length(stim) - starts(end);
                 if abs(snip_len2-snip_len)/snip_len < 0.01 %Less than 1% off of the expected cycle length
                     snip_len = min([snip_len1 snip_len2]);
@@ -71,17 +71,19 @@ function [type,starts,ends,stims] = MakeCycAvg__alignCycles(info,Fs,ts,stim)
             ends = starts + snip_len - 1;
             %Delete incomplete cycles
             starts(ends>length(stim)) = [];
-            ends(ends>length(stim)) = [];
+            ends(ends>length(stim)) = [];  
             all_stim = zeros(snip_len,length(starts));
             for i = 1:length(starts)
                 all_stim(:,i) = stim(starts(i):ends(i));
             end
             %Remove any obvious erroneous motion traces
-            tol = 0.2; %Amplitude can be 20% wrong and still be tolerates
-            rm_tr = abs(max(all_stim)-amp)/amp > tol | abs(min(all_stim)+amp)/amp > tol;
-            starts(rm_tr) = [];
-            ends(rm_tr) = [];
-            all_stim(:,rm_tr) = [];
+            if contains(info.dataType,{'RotaryChair'})
+                tol = 0.2; %Amplitude can be 20% wrong and still be tolerated
+                rm_tr = abs(max(all_stim)-amp)/amp > tol | abs(min(all_stim)+amp)/amp > tol;
+                starts(rm_tr) = [];
+                ends(rm_tr) = [];
+                all_stim(:,rm_tr) = [];
+            end 
             stims = mean(all_stim,2); 
         elseif contains(info.dataType,'Step')
             type = 2;

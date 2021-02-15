@@ -3,6 +3,7 @@
 %experiments across one degree of freedom like:
 % Sine w/ different frequency (SineFreq)
 % Sine w/ different amplitude (SineAmp)
+% Sine manually pick files (SineManual)
 % Pulse rate w/ different frequency (PFM)
 % Pulse rate w/ different amplitude (PAM)
 % Autoscan Current Levels (Autoscan)
@@ -11,6 +12,7 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
     close all;    
     load('VNELcolors.mat','colors')
     code_name = ['Plotting Scripts',filesep,'plotGroupCycAvg.m'];
+    %%
     switch type
         case 'SineFreq'
             %%
@@ -54,7 +56,7 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
             load([Cyc_Path,filesep,cyc_files{1}],'CycAvg')
             goggle = CycAvg.info.goggle_ver;
             for j = 1:enum
-                if contains(exp_name{j},{' X ',' Y '})
+                if contains(exp_name{j},{' X ',' Y '})||strcmp(exp_name{j}(end-1:end),' X')||strcmp(exp_name{j}(end-1:end),' Y')
                     canal = 'XY';
                 else
                     canal = 'LRZ';
@@ -246,7 +248,7 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
             load([Cyc_Path,filesep,cyc_files{1}],'CycAvg')
             goggle = CycAvg.info.goggle_ver;
             for j = 1:enum
-                if contains(exp_name{j},{' X ',' Y '})
+                if contains(exp_name{j},{' X ',' Y '})||strcmp(exp_name{j}(end-1:end),' X')||strcmp(exp_name{j}(end-1:end),' Y')
                     canal = 'XY';
                 else
                     canal = 'LRZ';
@@ -394,6 +396,195 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 savefig([path,filesep,fig_name{:}])
                 close;
             end
+        case 'SineManual'
+            %%
+            sm = -1; %trigger multiplier, -1 = invert head trace
+            cyc_files = extractfield(dir([Cyc_Path,filesep,'*Sine*.mat']),'name');
+            cyc_files(contains(cyc_files,'NotAnalyzeable')) = [];
+            [indx,tf] = nmlistdlg('PromptString','Select experiment types to graph:',...
+                           'SelectionMode','multiple',...
+                           'ListSize',[350 300],...
+                           'ListString',cyc_files); 
+            if tf == 0
+                return;
+            end
+            rel_files = cyc_files(indx);
+            file_parts = cell(length(rel_files),length(split(rel_files{1},'-')));
+            all_freq = cell(length(rel_files),1);
+            all_amp = cell(length(rel_files),1);
+            for i = 1:length(rel_files)
+                fname = strrep(strrep(rel_files{i},'CycAvg_',''),'.mat','');
+                fparts = split(fname,'-');
+                file_parts(i,:) = fparts;
+                all_freq(i,1) = fparts(contains(fparts,'Hz'));
+                all_amp(i,1) = fparts(contains(fparts,'dps'));
+            end
+            overall_title = file_parts(1,:);
+            plot_titles = file_parts;
+            for i = 1:size(file_parts,2)
+                test = unique(file_parts(:,i));
+                if length(test) == 1
+                    plot_titles(:,i) = {'del'};
+                else
+                    overall_title(1,i) = {'del'};
+                end
+            end
+            overall_title(contains(overall_title,'del')) = []; 
+            overall_title = strjoin(overall_title,' ');
+            plot_titles(:,contains(plot_titles(1,:),'del')) = [];           
+            %Sort by freq or amp if applicable
+            if length(unique(all_freq))>1 %sort by freq
+                [~,indf] = sort(cellfun(@str2double,strrep(plot_titles(:,contains(plot_titles(1,:),'Hz')),'Hz',''))); %make sure it's in numerical order
+                plot_titles = plot_titles(indf,:);
+            elseif length(unique(all_amp))>1 %sort by amp
+                [~,indf] = sort(cellfun(@str2double,strrep(plot_titles(:,contains(plot_titles(1,:),'dps')),'dps',''))); %make sure it's in numerical order
+                plot_titles = plot_titles(indf,:);
+            end
+            plot_titles = join(plot_titles,' '); 
+            enum = size(plot_titles,1);
+            %Figure out the google type
+            load([Cyc_Path,filesep,rel_files{1}],'CycAvg')
+            goggle = CycAvg.info.goggle_ver;
+            figure('Units','inches','Position',[0.2778    5.8472   17.2222    3.8333],'Color',[1,1,1])
+            %Title
+            annotation('textbox',[0 .9 1 .1],'String',[overall_title,' ',goggle],'FontSize',14,...
+            'HorizontalAlignment','center','EdgeColor','none');
+            annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                code_name,newline,...
+                'VOGA',version,newline,Experimenter],'FontSize',5,...
+            'EdgeColor','none','interpreter','none');
+            ha = gobjects(1,enum);
+            x_space = 0.02;
+            x_min = 0.04;
+            x_max = 0.98;
+            x_wid = (x_max-x_min-x_space*(enum-1))/enum;
+            y_height = 0.75;
+            x_pos = x_min:(x_wid+x_space):x_max;
+            y_pos = 0.12;
+            for i = 1:enum
+                parts = split(plot_titles{i});
+                freq = str2double(strrep(parts{contains(parts,'Hz')},'Hz',''));
+                amp = str2double(strrep(parts{contains(parts,'dps')},'dps',''));
+                full_exp = [overall_title,' ',plot_titles{i}];
+                if contains(full_exp,{' X ',' Y '})||strcmp(full_exp(end-1:end),' X')||strcmp(full_exp(end-1:end),' Y')
+                    canal = 'XY';
+                else
+                    canal = 'LRZ';
+                end
+                ha(i) = subplot(1000,1000,1);
+                ha(i).Position = [x_pos(i) y_pos x_wid y_height];
+                load([Cyc_Path,filesep,rel_files{indf(i)}],'CycAvg')
+                fields = fieldnames(CycAvg);       
+                if ~ismember('t',fields)
+                    CycAvg.t = reshape((0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs),[],1);
+                else
+                    CycAvg.t = reshape(CycAvg.t,[],1);
+                end
+                if length(CycAvg.t) > 1000
+                    s = round(linspace(1,length(CycAvg.t),1000));
+                else
+                    s = 1:length(CycAvg.t);
+                end
+                [aa,ab] = size(CycAvg.stim);
+                if aa == length(CycAvg.t) && ab ~=1
+                    CycAvg.stim = mean(CycAvg.stim,2)';
+                elseif ab == length(CycAvg.t) && aa ~=1
+                    CycAvg.stim = mean(CycAvg.stim,1);
+                end
+                h(1) = sm*plot(CycAvg.t(s),CycAvg.stim(s),'k');
+                hold on
+                %Now add the fills and standard deviations and means
+                if strcmp(canal,'XY')
+                    leg_text = {'Stimulus','Left X','Right X',...
+                        'Left Y','Right Y','Left Z','Right Z'};
+                    %LE-X
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.lx_cycavg(s),fliplr((CycAvg.lx_cycavg(s) + CycAvg.lx_cycstd(s)))],colors.l_x_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.lx_cycavg(s),fliplr((CycAvg.lx_cycavg(s) - CycAvg.lx_cycstd(s)))],colors.l_x_s)
+                    plot(CycAvg.t(s),CycAvg.lx_cycavg(s) + CycAvg.lx_cycstd(s),'Color',colors.l_x)
+                    plot(CycAvg.t(s),CycAvg.lx_cycavg(s) - CycAvg.lx_cycstd(s),'Color',colors.l_x)
+                    h(2) = plot(CycAvg.t(s),CycAvg.lx_cycavg(s),'Color',colors.l_x,'LineWidth',2);
+                    %RE-X
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rx_cycavg(s),fliplr((CycAvg.rx_cycavg(s) + CycAvg.rx_cycstd(s)))],colors.r_x_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rx_cycavg(s),fliplr((CycAvg.rx_cycavg(s) - CycAvg.rx_cycstd(s)))],colors.r_x_s)
+                    plot(CycAvg.t(s),CycAvg.rx_cycavg(s) + CycAvg.rx_cycstd(s),'Color',colors.r_x)
+                    plot(CycAvg.t(s),CycAvg.rx_cycavg(s) - CycAvg.rx_cycstd(s),'Color',colors.r_x)
+                    h(3) = plot(CycAvg.t(s),CycAvg.rx_cycavg(s),'Color',colors.r_x,'LineWidth',2);
+                    %LE-Y
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.ly_cycavg(s),fliplr((CycAvg.ly_cycavg(s) + CycAvg.ly_cycstd(s)))],colors.l_y_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.ly_cycavg(s),fliplr((CycAvg.ly_cycavg(s) - CycAvg.ly_cycstd(s)))],colors.l_y_s)
+                    plot(CycAvg.t(s),CycAvg.ly_cycavg(s) + CycAvg.ly_cycstd(s),'Color',colors.l_y)
+                    plot(CycAvg.t(s),CycAvg.ly_cycavg(s) - CycAvg.ly_cycstd(s),'Color',colors.l_y)
+                    h(4) = plot(CycAvg.t(s),CycAvg.ly_cycavg(s),'Color',colors.l_y,'LineWidth',2);
+                    %RE-Y
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.ry_cycavg(s),fliplr((CycAvg.ry_cycavg(s) + CycAvg.ry_cycstd(s)))],colors.r_y_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.ry_cycavg(s),fliplr((CycAvg.ry_cycavg(s) - CycAvg.ry_cycstd(s)))],colors.r_y_s)
+                    plot(CycAvg.t(s),CycAvg.ry_cycavg(s) + CycAvg.ry_cycstd(s),'Color',colors.r_y)
+                    plot(CycAvg.t(s),CycAvg.ry_cycavg(s) - CycAvg.ry_cycstd(s),'Color',colors.r_y)
+                    h(5) = plot(CycAvg.t(s),CycAvg.ry_cycavg(s),'Color',colors.r_y,'LineWidth',2);
+                    %LE-LHRH
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.lz_cycavg(s),fliplr((CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s)))],colors.l_z_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.lz_cycavg(s),fliplr((CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s)))],colors.l_z_s)
+                    plot(CycAvg.t(s),CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s),'Color',colors.l_z)
+                    plot(CycAvg.t(s),CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s),'Color',colors.l_z)
+                    h(6) = plot(CycAvg.t(s),CycAvg.lz_cycavg(s),'Color',colors.l_z,'LineWidth',2);
+                    %RE-LHRH
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rz_cycavg(s),fliplr((CycAvg.rz_cycavg(s) + CycAvg.rz_cycstd(s)))],colors.r_z_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rz_cycavg(s),fliplr((CycAvg.rz_cycavg(s) - CycAvg.rz_cycstd(s)))],colors.r_z_s)
+                    plot(CycAvg.t(s),CycAvg.rz_cycavg(s) + CycAvg.rz_cycstd(s),'Color',colors.r_z)
+                    plot(CycAvg.t(s),CycAvg.rz_cycavg(s) - CycAvg.rz_cycstd(s),'Color',colors.r_z)
+                    h(7) = plot(CycAvg.t(s),CycAvg.rz_cycavg(s),'Color',colors.r_z,'LineWidth',2);
+                else
+                    leg_text = {'Stimulus','Left LARP','Right LARP',...
+                        'Left RALP','Right RALP','Left Z','Right Z'};
+                    %LE-LARP
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.ll_cycavg(s),fliplr((CycAvg.ll_cycavg(s) + CycAvg.ll_cycstd(s)))],colors.l_l_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.ll_cycavg(s),fliplr((CycAvg.ll_cycavg(s) - CycAvg.ll_cycstd(s)))],colors.l_l_s)
+                    plot(CycAvg.t(s),CycAvg.ll_cycavg(s) + CycAvg.ll_cycstd(s),'Color',colors.l_l)
+                    plot(CycAvg.t(s),CycAvg.ll_cycavg(s) - CycAvg.ll_cycstd(s),'Color',colors.l_l)
+                    h(2) = plot(CycAvg.t(s),CycAvg.ll_cycavg(s),'Color',colors.l_l,'LineWidth',2);
+                    %RE-LARP
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rl_cycavg(s),fliplr((CycAvg.rl_cycavg(s) + CycAvg.rl_cycstd(s)))],colors.r_l_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rl_cycavg(s),fliplr((CycAvg.rl_cycavg(s) - CycAvg.rl_cycstd(s)))],colors.r_l_s)
+                    plot(CycAvg.t(s),CycAvg.rl_cycavg(s) + CycAvg.rl_cycstd(s),'Color',colors.r_l)
+                    plot(CycAvg.t(s),CycAvg.rl_cycavg(s) - CycAvg.rl_cycstd(s),'Color',colors.r_l)
+                    h(3) = plot(CycAvg.t(s),CycAvg.rl_cycavg(s),'Color',colors.r_l,'LineWidth',2);
+                    %LE_RALP
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.lr_cycavg(s),fliplr((CycAvg.lr_cycavg(s) + CycAvg.lr_cycstd(s)))],colors.l_r_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.lr_cycavg(s),fliplr((CycAvg.lr_cycavg(s) - CycAvg.lr_cycstd(s)))],colors.l_r_s)
+                    plot(CycAvg.t(s),CycAvg.lr_cycavg(s) + CycAvg.lr_cycstd(s),'Color',colors.l_r)
+                    plot(CycAvg.t(s),CycAvg.lr_cycavg(s) - CycAvg.lr_cycstd(s),'Color',colors.l_r)
+                    h(4) = plot(CycAvg.t(s),CycAvg.lr_cycavg(s),'Color',colors.l_r,'LineWidth',2);
+                    %RE-RALP
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rr_cycavg(s),fliplr((CycAvg.rr_cycavg(s) + CycAvg.rr_cycstd(s)))],colors.r_r_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rr_cycavg(s),fliplr((CycAvg.rr_cycavg(s) - CycAvg.rr_cycstd(s)))],colors.r_r_s)
+                    plot(CycAvg.t(s),CycAvg.rr_cycavg(s) + CycAvg.rr_cycstd(s),'Color',colors.r_r)
+                    plot(CycAvg.t(s),CycAvg.rr_cycavg(s) - CycAvg.rr_cycstd(s),'Color',colors.r_r)
+                    h(5) = plot(CycAvg.t(s),CycAvg.rr_cycavg(s),'Color',colors.r_r,'LineWidth',2);
+                    %LE-LHRH
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.lz_cycavg(s),fliplr((CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s)))],colors.l_z_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.lz_cycavg(s),fliplr((CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s)))],colors.l_z_s)
+                    plot(CycAvg.t(s),CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s),'Color',colors.l_z)
+                    plot(CycAvg.t(s),CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s),'Color',colors.l_z)
+                    h(6) = plot(CycAvg.t(s),CycAvg.lz_cycavg(s),'Color',colors.l_z,'LineWidth',2);
+                    %RE-LHRH
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rz_cycavg(s),fliplr((CycAvg.rz_cycavg(s) + CycAvg.rz_cycstd(s)))],colors.r_z_s)
+                    fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.rz_cycavg(s),fliplr((CycAvg.rz_cycavg(s) - CycAvg.rz_cycstd(s)))],colors.r_z_s)
+                    plot(CycAvg.t(s),CycAvg.rz_cycavg(s) + CycAvg.rz_cycstd(s),'Color',colors.r_z)
+                    plot(CycAvg.t(s),CycAvg.rz_cycavg(s) - CycAvg.rz_cycstd(s),'Color',colors.r_z)
+                    h(7) = plot(CycAvg.t(s),CycAvg.rz_cycavg(s),'Color',colors.r_z,'LineWidth',2);
+                end
+                title(plot_titles{i})
+                xlabel('Time (s)')
+                set(gca,'XLim',[0 1/freq],'YLim',amp*[-1.1,1.1])
+            end
+            hold off            
+            if i == 1
+                ylabel('Angular Velocity (dps)')            
+            end 
+            legend(ha(1),h,leg_text)
+            fig_name = inputdlg('Name this figure','',1,{[overall_title,' ',goggle,'.fig']});
+            savefig([path,filesep,fig_name{:}])
+            close;   
         case 'PFM'
             %%
             disp('No code written for PFM yet')

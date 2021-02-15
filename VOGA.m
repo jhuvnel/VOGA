@@ -3,8 +3,7 @@
 % parameterize batches of files. 
 %
 % To initialize after MATLAB has restarted, navigate to the folder with this
-% function and type either "VOGA" or "allfoldpath" into the command line 
-% to add all functions to the path. If you typed "VOGA", hit cancel now.
+% function and type "allfoldpath" into the command line to add all functions to the path.
 %
 % To analyze data, navivate to the path with the Raw File, Segmented Files,
 % and Cycle Average folders and then run "VOGA."

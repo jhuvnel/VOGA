@@ -8,7 +8,8 @@ clc;
 load('VNELcolors.mat','colors')
 % Fill colors for cycle selection
 %Color of cycle on long graph
-colors.cyc_keep = [0.75 1 0.75]; 
+colors.cyc_keep = [0.85 0.85 0.85];
+%colors.cyc_keep = [0.75 1 0.75]; 
 colors.cyc_bold_k = [0 0.75 0];
 colors.cyc_rm = [1 1 1];
 colors.cyc_bold_r = [0.85 0.85 0.85];

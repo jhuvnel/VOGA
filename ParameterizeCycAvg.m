@@ -27,7 +27,11 @@ else
     subject = '';
 end
 % Visit
-visit = strrep(fparts{contains(fparts,'Visit')},' ','');
+if any(contains(fparts,'Visit'))
+    visit = strrep(fparts{contains(fparts,'Visit')},' ','');
+else
+    visit = 'NA';
+end
 % Date
 date = datetime(fparts{cellfun(@str2double,fparts)>20160000},'InputFormat','yyyyMMdd');
 % Experiment, Condition, and Stim Axes
