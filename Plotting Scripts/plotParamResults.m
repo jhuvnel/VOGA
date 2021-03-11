@@ -2,27 +2,34 @@
 % This function makes figures from the Results.mat tables 
 % It detects the different possible figures based on the table given.
 
-function plotParamResults(type,path,code_Path,version,Experimenter,annot)
-    close all;
-    load('VNELcolors.mat','colors')
-    code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
-    warning('off')
-    sub_info = readtable('SubjectInfo.xlsx');
-    warning('on')
-    Subs = sub_info.Subject;
-    Ears = sub_info.Ear;
-    % Load table in question
-    res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
-    if isempty(res_file)
-        disp('No table with cycle parameters found on this path.')
-        return;
+%type = 'SineAmpVelLRZ';
+%type = 'SineAmpVelXYZ';
+%type = 'Autoscan';
+
+function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
+    if nargin < 7
+        YMax = 100;
     end
-    load(res_file{end},'all_results')    
     switch type
         case 'SineAmpVelLRZ'   
-            %%
-            %Make Figure like Boutros 2019 Figure 6
-            YMax = 100;
+            %% Make Figure like Boutros 2019 Figure 6
+            % Initialize
+            close all;
+            load('VNELcolors.mat','colors')
+            code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
+            warning('off')
+            sub_info = readtable('SubjectInfo.xlsx');
+            warning('on')
+            Subs = sub_info{:,1};
+            Ears = sub_info{:,2};
+            % Load table in question
+            res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
+            if isempty(res_file)
+                disp('No table with cycle parameters found on this path.')
+                return;
+            end
+            load(res_file{end},'all_results') 
+            %Pick files to run
             [indx,tf] = listdlg('ListString',all_results.File,...
                 'PromptString','Pick the files to plot','ListSize',[400 300],...
                 'SelectionMode','multiple');
@@ -157,9 +164,24 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot)
             end
             close;
         case 'SineAmpVelXYZ'   
-            %%
-            %Make Figure like Boutros 2019 Figure 6 but X, Y and Z
-            YMax = 50;
+            %% Make Figure like Boutros 2019 Figure 6 but X, Y and Z
+            % Initialize
+            close all;
+            load('VNELcolors.mat','colors')
+            code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
+            warning('off')
+            sub_info = readtable('SubjectInfo.xlsx');
+            warning('on')
+            Subs = sub_info{:,1};
+            Ears = sub_info{:,2};
+            % Load table in question
+            res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
+            if isempty(res_file)
+                disp('No table with cycle parameters found on this path.')
+                return;
+            end
+            load(res_file{end},'all_results') 
+            %Pick files to graph
             [indx,tf] = listdlg('ListString',all_results.File,...
                 'PromptString','Pick the files to plot','ListSize',[400 300],...
                 'SelectionMode','multiple');
@@ -253,7 +275,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot)
             xlabel(ha(5),'% Modulation Depth','FontSize',14)
             ylabel(ha(1),'Left Eye','FontSize',14)
             ylabel(ha(4),'Right Eye','FontSize',14)
-            text(ha(4),-40,30,'VOR Component Magnitude (\circ/s)','Rotation',90,'FontSize',16,'FontWeight','bold')
+            text(ha(4),-40,YMax/2,'VOR Component Magnitude (\circ/s)','Rotation',90,'FontSize',16,'FontWeight','bold')
             colorsL = [colors.l_x;colors.l_y;colors.l_z];
             colorsR = [colors.r_x;colors.r_y;colors.r_z];
             hL = gobjects(1,3);
@@ -294,9 +316,27 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot)
             end
             close;
         case 'Autoscan'
-            %%
+            %% Make Figure like Boutros 2019 Figure 4 but Magnitude and Misalignment
+            % Initialize
+            close all;
+            load('VNELcolors.mat','colors')
+            code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
+%             warning('off')
+%             sub_info = readtable('SubjectInfo.xlsx');
+%             warning('on')
+%             Subs = sub_info{:,1};
+%             Ears = sub_info{:,2};
+            % Load table in question
+            res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
+            if isempty(res_file)
+                disp('No table with cycle parameters found on this path.')
+                return;
+            end
+            load(res_file{end},'all_results') 
             %Now figure out which files to plot
             all_exps = all_results.Condition;
+            parts = split(all_exps{1},' ');
+            exp_name = [all_results.Subject{1},' ',all_results.Visit{1},' ',datestr(all_results.Date(1),'yyyymmdd'),' Autoscan ',parts{contains(parts,'us')},' ',parts{contains(parts,'pps')},' ',all_results.Goggle{1}];
             E_inds = false(length(all_exps),9); 
             which_files = questdlg('Plot all the files in this directory or manually select them?','','All','Select','Select');
             for i = 1:9
@@ -312,6 +352,10 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot)
                     disp(['No files found for E',num2str(i+2)])
                 end
             end
+            %Find the cycle numbers for each column
+            N = [min(all_results.Cycles(any(E_inds(:,1:3),2))),...
+                min(all_results.Cycles(any(E_inds(:,4:6),2))),...
+                min(all_results.Cycles(any(E_inds(:,7:9),2)))];
             %Make some bold ( if you know which one was activated on)
             E_bold = false(1,9);
             indx = listdlg('ListString',strcat('E',cellfun(@num2str,num2cell(3:11),'UniformOutput',false)),...
@@ -321,32 +365,45 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot)
             ha = gobjects(1,6);
             %markerbig=5;
             %markersmall=4;
-            linethick=2;
-            linethin=1;
+            %linethick=2;
+            %linethin=1;
             errorbarcapsize=1;
             figsizeinches=[7,6];
             XLim = [-5 105];
-            YLim_vel = [0,100];
+            YLim_vel = [0,YMax];
             YLim_align = [0 80];
             %figsizeinchesBoxplot=[2.3,4];
             figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
             if annot
-                annotation('textbox',[0 0 1 1],'String',...
-                    [path,newline,code_Path,filesep,'plotActivationCurrentLevels.m'],'FontSize',5,...
-                    'EdgeColor','none','interpreter','none','VerticalAlignment','bottom');
+                annotation('textbox',[0 0 1 1],'String',[path,newline,code_Path,filesep,...
+                        code_name,newline,...
+                        'VOGA',version,newline,Experimenter],'FontSize',5,...
+                    'EdgeColor','none','interpreter','none');
             end
+            annotation('textbox',[0 .9 1 .1],'String',strrep(exp_name,'us','\mus'),'FontSize',14,...
+                'HorizontalAlignment','center','EdgeColor','none');
             ha(1) = subplot(2,3,1);
-            ha(1).Position = [0.1,0.57,0.29,0.4];
             ha(2) = subplot(2,3,2);
-            ha(2).Position = [0.4,0.57,0.29,0.4];
             ha(3) = subplot(2,3,3);
-            ha(3).Position = [0.7,0.57,0.29,0.4];
             ha(4) = subplot(2,3,4);
-            ha(4).Position = [0.1,0.12,0.29,0.4];
             ha(5) = subplot(2,3,5);
-            ha(5).Position = [0.4,0.12,0.29,0.4];
             ha(6) = subplot(2,3,6);
-            ha(6).Position = [0.7,0.12,0.29,0.4];
+            x_min = 0.1;
+            x_max = 0.99;
+            x_space = 0.01;
+            y_min = 0.08;
+            y_max = 0.93;
+            y_space = 0.03;
+            x_wid = (x_max-x_min-2*x_space)/3;
+            y_wid = (y_max-y_min-y_space)/2;
+            x_pos = x_min:x_wid+x_space:x_max;
+            y_pos = y_min:y_wid+y_space:y_max;
+            ha(1).Position = [x_pos(1),y_pos(2),x_wid,y_wid];
+            ha(2).Position = [x_pos(2),y_pos(2),x_wid,y_wid];
+            ha(3).Position = [x_pos(3),y_pos(2),x_wid,y_wid];
+            ha(4).Position = [x_pos(1),y_pos(1),x_wid,y_wid];
+            ha(5).Position = [x_pos(2),y_pos(1),x_wid,y_wid];
+            ha(6).Position = [x_pos(3),y_pos(1),x_wid,y_wid];
             markers = {'x','o','d'};
             %Set colors (faded vs normal)
             if any(contains(all_exps,{'LP';'LH';'LA'})) %Left sided
@@ -395,21 +452,21 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot)
                     [curr_norm,curr_i] = sort(100*(curr-min(curr))/(max(curr)-min(curr))); 
                     %Determine canal
                     if any(contains(exp,{'LP','RA'})) %RALP
-                        canal = 'RALP';
+                        canal = 'R';
                     elseif any(contains(exp,{'LH','RH'})) %LHRH
-                        canal = 'LHRH';
+                        canal = 'Z';
                     else %LARP
-                        canal = 'LARP';
+                        canal = 'L';
                     end        
                     %Extract the relevant vectors
-                    L_Vel = abs(rel_tab.(['E',num2str(i_ord(j))]).(['L_',canal,'_MaxVel'])(curr_i));
-                    L_Vel_sd = rel_tab.(['E',num2str(i_ord(j))]).(['L_',canal,'_MaxVel_sd'])(curr_i);
-                    R_Vel = abs(rel_tab.(['E',num2str(i_ord(j))]).(['R_',canal,'_MaxVel'])(curr_i));
-                    R_Vel_sd = rel_tab.(['E',num2str(i_ord(j))]).(['R_',canal,'_MaxVel_sd'])(curr_i);        
-                    L_Align = rel_tab.(['E',num2str(i_ord(j))]).L_Align(curr_i);
-                    L_Align_sd = rel_tab.(['E',num2str(i_ord(j))]).L_Align_sd(curr_i);
-                    R_Align = rel_tab.(['E',num2str(i_ord(j))]).R_Align(curr_i);
-                    R_Align_sd = rel_tab.(['E',num2str(i_ord(j))]).R_Align_sd(curr_i);
+                    L_Vel = abs(rel_tab.(['E',num2str(i_ord(j))]).(['MaxVel_L',canal,'_HIGH'])(curr_i));
+                    L_Vel_sd = rel_tab.(['E',num2str(i_ord(j))]).(['MaxVel_L',canal,'_HIGH_sd'])(curr_i);
+                    R_Vel = abs(rel_tab.(['E',num2str(i_ord(j))]).(['MaxVel_R',canal,'_HIGH'])(curr_i));
+                    R_Vel_sd = rel_tab.(['E',num2str(i_ord(j))]).(['MaxVel_R',canal,'_HIGH_sd'])(curr_i);        
+                    L_Align = rel_tab.(['E',num2str(i_ord(j))]).Align_L_HIGH(curr_i);
+                    L_Align_sd = rel_tab.(['E',num2str(i_ord(j))]).Align_L_HIGH_sd(curr_i);
+                    R_Align = rel_tab.(['E',num2str(i_ord(j))]).Align_R_HIGH(curr_i);
+                    R_Align_sd = rel_tab.(['E',num2str(i_ord(j))]).Align_R_HIGH_sd(curr_i);
                     %Choose the larger eye for each current
                     [~,eye] = max([L_Vel,R_Vel],[],2);
                     Vel = L_Vel;
@@ -449,7 +506,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot)
                 set(gca,'YLim',YLim_align)
                 if i == 1
                     set(gca,'YTick',10:10:max(YLim_align))
-                    ylabel({'Misalignemnt';'Angle (\circ)'})
+                    ylabel({'Misalignment';'Angle (\circ)'})
                 else
                     set(gca,'YColor','none')
                 end
@@ -457,6 +514,57 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot)
                 if i==2
                     xlabel('% of Current Range')
                 end    
+            end
+            fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name,' ','-'),'.fig']});
+            if ~isempty(fig_name)
+                savefig([path,filesep,fig_name{:}])
+            end
+            close;
+        case 'SpherePlot'
+            %% Disco Ball plot
+            close all;
+            load('VNELcolors.mat','colors')
+            code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
+            warning('off')
+            sub_info = readtable('SubjectInfo.xlsx');
+            warning('on')
+            Subs = sub_info{:,1};
+            Ears = sub_info{:,2};
+            % Load table in question
+            res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
+            if isempty(res_file)
+                disp('No table with cycle parameters found on this path.')
+                return;
+            end
+            load(res_file{end},'all_results') 
+            %Pick files to graph
+            [indx,tf] = listdlg('ListString',all_results.File,...
+                'PromptString','Pick the files to plot','ListSize',[400 300],...
+                'SelectionMode','multiple');
+            if tf == 0
+                return;
+            end
+            all_results2 = all_results(indx,:);
+            subject = all_results2.Subject{1};
+            hg = figure;
+            Function = 2;
+            plotstimaxis = 0;
+            plotelecaxis = 1;
+            normlen = 1;
+            stim_ear = Ears{ismember(Subs,subject)};
+            for i = 1:size(all_results2,1)
+                load([Cyc_Path,filesep,all_results2.File{i}],'CycAvg')
+                %Determine canal
+                if any(contains(all_results2.Condition{i},{'LP','RA'})) %RALP
+                    plot_colors = [colors.l_r;colors.r_r]; 
+                elseif any(contains(all_results2.Condition{i},{'LH','RH'})) %LHRH
+                    plot_colors = [colors.l_z;colors.r_z]; 
+                elseif any(contains(all_results2.Condition{i},{'LA','RP'})) %LARP
+                    plot_colors = [colors.l_l;colors.r_l]; 
+                else
+                    plot_colors = [0,0,0;0.5,0.5,0.5]; %black and gray
+                end
+                hg = MakeSpherePlot(CycAvg,hg,Function,plotstimaxis,plotelecaxis,normlen,plot_colors,stim_ear);
             end
     end
 end

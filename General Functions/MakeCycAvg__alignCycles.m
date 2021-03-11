@@ -1,4 +1,15 @@
-function [type,starts,ends,stims] = MakeCycAvg__alignCycles(info,Fs,ts,stim)
+function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts,stim1)
+    %Shift Trigger if needed
+    stim = reshape(stim1,[],1);
+    len = length(stim);
+    TrigShift = round(info.TriggerShift2);
+    if TrigShift > 0
+        stim = [repmat(stim(1),TrigShift,1);stim];
+        stim = stim(1:len);
+    elseif TrigShift < 0
+        stim = [stim;repmat(stim(end),-TrigShift,1)];
+        stim = stim((-TrigShift+1):end);
+    end
     if contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
         if contains(info.dataType,'Sine')
             type = 1;
@@ -153,4 +164,9 @@ function [type,starts,ends,stims] = MakeCycAvg__alignCycles(info,Fs,ts,stim)
     else
         error('Unknown Data Type')
     end 
+    t_snip = reshape(ts(1:length(stims))-ts(1),1,[]);
+    keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
+    for i = 1:length(starts)
+        keep_inds(:,i) = starts(i):ends(i);
+    end
 end

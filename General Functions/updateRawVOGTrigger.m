@@ -1,6 +1,6 @@
-In_Path = 'SESSION-2021Feb11-140513.txt';
-TEMP_In_Path = '   ';
-%TEMP_In_Path = 'SESSION-2021Feb08-122954.txt';
+In_Path = 'SESSION-2021Feb22-134413.txt';
+%TEMP_In_Path = '   ';
+TEMP_In_Path = 'SESSION-2021Feb22-131754.txt';
 % Standardize Colors
 colors.l_x = [237,150,33]/255;
 colors.l_y = [125,46,143]/255;
@@ -85,26 +85,33 @@ else
     Time_Eye = NaN;
     Stim = NaN;
 end
+Fs = 1/mean(diff(Time_Eye));
 % Plot
 plot(NaN,NaN)
 hold on
-plot(Time_Eye,LX,'Color',colors.l_x)
-plot(Time_Eye,RX,'Color',colors.r_x)
-plot(Time_Eye,LY,'Color',colors.l_y)
-plot(Time_Eye,RY,'Color',colors.r_y)
-plot(Time_Eye,LZ,'Color',colors.l_z)
-plot(Time_Eye,RZ,'Color',colors.r_z)
-plot(Time_Eye,GyroX,'k:')
-plot(Time_Eye,GyroY,'k--')
-plot(Time_Eye,GyroZ,'k-')
-plot(Time_Eye,100*Stim,'b')
-plot(TEMP_Time_Eye,100*TEMP_Stim,'g')
+plot(Time_Eye,LX,'Color',colors.l_x);plot(Time_Eye,RX,'Color',colors.r_x);plot(Time_Eye,LY,'Color',colors.l_y);
+plot(Time_Eye,RY,'Color',colors.r_y);plot(Time_Eye,LZ,'Color',colors.l_z);plot(Time_Eye,RZ,'Color',colors.r_z);
+plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-')
+plot(Time_Eye,30*Stim,'b')
+plot(TEMP_Time_Eye,30*TEMP_Stim,'g')
 hold off
 xlabel('Time (s)')
 ylabel('Velocity (dps)')
 legend('GyroX','GyroY','GyroZ','Trigger')
-axis([Time_Eye(1) Time_Eye(end) -10 110])
-Fs = 1/mean(diff(Time_Eye));
+axis([Time_Eye(1) Time_Eye(end) -40 40])
+%% Plot
+plot(NaN,NaN)
+hold on
+plot(Time_Eye,LX,'Color',colors.l_x);plot(Time_Eye,RX,'Color',colors.r_x);plot(Time_Eye,LY,'Color',colors.l_y);
+plot(Time_Eye,RY,'Color',colors.r_y);plot(Time_Eye,LZ,'Color',colors.l_z);plot(Time_Eye,RZ,'Color',colors.r_z);
+plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-')
+plot(Time_Eye,30*Stim,'b')
+plot(TEMP_Time_Eye,30*TEMP_Stim,'g')
+hold off
+xlabel('Time (s)')
+ylabel('Velocity (dps)')
+legend('GyroX','GyroY','GyroZ','Trigger')
+axis([Time_Eye(1) Time_Eye(end) -40 40])
 %% OLD Code that worked before
 %         % CODED FOR SOME NOISY TRIGGER EXPERIMENTS
 %         plot(100*StimAll,'b')
@@ -138,7 +145,7 @@ Fs = 1/mean(diff(Time_Eye));
 %             StimAll = Stim3;
 %         end
 %% Plot from template file
-align = 'end'; %can also be start
+align = 'start'; %can also be start
 if length(TEMP_Stim)>length(Stim)
     TEMP_Stim = TEMP_Stim(1:length(Stim));
 elseif length(TEMP_Stim)<length(Stim)
@@ -176,48 +183,67 @@ legend('Template','Trigger')
 axis([Time_Eye(1) Time_Eye(end) -0.75 1.25])
 %% Fit template by adjusting left and right padding
 TEMP_Stim = TEMP_Stim(find(TEMP_Stim==(1-TEMP_Stim(1)),1,'first')-1:end);
-l_i = 1050;
-r_i = 6000;
+l_i = 3450;
+r_i = 30000;
 TEMP_Stim2 = [TEMP_Stim(end)*ones(l_i,1);TEMP_Stim;TEMP_Stim(end)*ones(r_i,1)];
 TEMP_Stim2 = TEMP_Stim2(1:length(Stim));
 TEMP_Stim2 = 1-TEMP_Stim2;
 plot(NaN,NaN)
 hold on
-% plot(Time_Eye,LX,'Color',colors.l_x)
-% plot(Time_Eye,RX,'Color',colors.r_x)
-% plot(Time_Eye,LY,'Color',colors.l_y)
-% plot(Time_Eye,RY,'Color',colors.r_y)
-% plot(Time_Eye,LZ,'Color',colors.l_z)
-% plot(Time_Eye,RZ,'Color',colors.r_z)
-plot(Time_Eye,GyroX,'k:')
-plot(Time_Eye,GyroY,'k--')
-plot(Time_Eye,GyroZ,'k-')
+plot(Time_Eye,LX,'Color',colors.l_x,Time_Eye,RX,'Color',colors.r_x,Time_Eye,LY,'Color',colors.l_y)
+plot(Time_Eye,RY,'Color',colors.r_y,Time_Eye,LZ,'Color',colors.l_z,Time_Eye,RZ,'Color',colors.r_z)
+plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-')
 plot(Time_Eye,30*Stim,'b')
 plot(Time_Eye,30*TEMP_Stim2,'g')
 hold off
 xlabel('Time (s)')
 ylabel('Velocity (dps)')
 legend('GyroX','GyroY','GyroZ','Trigger')
-%set(gca,'YLim',[-10 10])
+set(gca,'YLim',[-30 30])
 %% Make Templates
 %Frequency Sweep High to Low
-t1 = 120;
-t2 = 220;
-cyc_num = 15;
+%Set time chunk to look at
+shift = -40;
+t1 = 5; %s 
+t2 = 50; %s 
 [~,t1_ind] = min(abs(Time_Eye-t1));
 [~,t2_ind] = min(abs(Time_Eye-t2));
-spike = diff(find(abs(diff(Stim(t1_ind:t2_ind)))>0));
-spike(spike==1) = [];
-tol = sum(abs((spike/min(spike)-floor(spike/min(spike)))));
-if tol < 0.1
-    val = min(spike);
-else
-    val = spike(end);
-end
-val = floor(Fs/0.2)-34;
-changes = [0;val*ones(cyc_num,1)];
-k = find(Stim==(1-Stim(t1_ind))&Time_Eye>t1,1,'first');
-template = Stim(t1_ind)*ones(1,length(Time));
+
+template = Stim;
+template(t1_ind:t2_ind) = TEMP_Stim((t1_ind:t2_ind)+shift);
+%Detect cycle size
+% spike = diff(find(abs(diff(Stim(t1_ind:t2_ind)))>0));
+% spike(spike==1) = [];
+% tol = sum(abs((spike/min(spike)-floor(spike/min(spike)))));
+% if tol < 0.1
+%     cyc_len = min(spike);
+% else
+%     cyc_len = spike(end);
+% end
+%Set cycle size and cycle number
+%val = floor(Fs/2);
+% cyc_len = 72;
+% cyc_num = 20;
+% shifts = find(abs(diff(Stim))>0)+1;
+% k = shifts(1);
+%template = Stim(t1_ind)*ones(1,length(Time));
+%sub_temp = [1,mod(floor((1:cyc_num*cyc_len)/cyc_len),2)];
+%Align
+%From the first change
+%k = find(Stim==(1-Stim(t1_ind))&Time_Eye>t1,1,'first');
+%rel_inds = (1:length(sub_temp))+k-1;
+%From the last change
+%k = find(Stim==(1-Stim(t2_ind))&Time_Eye<t2,1,'last');
+% rel_inds = (1:length(sub_temp))+k-length(sub_temp)+1;
+% if Stim(t1_ind) == 0
+%     template(rel_inds) = 1-sub_temp;
+%     template(rel_inds(end)+1:end) = 1-sub_temp(end);
+% else
+%     template(rel_inds) = sub_temp;
+%     template(rel_inds(end)+1:end) = sub_temp(end);
+% end
+%OLD WAY
+%changes = [0;cyc_len*ones(cyc_num,1)];
 %changes = [0;...
            %floor(Fs/5)*ones(20,1);floor(Fs*5);...
            %floor(Fs/2)*ones(20,1);floor(Fs*5);...
@@ -225,10 +251,11 @@ template = Stim(t1_ind)*ones(1,length(Time));
            %floor(Fs/0.5)*ones(20,1);floor(Fs*5)];...
            %floor(Fs/0.2)*ones(15,1);floor(Fs*10);...
            %floor(Fs/0.1)*ones(10,1)];
-for i = 1:length(changes)
-    template(k+changes(i):end) = 1-template(k+changes(i):end);
-    k = k+changes(i)+1;
-end
+% for i = 1:length(changes)
+%     template(k+changes(i):end) = 1-template(k+changes(i):end);
+%     k = k+changes(i)+1;
+% end
+
 plot(Time_Eye,GyroX,'k:')
 hold on
 plot(Time_Eye,LX,'Color',colors.l_x)
@@ -243,19 +270,55 @@ plot(Time_Eye,100*Stim,'b')
 plot(Time_Eye,100*template,'g')
 hold off
 axis([t1 t2 -10 110])   
+%% Amplitude Sweep Fix
+%Works when the trigger is a whole set instead of each cycle
+shifts = find(abs(diff(Stim))>0)+1;
+cyc_len = 72;
+cyc_num = 20;
+template = Stim(1)*ones(1,length(Time));
+sub_temp = [1,mod(floor((1:cyc_num*cyc_len)/cyc_len),2)];
+for i = 1:length(shifts)
+    k = shifts(i);
+    rel_inds = (1:length(sub_temp))+k-length(sub_temp)+1;
+    if Stim(rel_inds(1)) == 0
+        template(rel_inds) = 1-sub_temp;
+        template(rel_inds(end)+1:end) = 1-sub_temp(end);
+    else
+        template(rel_inds) = sub_temp;
+        template(rel_inds(end)+1:end) = sub_temp(end);
+    end
+end
+
+plot(Time_Eye,GyroX,'k:')
+hold on
+plot(Time_Eye,LX,'Color',colors.l_x)
+plot(Time_Eye,RX,'Color',colors.r_x)
+plot(Time_Eye,LY,'Color',colors.l_y)
+plot(Time_Eye,RY,'Color',colors.r_y)
+plot(Time_Eye,LZ,'Color',colors.l_z)
+plot(Time_Eye,RZ,'Color',colors.r_z)
+plot(Time_Eye,GyroY,'k--')
+plot(Time_Eye,GyroZ,'k-')
+plot(Time_Eye,100*Stim,'b')
+plot(Time_Eye,100*template,'g')
+hold off
 %% Keep changes
-%Stim(t1_ind:t2_ind) = template(t1_ind:t2_ind);
+ Stim(t1_ind:t2_ind) = template(t1_ind:t2_ind);
+% if Stim(t2_ind) ~= Stim(t2_ind+1)
+%    Stim(t2_ind+1:end) = 1-Stim(t2_ind+1:end);
+% end
 %Stim(t1_ind:end) = template(t1_ind:end);
 %Stim(t2_ind:end) = Stim(t2_ind);
 
+Stim = template;
 %Stim = TEMP_Stim;
-Stim = TEMP_Stim2;
+%Stim = TEMP_Stim2;
 %% Save to file
 new_fname = [In_Path(1:end-4),'_UpdatedTrigger_',datestr(now,'yyyymmdd_HHMMSS'),'_FixedShape',In_Path(end-3:end)];
 if strcmp(In_Path(end-2:end),'dat')%NKI
     data.EventCode = Stim;
     writetable(data,new_fname,'Delimiter','tab');
 elseif strcmp(In_Path(end-2:end),'txt') %LDVOG
-    data{:,StimIndex} = Stim;
+    data{:,StimIndex} = reshape(Stim,[],1);
     writetable(data,new_fname);
 end

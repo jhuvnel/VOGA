@@ -63,9 +63,9 @@ elseif contains(condition,'Y')
 elseif contains(condition,'Activation')
     stim_vect = [0,0,0];
 elseif contains(condition,'Vect') %MultiVector
-    b1 = strfind(experiment,'[');
-    b2 = strfind(experiment,']');
-    stim_vect = str2num(experiment(b1+1,b2-1));
+    b1 = strfind(condition,'[');
+    b2 = strfind(condition,']');
+    stim_vect = str2num(strrep(condition(b1+1:b2-1),' ','-'));
 else
     stim_vect = [0,0,0];
 end    

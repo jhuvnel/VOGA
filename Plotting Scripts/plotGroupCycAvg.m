@@ -8,7 +8,15 @@
 % Pulse rate w/ different amplitude (PAM)
 % Autoscan Current Levels (Autoscan)
 
-function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
+%type = 'SineFreq';
+%type = 'SineAmp';
+%type = 'SineManual';
+%type = 'Autoscan';
+
+function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter,annot,YMax)
+    if nargin < 8
+        YMax = [];
+    end
     close all;    
     load('VNELcolors.mat','colors')
     code_name = ['Plotting Scripts',filesep,'plotGroupCycAvg.m'];
@@ -65,10 +73,12 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 %Title
                 annotation('textbox',[0 .9 1 .1],'String',[exp_name{j,1},' ',exp_name{j,2},' ',goggle],'FontSize',14,...
                 'HorizontalAlignment','center','EdgeColor','none');
-                annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
-                    code_name,newline,...
-                    'VOGA',version,newline,Experimenter],'FontSize',5,...
-                'EdgeColor','none','interpreter','none');
+                if annot
+                    annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                        code_name,newline,...
+                        'VOGA',version,newline,Experimenter],'FontSize',5,...
+                    'EdgeColor','none','interpreter','none');
+                end
                 ha = gobjects(1,fnum);
                 x_space = 0.01;
                 x_min = 0.04;
@@ -185,11 +195,13 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                         end
                         hold off
                         XLim = [0 1/freq];
-                        YLim = [min(CycAvg.stim) max(CycAvg.stim)];
                     else 
                         plot(NaN,NaN)
                         XLim = [0 1/freq];
                         YLim = [-100 100];
+                    end
+                    if ~isempty(YMax)
+                        YLim = [-YMax YMax];
                     end
                     set(gca,'XLim',XLim)
                     set(gca,'YLim',YLim)
@@ -257,13 +269,15 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 %Title
                 annotation('textbox',[0 .9 1 .1],'String',[exp_name{j,1},' ',exp_name{j,2},' ',goggle],'FontSize',14,...
                 'HorizontalAlignment','center','EdgeColor','none');
-                annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
-                    code_name,newline,...
-                    'VOGA',version,newline,Experimenter],'FontSize',5,...
-                'EdgeColor','none','interpreter','none');
+                if annot
+                    annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                        code_name,newline,...
+                        'VOGA',version,newline,Experimenter],'FontSize',5,...
+                    'EdgeColor','none','interpreter','none');
+                end
                 ha = gobjects(1,anum);                
                 x_space = 0.025;
-                x_min = 0.03;
+                x_min = 0.04;
                 x_max = 0.99;
                 x_wid = (x_max-x_min-x_space*(anum-1))/anum;
                 y_height = 0.75;
@@ -383,8 +397,16 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                         XLim = [0 0.5];%2Hz
                         YLim = [-amp amp];
                     end
+                    if ~isempty(YMax)
+                        YLim = [-YMax YMax];
+                        if i~=1
+                            set(gca,'YTickLabel',[])
+                        end
+                    else
+                        set(gca,'YTick',[-amp -amp/2 0 amp/2 amp])
+                    end
                     set(gca,'XLim',XLim)
-                    set(gca,'YLim',YLim,'YTick',[-amp -amp/2 0 amp/2 amp])
+                    set(gca,'YLim',YLim)
                     title(amps{i})
                     xlabel('Time (s)')
                     if i == 1
@@ -398,6 +420,7 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
             end
         case 'SineManual'
             %%
+            canal = '';
             sm = -1; %trigger multiplier, -1 = invert head trace
             cyc_files = extractfield(dir([Cyc_Path,filesep,'*Sine*.mat']),'name');
             cyc_files(contains(cyc_files,'NotAnalyzeable')) = [];
@@ -449,10 +472,12 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
             %Title
             annotation('textbox',[0 .9 1 .1],'String',[overall_title,' ',goggle],'FontSize',14,...
             'HorizontalAlignment','center','EdgeColor','none');
-            annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
-                code_name,newline,...
-                'VOGA',version,newline,Experimenter],'FontSize',5,...
-            'EdgeColor','none','interpreter','none');
+            if annot
+                annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                    code_name,newline,...
+                    'VOGA',version,newline,Experimenter],'FontSize',5,...
+                'EdgeColor','none','interpreter','none');
+            end
             ha = gobjects(1,enum);
             x_space = 0.02;
             x_min = 0.04;
@@ -466,10 +491,12 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 freq = str2double(strrep(parts{contains(parts,'Hz')},'Hz',''));
                 amp = str2double(strrep(parts{contains(parts,'dps')},'dps',''));
                 full_exp = [overall_title,' ',plot_titles{i}];
-                if contains(full_exp,{' X ',' Y '})||strcmp(full_exp(end-1:end),' X')||strcmp(full_exp(end-1:end),' Y')
-                    canal = 'XY';
-                else
-                    canal = 'LRZ';
+                if isempty(canal)
+                    if contains(full_exp,{' X ',' Y '})||strcmp(full_exp(end-1:end),' X')||strcmp(full_exp(end-1:end),' Y')
+                        canal = 'XY';
+                    else
+                        canal = 'LRZ';
+                    end
                 end
                 ha(i) = subplot(1000,1000,1);
                 ha(i).Position = [x_pos(i) y_pos x_wid y_height];
@@ -491,7 +518,7 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 elseif ab == length(CycAvg.t) && aa ~=1
                     CycAvg.stim = mean(CycAvg.stim,1);
                 end
-                h(1) = sm*plot(CycAvg.t(s),CycAvg.stim(s),'k');
+                h(1) = plot(CycAvg.t(s),sm*medfilt1(CycAvg.stim(s),3),'k','LineWidth',2);
                 hold on
                 %Now add the fills and standard deviations and means
                 if strcmp(canal,'XY')
@@ -575,12 +602,21 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 end
                 title(plot_titles{i})
                 xlabel('Time (s)')
-                set(gca,'XLim',[0 1/freq],'YLim',amp*[-1.1,1.1])
+                set(gca,'XLim',[0 1/freq])
+                if ~isempty(YMax)
+                    YLim = [-YMax YMax];
+                    set(gca,'YLim',YLim)
+                    if i~=1
+                        set(gca,'YTickLabel',[])
+                    end
+                else
+                    set(gca,'YLim',amp*[-1.1,1.1])
+                end
+                hold off            
+                if i == 1
+                    ylabel('Angular Velocity (dps)')            
+                end 
             end
-            hold off            
-            if i == 1
-                ylabel('Angular Velocity (dps)')            
-            end 
             legend(ha(1),h,leg_text)
             fig_name = inputdlg('Name this figure','',1,{[overall_title,' ',goggle,'.fig']});
             savefig([path,filesep,fig_name{:}])
@@ -659,8 +695,10 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 ha = gobjects(1,length(f_order));
                 %Set params
                 grid_on = true;
-                yscale = 75;
-                YLim = yscale*[-1 1];
+                if isempty(YMax)
+                    YMax = 100;
+                end
+                YLim = YMax*[-1 1];
                 x_min = 0.01;
                 x_max = 0.95;
                 space_x = 0.01;
@@ -673,11 +711,11 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter)
                 y_wid = (y_max - y_min - space_y*2)/3;
                 fig_col_pos = reshape(repmat(fliplr(y_min:(y_wid+space_y):y_max),n_col,1),[],1)';
                 annotation('line',fig_row_pos(end)+[0 x_wid],y_min-0.01*[1 1],'LineWidth',2) 
-                annotation('line',(x_max+space_x)*[1 1],y_min+[0 yscale*y_wid/(2*YLim(2))],'LineWidth',2) 
+                annotation('line',(x_max+space_x)*[1 1],y_min+[0 YMax*y_wid/(2*YLim(2))],'LineWidth',2) 
                 annotation('textbox','String','0.5s','EdgeColor','none',...
                     'Position',[fig_row_pos(end),0,x_wid,y_min-0.01],'HorizontalAlignment','right','VerticalAlignment','middle')
-                annotation('textbox','String',[num2str(yscale),newline,'\circ/s'],'EdgeColor','none',...
-                    'Position',[x_max+space_x,y_min,1-(x_max+space_x),yscale*y_wid/(2*YLim(2))],'HorizontalAlignment','center','VerticalAlignment','middle')
+                annotation('textbox','String',[num2str(YMax),newline,'\circ/s'],'EdgeColor','none',...
+                    'Position',[x_max+space_x,y_min,1-(x_max+space_x),YMax*y_wid/(2*YLim(2))],'HorizontalAlignment','center','VerticalAlignment','middle')
                 for i = 1:length(f_order)
                     ha(i) = subplot(3,n_col,i);
                     set(gca,'XColor','none','YColor','none')

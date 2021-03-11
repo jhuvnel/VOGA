@@ -52,13 +52,22 @@ delete(findall(gcf,'type','annotation')) %in case there are leftover anotations
 fig.Units = 'inches';
 fig.Position = [0 0 11 10];
 %Title
-annotation('textbox',[0 .9 1 .1],'String',strrep(strrep(strrep(In_FileName,'_',' '),'-',' '),'.mat',''),'FontSize',14,...
+if contains(In_FileName,'[')&&contains(In_FileName,']')
+    fig_title = strrep(strrep(strrep(In_FileName,'_',' '),'-',' '),'.mat','');
+    b1 = strfind(fig_title,'[');
+    b2 = strfind(fig_title,']');
+    fig_title(b1:b2) = strrep(fig_title(b1:b2),' ','-');
+else
+    fig_title = strrep(strrep(strrep(In_FileName,'_',' '),'-',' '),'.mat','');
+end
+annotation('textbox',[0 .9 1 .1],'String',fig_title,'FontSize',14,...
     'HorizontalAlignment','center','EdgeColor','none');
 %% Extract raw position data
 info = Data.info;
 info.Analyzer = Experimenter;
 info.ver = version;
 info.colors = colors;
+info.TriggerShift2 = 0; %Shifting done manually in this file
 Fs = Data.Fs;
 if contains(info.dataType,'Activation')
     %preserve the time because this will be used to rejoin them
@@ -70,26 +79,26 @@ else
 end
 %Assign Trigger
 if contains(info.goggle_ver,'Moogles') %MOOG room coil system
-    stim = Data.Trigger;
+    stim1 = Data.Trigger;
 else %NKI or LDVOG Trigger = internal gyro or comes from the PCU for eeVOR
     if contains(info.dataType,'RotaryChair')
         if isfield(Data,'HeadVel_Z')
-            stim = Data.HeadVel_Z;
+            stim1 = Data.HeadVel_Z;
         else
-            stim = Data.HeadMPUVel_Z; 
+            stim1 = Data.HeadMPUVel_Z; 
         end   
     elseif contains(info.dataType,'aHIT')
         if contains(info.dataType,'LHRH')
-            stim = Data.HeadVel_Z;
+            stim1 = Data.HeadVel_Z;
         elseif contains(info.dataType,'LARP')
-            stim = (Data.HeadVel_X - Data.HeadVel_Y)/sqrt(2);
+            stim1 = (Data.HeadVel_X - Data.HeadVel_Y)/sqrt(2);
         elseif contains(info.dataType,'RALP')
-            stim = (Data.HeadVel_X + Data.HeadVel_Y)/sqrt(2);
+            stim1 = (Data.HeadVel_X + Data.HeadVel_Y)/sqrt(2);
         else
-            stim = Data.Trigger;
+            stim1 = Data.Trigger;
         end    
     else
-        stim = Data.Trigger; 
+        stim1 = Data.Trigger; 
     end       
 end
 %Fix huge number of NaN values in torsion traces of NKI traces
@@ -109,29 +118,24 @@ end
 %Defines a variable type that determines what type of filtering and
 %analysis needs to be done. type = 1: cycle average, 2: full trace (vel
 %step/activation)
-[type,starts,ends,stims] = MakeCycAvg__alignCycles(info,Fs,ts,stim);
+stim = stim1;
+[type,stims,t_snip,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
 %Remove any unnecessary trace the start and end
-keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
-for i = 1:length(starts)
-    keep_inds(:,i) = starts(i):ends(i);
-end
-keep_inds = keep_inds - starts(1)+1;
-if contains(info.dataType,'Activation')
-    te = te(starts(1):ends(end));
-    ts = ts(starts(1):ends(end));
-    t_snip = reshape(ts(1:length(stims)),1,[]);
-else
-    te = te(starts(1):ends(end)) - te(starts(1));
-    ts = ts(starts(1):ends(end)) - ts(starts(1));
-    t_snip = reshape(ts(1:length(stims))-ts(1),1,[]);
-end
-stim = stim(starts(1):ends(end));
-Data.LE_Position_X = Data.LE_Position_X(starts(1):ends(end));
-Data.LE_Position_Y = Data.LE_Position_Y(starts(1):ends(end));
-Data.LE_Position_Z = Data.LE_Position_Z(starts(1):ends(end));
-Data.RE_Position_X = Data.RE_Position_X(starts(1):ends(end));
-Data.RE_Position_Y = Data.RE_Position_Y(starts(1):ends(end));
-Data.RE_Position_Z = Data.RE_Position_Z(starts(1):ends(end));
+% keep_inds = keep_inds - starts(1)+1;
+% if contains(info.dataType,'Activation')
+%     te = te(starts(1):ends(end));
+%     ts = ts(starts(1):ends(end));
+% else
+%     te = te(starts(1):ends(end)) - te(starts(1));
+%     ts = ts(starts(1):ends(end)) - ts(starts(1));   
+% end
+% stim = stim(starts(1):ends(end));
+% Data.LE_Position_X = Data.LE_Position_X(starts(1):ends(end));
+% Data.LE_Position_Y = Data.LE_Position_Y(starts(1):ends(end));
+% Data.LE_Position_Z = Data.LE_Position_Z(starts(1):ends(end));
+% Data.RE_Position_X = Data.RE_Position_X(starts(1):ends(end));
+% Data.RE_Position_Y = Data.RE_Position_Y(starts(1):ends(end));
+% Data.RE_Position_Z = Data.RE_Position_Z(starts(1):ends(end));
 %% Set some Defaults
 %Filter Traces with intial guesses
 if type == 1
@@ -151,7 +155,6 @@ if type == 1
     vel_spline = NaN;
     vel_acc = NaN; 
     vel_med = NaN;
-    keep_tr = true(1,length(starts));
 else %velstep and activation
     pos_med = [11;11;5;5;3;3];
     pos_spline = NaN(6,1);
@@ -159,15 +162,14 @@ else %velstep and activation
     vel_smooth = NaN;
     vel_spline = NaN;
     vel_acc = 10;
-    vel_med = Fs+1-mod(Fs,2);
-    keep_tr = true(1,length(starts));
+    vel_med = Fs+1-mod(Fs,2);   
 end
 line_wid.norm = 0.5;
 line_wid.bold = 2;
 %% Once analyzeable, here is the while loop they stay in until saving or exiting
 %You can change the order/existance of these options without ruining
 %anything because the comparrisons are all string based
-opts = {'Start Over','Filter Position','Filter Velocity','Select Cycles','Set Y-axis limits','Save'};
+opts = {'Start Over','Shift Trigger','Filter Position','Filter Velocity','Select Cycles','Set Y-axis limits','Save'};
 ind = 1; %Run the start procedure first
 while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
     if strcmp(opts{ind},'Start Over')
@@ -175,6 +177,9 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         filt_params_v = [vel_smooth;vel_spline;vel_acc;vel_med];        
         YLim_Pos = [-30 30];
         YLim_Vel = [-100 100];
+        info.TriggerShift2 = 0;
+        [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
+        keep_tr = true(1,size(keep_inds,2)); 
         [filt,Data_calc,LE_V,RE_V,Data_cal,Data_In] = MakeCycAvg__filterTraces(type,filt_params_p,filt_params_v,te,ts,Data,keep_inds); 
         CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
         ha = MakeCycAvg__plotFullCycAvg([],type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
@@ -191,6 +196,20 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
                 end
             end
             return;
+        end
+    elseif strcmp(opts{ind},'Shift Trigger')
+        new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ','Shift',[1 15],{num2str(info.TriggerShift2)},'on',1,[11 6.5 1.75 1.25]));
+        if ~isempty(new_TrigShift)
+            info.TriggerShift2 = round(new_TrigShift);
+            [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
+            if size(keep_inds,2) > length(keep_tr)
+                keep_tr = [keep_tr;true(size(keep_inds,2)-length(keep_tr))];
+            elseif size(keep_inds,2) < length(keep_tr)
+                keep_tr = keep_tr(1:size(keep_inds,2));
+            end
+            [filt,Data_calc,LE_V,RE_V,Data_cal,Data_In] = MakeCycAvg__filterTraces(type,filt_params_p,filt_params_v,te,ts,Data,keep_inds); 
+            CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
+            ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
         end
     elseif strcmp(opts{ind},'Filter Position')
         %Get new parameter values

@@ -1,4 +1,4 @@
-function makeNotes(Raw_Path,no_notes)
+function MakeNotes(Raw_Path,no_notes)
 %Set some initial parameters to use in the batch
 prompt = {['Set the initial parameters.',newline,newline,'Subject: '];...
     'Implant Ear (L/R): ';'Visit: ';'Date: ';'Goggle Version: ';'Goggle Angle: '};
@@ -102,8 +102,8 @@ for i = 1:length(no_notes)
         GyroY = data{1:length(Time_Eye),YvelHeadIndex};
         GyroZ = -data{1:length(Time_Eye),ZvelHeadIndex};        
     end
-    if length(Time_Eye) > 1000
-        sub_i = floor(linspace(1,length(Time_Eye),1000));
+    if length(Time_Eye) > 1000000
+        sub_i = floor(linspace(1,length(Time_Eye),1000000));
     else
         sub_i = 1:length(Time_Eye);
     end

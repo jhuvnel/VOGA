@@ -121,6 +121,12 @@ while tf1
         data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
         version = data{1,2}{:};
         Experimenter = data{2,2}{:};
+        annot_q = questdlg('Descriptive annotation on figures?','','Yes','No','Yes');
+        if strcmp(annot_q,'No')
+            annot = 0;
+        else
+            annot = 1;
+        end
         return;
     elseif strcmp(opts{ind},'Set Version')
         writeInfoFile(code_Path);
