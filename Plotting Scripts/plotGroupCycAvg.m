@@ -198,10 +198,11 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter,annot
                     else 
                         plot(NaN,NaN)
                         XLim = [0 1/freq];
-                        YLim = [-100 100];
                     end
                     if ~isempty(YMax)
                         YLim = [-YMax YMax];
+                    else
+                        YLim = [-100 100];
                     end
                     set(gca,'XLim',XLim)
                     set(gca,'YLim',YLim)
