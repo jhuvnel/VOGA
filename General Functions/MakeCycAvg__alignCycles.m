@@ -122,7 +122,7 @@ function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts
             trig = diff(stim);
             starts = find(trig==1)-1;
             starts = starts(1:2:end);
-            snip_len = min(diff(starts));
+            snip_len = round(median(diff(starts)));
             ends = starts + snip_len;
             %Create model stimulus trace
             stims = stim(starts(1):ends(1));
@@ -146,7 +146,7 @@ function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts
             type=1;
             trig = (diff(stim));
             starts = find(trig==1);
-            snip_len = min(diff(starts));
+            snip_len = round(median(diff(starts)));
             ends = starts + snip_len - 1;
             stims = 50*stim(starts(1):ends(1));
         elseif contains(info.dataType,'Activation') % (low = dark, high = light but don't cycle average here)

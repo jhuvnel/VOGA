@@ -144,10 +144,14 @@ function plotCycAvg(CycAvg,type,plot_fits,lrz_xyz)
             end         
             hold off
             if ismember('name',fields)
-                title(strrep(strrep(CycAvg.name,'-',' '),'_',' '))
+                fig_title = strrep(strrep(CycAvg.name,'-',' '),'_',' ');
             else
-                title(strrep(CycAvg.info.dataType,'-',' '))
+                fig_title = strrep(CycAvg.info.dataType,'-',' ');
             end
+            if contains(fig_title,'[')&&contains(fig_title,']')
+                fig_title(strfind(fig_title,'['):strfind(fig_title,']')) = strrep(fig_title(strfind(fig_title,'['):strfind(fig_title,']')),' ','-');
+            end
+            title(fig_title)
             xlabel('Time (s)')
             ylabel('Angular Velocity (dps)')
             legend(h,leg_lab)
@@ -189,9 +193,13 @@ function plotCycAvg(CycAvg,type,plot_fits,lrz_xyz)
             legend(h2,leg_lab)
             fields = fieldnames(CycAvg);
             if ismember('name',fields)
-                title(strrep(strrep(CycAvg.name,'-',' '),'_',' '))
+                fig_title = strrep(strrep(CycAvg.name,'-',' '),'_',' ');
             else
-                title(strrep(CycAvg.info.dataType,'-',' '))
+                fig_title = strrep(CycAvg.info.dataType,'-',' ');
             end
+            if contains(fig_title,'[')&&contains(fig_title,']')
+                fig_title(strfind(fig_title,'['):strfind(fig_title,']')) = strrep(fig_title(strfind(fig_title,'['):strfind(fig_title,']')),' ','-');
+            end
+            title(fig_title)
     end
 end

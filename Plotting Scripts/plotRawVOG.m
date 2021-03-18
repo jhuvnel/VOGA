@@ -110,11 +110,11 @@ function plotRawVOG(Raw_Path,plot_eyes,xyz_lrz)
     GyroR = (GyroX + GyroY)/sqrt(2);
     figure;
     if any(strcmp(xyz_lrz,{'xyz','XYZ'}))
-        plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-',Time_Eye,100*Stim,'b')
+        plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-',Time_Eye,40*Stim-30,'b')
         leg_text = {'GyroX','GyroY','GyroZ'};
     else
         leg_text = {'GyroL','GyroR','GyroZ'};
-        plot(Time_Eye,GyroL,'k:',Time_Eye,GyroR,'k--',Time_Eye,GyroZ,'k-',Time_Eye,100*Stim,'b')
+        plot(Time_Eye,GyroL,'k:',Time_Eye,GyroR,'k--',Time_Eye,GyroZ,'k-',Time_Eye,40*Stim-30,'b')
     end
     if plot_eyes
         hold on

@@ -467,7 +467,8 @@ function Segment(In_Path,Seg_Path)
             temp2 = diff(temp);
             start = all_starts;
             ends = all_ends;
-            thresh_tol = 50; %tolerance for differences in cyc length
+            thresh_tol = Fs*0.4; %tolerance for differences in cyc length (always at least 400ms of break)
+            %thresh_tol = 50; %old
             for i = 2:length(all_starts)
                 if abs(temp2(i)-temp2(i-1))<thresh_tol
                     start(i) = start(i-1);
@@ -478,25 +479,14 @@ function Segment(In_Path,Seg_Path)
                     ends(i-1) = NaN;
                 end
             end
+            temp2(isnan(start)) = [];
             start(isnan(start)) = [];
             ends(isnan(ends)) = [];
-            pad = median(diff(temp));
-            start = start-pad;
-            ends = ends+pad;
+            start = start-temp2;
+            ends = ends+temp2;
             start(start<0) = 1;
             ends(ends>length(Time_Stim)) = length(Time_Stim);
-%            plot(Time_Stim,Stim,'k',Time_Stim(round(start,0)),Stim(round(start,0)),'r*',Time_Stim(round(ends,0)),Stim(round(ends,0)),'b*')
-%         else %Pulse Trains / Multi Vector
-%             %Sometimes the trigger starts high and needs to be fixed
-%             if Stim(1)==1
-%                 %Set all leading 1's to 0
-%                 Stim(1:find(Stim==0,1,'first')) = 0;                    
-%             end
-%             inds = find(Stim==1);
-%             inds([false;diff(inds)==1]) = []; %Multiple points from same trigger toggle
-%             pad = median(diff(inds));
-%             start = inds([true;diff(inds)>2*pad])-pad;
-%             ends = inds([diff(inds)>2*pad;true])+pad;
+            plot(Time_Stim,Stim,'k',Time_Stim(round(start,0)),Stim(round(start,0)),'r*',Time_Stim(round(ends,0)),Stim(round(ends,0)),'b*')
         end
         stim = Stim;
         start = round(start);
@@ -650,8 +640,8 @@ function Segment(In_Path,Seg_Path)
             if save_flag
                 save([Seg_Path,filesep,fname,'.mat'],'Data')
                 %Plot and save figure of the segment
-%                fig = plotSegment(Data);
-%                savefig(fig,[Seg_Path,filesep,fname,'.fig'])
+                fig = plotSegment(Data);
+                savefig(fig,[Seg_Path,filesep,fname,'.fig'])
             end
         end
     end

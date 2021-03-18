@@ -132,7 +132,7 @@ function logtoNotes(Raw_Path)
                 VOG_data = readtable([Raw_Path,filesep,fname]);
                 if contains(fname,'.txt') %LDVOG  
                     parts = split(fname,'-');
-                    if ~isempty(VOG_data{2,end})
+                    if isduration(VOG_data{2,end})
                         %Use the timestamps on the file itself
                         VOG_times = datetime(strrep(parts{2},'.txt',''),'InputFormat','yyyyMMMMdd')+[VOG_data{1,end},VOG_data{end,end}];
                     else %Use file creation time

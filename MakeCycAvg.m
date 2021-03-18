@@ -120,22 +120,6 @@ end
 %step/activation)
 stim = stim1;
 [type,stims,t_snip,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
-%Remove any unnecessary trace the start and end
-% keep_inds = keep_inds - starts(1)+1;
-% if contains(info.dataType,'Activation')
-%     te = te(starts(1):ends(end));
-%     ts = ts(starts(1):ends(end));
-% else
-%     te = te(starts(1):ends(end)) - te(starts(1));
-%     ts = ts(starts(1):ends(end)) - ts(starts(1));   
-% end
-% stim = stim(starts(1):ends(end));
-% Data.LE_Position_X = Data.LE_Position_X(starts(1):ends(end));
-% Data.LE_Position_Y = Data.LE_Position_Y(starts(1):ends(end));
-% Data.LE_Position_Z = Data.LE_Position_Z(starts(1):ends(end));
-% Data.RE_Position_X = Data.RE_Position_X(starts(1):ends(end));
-% Data.RE_Position_Y = Data.RE_Position_Y(starts(1):ends(end));
-% Data.RE_Position_Z = Data.RE_Position_Z(starts(1):ends(end));
 %% Set some Defaults
 %Filter Traces with intial guesses
 if type == 1
@@ -169,8 +153,8 @@ line_wid.bold = 2;
 %% Once analyzeable, here is the while loop they stay in until saving or exiting
 %You can change the order/existance of these options without ruining
 %anything because the comparrisons are all string based
-opts = {'Start Over','Shift Trigger','Filter Position','Filter Velocity','Select Cycles','Set Y-axis limits','Save'};
-ind = 1; %Run the start procedure first
+opts = {'Set Y-axis Lim','Filter Position','Filter Velocity','Select Cycles','Shift Trigger','Not Analyzeable','Start Over','Save'};
+ind = 7; %Run the start procedure first
 while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
     if strcmp(opts{ind},'Start Over')
         filt_params_p = [pos_med;pos_spline;pos_sgolay];
@@ -183,27 +167,27 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         [filt,Data_calc,LE_V,RE_V,Data_cal,Data_In] = MakeCycAvg__filterTraces(type,filt_params_p,filt_params_v,te,ts,Data,keep_inds); 
         CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
         ha = MakeCycAvg__plotFullCycAvg([],type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
-        % Determine if data are analyzeable
-        analyze = nmquestdlg('Are these data analyzeable?','','Yes','No','Yes');
-        if strcmp(analyze,'No') 
-            save([Cyc_Path,filesep,'NotAnalyzeable_',In_FileName],'Data')
-            %If the file was previously designated as analyzeable, remove that file
-            d1 = dir([Cyc_Path,filesep,'*.mat']);
-            if ~isempty(d1)
-                d1 = {d1.name};
-                if ismember(['CycAvg_',In_FileName],d1)
-                    delete([Cyc_Path,filesep,'CycAvg_',In_FileName])
-                end
+    elseif strcmp(opts{ind},'Not Analyzeable')
+        save([Cyc_Path,filesep,'NotAnalyzeable_',In_FileName],'Data')
+        savefig([Cyc_Path,filesep,'NotAnalyzeable_',In_FileName(1:end-4),'.fig'])
+        close;
+        %If the file was previously designated as analyzeable, remove that file
+        d1 = dir([Cyc_Path,filesep,'*.mat']);
+        if ~isempty(d1)
+            d1 = {d1.name};
+            if ismember(['CycAvg_',In_FileName],d1)
+                delete([Cyc_Path,filesep,'CycAvg_',In_FileName])
             end
-            return;
         end
+        return;
     elseif strcmp(opts{ind},'Shift Trigger')
         new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ','Shift',[1 15],{num2str(info.TriggerShift2)},'on',1,[11 6.5 1.75 1.25]));
         if ~isempty(new_TrigShift)
             info.TriggerShift2 = round(new_TrigShift);
             [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
             if size(keep_inds,2) > length(keep_tr)
-                keep_tr = [keep_tr;true(size(keep_inds,2)-length(keep_tr))];
+                old_keep_tr = keep_tr;
+                keep_tr = [old_keep_tr;true(1,size(keep_inds,2)-length(keep_tr))];
             elseif size(keep_inds,2) < length(keep_tr)
                 keep_tr = keep_tr(1:size(keep_inds,2));
             end
@@ -243,7 +227,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
         ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
         %[keep_tr,ha] = MakeCycAvg__selectCycles(ha,type,colors,line_wid,te,t_snip,stims,Fs,Data,info,filt,LE_V,RE_V,keep_inds,keep_tr,In_FileName);
-    elseif strcmp(opts{ind},'Set Y-axis limits')
+    elseif strcmp(opts{ind},'Set Y-axis Lim')
         %Get new parameter values
         prompt = {['Set Y-axis limits',newline,newline,'Position:',newline,newline,'Lower Limit:'],...
             'Upper Limit:',['Velocity:',newline,newline,'Lower Limit:'],'Upper Limit:'};

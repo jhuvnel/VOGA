@@ -27,6 +27,9 @@ function fig = plotSegment(Data)
     ts = Data.Time_Stim - Data.Time_Stim(1);
     info = Data.info;
     dType = strrep(strrep(info.dataType,'_',' '),'-',' ');
+    if contains(dType,'[')&&contains(dType,']')
+        dType(strfind(dType,'['):strfind(dType,']')) = strrep(dType(strfind(dType,'['):strfind(dType,']')),' ','-'); %Put negative signs back in vectors
+    end
     %Trigger multiplier
     if contains(info.dataType,'RotaryChair')
         if isfield(Data,'HeadVel_Z')
