@@ -7,5 +7,6 @@
 !git remote add upstream https://github.com/ayiotis/VOGA.git
 !git fetch upstream
 !git merge upstream/master
+%Added these commands because of some errors I got with merging
 !git commit
 !git push
