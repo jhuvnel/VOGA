@@ -13,7 +13,7 @@
 %type = 'SineManual';
 %type = 'Autoscan';
 
-function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter,annot,YMax)
+function plotGroupCycAvg(type,Path,Cyc_Path,code_Path,version,Experimenter,annot,YMax)
     if nargin < 8
         YMax = [];
     end
@@ -215,8 +215,9 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter,annot
                     end
                 end  
                 legend(ha(1),h,leg_text)
-                fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name{j,1},' ','-'),'-',exp_name{j,2},'-',goggle,'.fig']});
-                savefig([path,filesep,fig_name{:}])
+                fig_name = {[strrep(exp_name{j,1},' ','-'),'-',exp_name{j,2},'-',goggle,'.fig']};
+                %fig_name = inputdlg('Name this figure','',1,fig_name);
+                savefig([Path,filesep,fig_name{:}])
                 close;
             end
         case 'SineAmp'
@@ -415,8 +416,9 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter,annot
                     end
                 end  
                 legend(ha(1),h,leg_text)
-                fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name{j,1},' ','-'),'-',exp_name{j,2},'-',goggle,'.fig']});
-                savefig([path,filesep,fig_name{:}])
+                fig_name = {[strrep(exp_name{j,1},' ','-'),'-',exp_name{j,2},'-',goggle,'.fig']};
+                %fig_name = inputdlg('Name this figure','',1,fig_name);
+                savefig([Path,filesep,fig_name{:}])
                 close;
             end
         case 'SineManual'
@@ -619,8 +621,9 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter,annot
                 end 
             end
             legend(ha(1),h,leg_text)
-            fig_name = inputdlg('Name this figure','',1,{[overall_title,' ',goggle,'.fig']});
-            savefig([path,filesep,fig_name{:}])
+            fig_name = {[overall_title,' ',goggle,'.fig']};
+            fig_name = inputdlg('Name this figure','',1,fig_name);
+            savefig([Path,filesep,fig_name{:}])
             close;   
         case 'PFM'
             %%
@@ -834,7 +837,7 @@ function plotGroupCycAvg(type,path,Cyc_Path,code_Path,version,Experimenter,annot
                         text(0.5,YLim(1),num2str(length(CycAvg.cyclist)),'Color','k','HorizontalAlignment','right','VerticalAlignment','bottom')
                     end
                 end
-                savefig([path,filesep,strrep(fig_title{:},' ','-'),'.fig'])
+                savefig([Path,filesep,strrep(fig_title{:},' ','-'),'.fig'])
             end
     end
 end

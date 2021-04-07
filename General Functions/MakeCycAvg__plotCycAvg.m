@@ -50,5 +50,30 @@ function MakeCycAvg__plotCycAvg(ax,type,colors,CycAvg)
             hold off
         case 2
             disp('No Cycle Average defined for this type')
-    end
+        case 3
+            axes(ax)
+            if contains(CycAvg.name,{'LH','RH'})
+                eye_c = 'z';
+            elseif contains(CycAvg.name,{'LA','RP'})
+                eye_c = 'l';
+            elseif contains(CycAvg.name,{'RA','LP'})
+                eye_c = 'r';
+            end
+            hold on
+            cla;
+            %Now add the fills and standard deviations and means
+            %Head
+            fill([CycAvg.t,fliplr(CycAvg.t)],[CycAvg.head_cycavg,fliplr((CycAvg.head_cycavg + CycAvg.head_cycstd))],0.75*[1 1 1])
+            fill([CycAvg.t,fliplr(CycAvg.t)],[CycAvg.head_cycavg,fliplr((CycAvg.head_cycavg - CycAvg.head_cycstd))],0.75*[1 1 1])
+            plot(CycAvg.t,CycAvg.head_cycavg + CycAvg.head_cycstd,'Color','k')
+            plot(CycAvg.t,CycAvg.head_cycavg - CycAvg.head_cycstd,'Color','k')
+            plot(CycAvg.t,CycAvg.head_cycavg,'Color','k','LineWidth',2);
+            %Eye
+            fill([CycAvg.t,fliplr(CycAvg.t)],[CycAvg.eye_cycavg,fliplr((CycAvg.eye_cycavg + CycAvg.eye_cycstd))],colors.(['l_',eye_c,'_s']))
+            fill([CycAvg.t,fliplr(CycAvg.t)],[CycAvg.eye_cycavg,fliplr((CycAvg.eye_cycavg - CycAvg.eye_cycstd))],colors.(['l_',eye_c,'_s']))
+            plot(CycAvg.t,CycAvg.eye_cycavg + CycAvg.eye_cycstd,'Color',colors.(['l_',eye_c]))
+            plot(CycAvg.t,CycAvg.eye_cycavg - CycAvg.eye_cycstd,'Color',colors.(['l_',eye_c]))
+            plot(CycAvg.t,CycAvg.eye_cycavg,'Color',colors.(['l_',eye_c]),'LineWidth',2);
+            hold off
+     end
 end

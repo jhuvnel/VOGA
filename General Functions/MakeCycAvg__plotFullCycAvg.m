@@ -3,7 +3,7 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
     switch type
         case 1 %Cycle Averaging
             if isempty(ha) %first time running
-                ha = gobjects(7,1);
+                ha = gobjects(5,1);
                 XLim_Long = [te(1) te(end)];
                 XLim_Short = [t_snip(1) t_snip(end)];
                 %For plots with cycles to select
@@ -215,5 +215,99 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             plot(ts,Data_calc.RE_Vel_Y,'.','Color',colors.r_y,'LineWidth',line_wid.norm);
             plot(ts,Data_calc.RE_Vel_Z,'.','Color',colors.r_z,'LineWidth',line_wid.norm);
             hold off
+        case 3 %No raw position
+            if contains(Data.info.dataType,{'LH','RH'})
+                eye_c = 'z';
+            elseif contains(Data.info.dataType,{'LA','RP'})
+                eye_c = 'l';
+            elseif contains(Data.info.dataType,{'RA','LP'})
+                eye_c = 'r';
+            end
+            if isempty(ha) %first time running
+                ha = gobjects(3,1);
+                XLim_Long = [te(1) te(end)];
+                XLim_Short = [t_snip(1) t_snip(end)];
+                %For plots with cycles to select
+                x1 = 0.06;
+                x2 = 0.37;
+                x3 = 0.68;
+                y1 = 0.045;
+                y2 = 0.51;
+                wid_x_s = 0.30;
+                wid_x_b = 0.92;
+                height_y = 0.43;
+                ha(1) = subplot(2,3,[1 2 3]);
+                ha(2) = subplot(2,3,4);
+                ha(3) = subplot(2,3,5);
+                ha(4) = subplot(2,3,6);
+                ha(1).Position = [x1 y2 wid_x_b height_y];
+                ha(2).Position = [x1 y1 wid_x_s height_y];
+                ha(3).Position = [x2 y1 wid_x_s height_y];
+                ha(4).Position = [x3 y1 wid_x_s height_y];
+                %Link Axes
+                linkaxes(ha([1,2]),'y')
+                linkaxes(ha([2,3,4]),'xy')
+                %Make cycle labels
+                cyc_num_labs = 1:length(keep_tr);
+                x_tick = te(round(floor(mean(keep_inds)),0));
+                %Set Labels
+                %ha1
+                set(ha(1),'XLim',XLim_Long,'YLim',YLim_Vel,'XTick',x_tick,'XTickLabel',cyc_num_labs,'Xaxislocation','top')
+                ylabel(ha(1),'Angular Velocity (dps)')
+                %ha2
+                set(ha(2),'XLim',XLim_Short,'YLim',YLim_Vel)
+                ylabel(ha(2),'Velocity (dps)')
+                title(ha(2),'All Filtered Cycles')
+                xlabel(ha(2),'Time (s)')
+                %ha3
+                set(ha(3),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
+                xlabel(ha(3),'Time (s)')
+                %ha4
+                set(ha(4),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
+                xlabel(ha(4),'Time (s)')
+                title(ha(4),'Cycle Average')
+            end
+            %Cycle Aligned Raw and Filtered Velocity
+            axes(ha(1))
+            hold on
+            cla;
+            for j = 1:size(keep_inds,2)
+                if keep_tr(j)
+                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep,'Tag',['Cycle_',num2str(j)]);
+                else
+                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm,'Tag',['Cycle_',num2str(j)]);
+                end
+            end
+            %Plot Cycles
+            h(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
+            plot(ts,Data_cal,'Color',colors.(['l_',eye_c,'_s']),'LineWidth',line_wid.norm)
+            h(2) = plot(ts,Data_calc,'Color',colors.(['l_',eye_c]),'LineWidth',line_wid.norm);
+            hold off
+            leg1 = legend(h,{'Head','Eye'});
+            leg1.ItemTokenSize(1) = 7;
+            axes(ha(2))
+            hold on
+            cla;
+            plot(t_snip,stims,'k','LineWidth',line_wid.norm)
+            %Filtered Data Only
+            for j = 1:size(keep_inds,2)
+                plot(t_snip,RE_V(:,j),'Color',colors.(['l_',eye_c]),'LineWidth',line_wid.norm,'Tag',['Cycle_',num2str(j)]);
+            end
+            hold off
+            axes(ha(3))
+            hold on
+            cla;
+            plot(t_snip,stims(:,keep_tr),'k','LineWidth',line_wid.norm)
+            for j = 1:size(keep_inds,2)
+                if keep_tr(j)
+                    visible = 'on';
+                else
+                    visible = 'off';
+                end
+                plot(t_snip,RE_V(:,j),'Color',colors.(['l_',eye_c]),'LineWidth',line_wid.norm,'Visible',visible','Tag',['Cycle_',num2str(j)]);
+            end
+            hold off
+            title(ha(3),['Accepted Cycles: ',num2str(sum(keep_tr)),' of ',num2str(length(keep_tr))])  
+            MakeCycAvg__plotCycAvg(ha(4),type,colors,CycAvg);
     end         
 end

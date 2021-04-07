@@ -1,177 +1,48 @@
-function keep_tr = MakeCycAvg__selectCycles(type,keep_tr)
-%function [keep_tr,ha] = MakeCycAvg__selectCycles(ha,type,colors,line_wid,te,t_snip,stims,Fs,Data,info,filt,LE_V,RE_V,keep_inds,keep_tr,In_FileName)
-    if type==1   
+function [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V)    
+    if type == 2
+        disp('No cycle selection for this data type')
+        return;
+    end
+    [ind,tf] = nmlistdlg('PromptString','Type of cycles:',...
+                       'SelectionMode','multiple',...
+                       'ListSize',[100 80],...
+                       'ListString',{'Click','List'},...
+                       'Position',[11,8,2,3]); 
+    if ~tf
+        return;
+    end
+    if ind == 1
+        [x,y] = ginput(1); %Assume this is on a cycle graph
+        t_ind = find(t_snip>x,1,'first');
+        if type == 1
+            eyes = [LE_V.LHRH(t_ind,:);LE_V.LARP(t_ind,:);LE_V.RALP(t_ind,:);...
+                RE_V.LHRH(t_ind,:);RE_V.LARP(t_ind,:);RE_V.RALP(t_ind,:)];
+            eyes(:,~keep_tr) = NaN;
+            [~,eye_i] = min(min(abs(eyes-y)));
+            keep_tr(eye_i) = false;
+        elseif type == 3
+            stims(t_ind,~keep_tr) = NaN;
+            RE_V(t_ind,~keep_tr) = NaN;
+            [head_v,head_i] = sort(abs(stims(t_ind,:)-y));
+            [eye_v,eye_i] = sort(abs(RE_V(t_ind,:)-y));
+            if head_v(1) < eye_v(1)
+                keep_tr(head_i(1)) = false;
+            else
+                keep_tr(eye_i(1)) = false;
+            end
+        end
+    elseif ind ==2
         cyc_num = 1:length(keep_tr);
-        [ind,tf] = nmlistdlg('PromptString','Select cycles:',...
+        [ind2,tf] = nmlistdlg('PromptString','Select cycles:',...
                            'SelectionMode','multiple',...
                            'InitialValue',cyc_num(keep_tr),...
                            'ListSize',[100 250],...
                            'ListString',cellstr(num2str(cyc_num')),...
-                           'Position',[11,5.25,2,5.25]); 
-        if tf==0
+                           'Position',[11,5.25,2,5.25]);           
+        if ~tf
             return;
-        else
-            keep_tr = false(1,length(keep_tr));
-            keep_tr(ind) = true;
-        end       
-        %% OLD VERSION WITH BUTTON CYCLE SELECTION
-%         selection_type = questdlg('Cycle selection with buttons or keyboard shortcuts?','','Buttons','Keyboard','Buttons');
-%         actions = {'Next Cycle','Previous Cycle','Remove Cycle','Add Cycle','Done'};
-%         %Start with 1st cycle
-%         cyc = 1;
-%         if keep_tr(cyc)
-%             set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_k)
-%         else
-%             set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_r)
-%         end
-%         set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.bold,'visible','on')
-%         %Prompt
-%         if strcmp(selection_type,'Buttons')
-%             %Start with selecting things on and off on the graph
-%             [ind,tf] = nmlistdlg('PromptString','Select an action:',...
-%                            'SelectionMode','single',...
-%                            'ListSize',[100 100],...
-%                            'ListString',actions,...
-%                            'Position',[11,7.75,2,2.75]); 
-%             if tf==0
-%                 command = actions{end};
-%             else
-%                 command = actions{ind};
-%             end           
-%         else %Keyboard shortcuts
-%             clc; %clear any previous attempts
-%             disp('Allowed commands:')
-%             disp('n = next cycle, no change to cycle status')
-%             disp('v = previous cycle, no change to cycle status')
-%             disp('j = remove cycle')
-%             disp('g = add cycle')
-%             disp('d = done')
-%             command = input('','s');
-%         end
-%         while ~(strcmp(command,'d')||strcmp(command,'Done'))
-%             switch command
-%                 case {'n','Next Cycle'}
-%                     %Remove previous bold
-%                     if keep_tr(cyc)
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_keep)
-%                         set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.norm)
-%                     else
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_rm)
-%                         set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.norm)
-%                         set(findobj(ha(4),'type','line','Tag',['Cycle_',num2str(cyc)]),'visible','off')
-%                     end
-%                     %Move cycle
-%                     if cyc ~= length(keep_tr)
-%                         cyc = cyc + 1;
-%                     else
-%                         cyc = 1; %Go back around the beginning
-%                     end
-%                     %Bold next cycle
-%                     if keep_tr(cyc)
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_k)
-%                     else
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_r)
-%                     end
-%                     set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.bold,'visible','on')
-%                 case {'v','Previous Cycle'}
-%                     %Remove previous bold
-%                     if keep_tr(cyc)
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_keep)
-%                         set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.norm)
-%                     else
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_rm)
-%                         set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.norm)
-%                         set(findobj(ha(4),'type','line','Tag',['Cycle_',num2str(cyc)]),'visible','off')
-%                     end
-%                     if cyc ~= 1
-%                         cyc = cyc - 1;
-%                     else
-%                         cyc = length(keep_tr); %Go to the end
-%                     end
-%                     %Bold next cycle
-%                     if keep_tr(cyc)
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_k)
-%                     else
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_r)
-%                     end
-%                     set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.bold,'visible','on')
-%                 case {'j','Remove Cycle'}
-%                     keep_tr(cyc) = false;
-%                     %Remove bold
-%                     set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_rm)
-%                     set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.norm)
-%                     set(findobj(ha(4),'type','line','Tag',['Cycle_',num2str(cyc)]),'visible','off')
-%                     %Go to next cycle
-%                     if cyc ~= length(keep_tr)
-%                         cyc = cyc + 1;
-%                     else
-%                         cyc = 1; %Go back around the beginning
-%                     end
-%                     %Bold next cycle
-%                     if keep_tr(cyc)
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_k)
-%                     else
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_r)
-%                     end
-%                     set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.bold,'visible','on')
-%                     %Recalc CycAvg
-%                     title(ha(4),['Accepted Cycles: ',num2str(sum(keep_tr)),' of ',num2str(length(keep_tr))])
-%                     CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
-%                     MakeCycAvg__plotCycAvg(ha(5),type,colors,CycAvg);
-%                 case {'g','Add Cycle'}
-%                     keep_tr(cyc) = true;
-%                     %Remove bold
-%                     set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_keep)
-%                     set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.norm)
-%                     set(findobj(ha(4),'type','line','Tag',['Cycle_',num2str(cyc)]),'visible','on')
-%                     %Go to next cycle
-%                     if cyc ~= length(keep_tr)
-%                         cyc = cyc + 1;
-%                     else
-%                         cyc = 1; %Go back around the beginning
-%                     end
-%                     %Bold next cycle
-%                     if keep_tr(cyc)
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_k)
-%                     else
-%                         set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_bold_r)
-%                     end
-%                     set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.bold,'visible','on')
-%                     %Recalc CycAvg and change title
-%                     title(ha(4),['Accepted Cycles: ',num2str(sum(keep_tr)),' of ',num2str(length(keep_tr))])
-%                     CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
-%                     MakeCycAvg__plotCycAvg(ha(5),type,colors,CycAvg);
-%                 otherwise
-%                     disp('Input not recognized')
-%             end
-%             %Prompt
-%             if strcmp(selection_type,'Buttons')
-%                 %Start with selecting things on and off on the graph
-%                 [ind,tf] = nmlistdlg('PromptString','Select an action:',...
-%                                'SelectionMode','single',...
-%                                'ListSize',[100 100],...
-%                                'ListString',actions,...
-%                                'Position',[11,7.75,2,2.75]); 
-%                 if tf==0
-%                     command = actions{end};
-%                 else
-%                     command = actions{ind};
-%                 end           
-%             else %Keyboard shortcuts
-%                 command = input('','s');
-%             end
-%         end     
-%         %Remove any bolded traces
-%         if keep_tr(cyc)
-%             set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_keep)
-%             set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.norm)
-%         else
-%             set(findobj(gcf,'type','patch','Tag',['Cycle_',num2str(cyc)]),'FaceColor',colors.cyc_rm)
-%             set(findobj(gcf,'type','line','Tag',['Cycle_',num2str(cyc)]),'LineWidth',line_wid.norm)
-%             set(findobj(ha(4),'type','line','Tag',['Cycle_',num2str(cyc)]),'visible','off')
-%         end
-    else
-        disp('No cycle selection available for this data type')
-        keep_tr = true;
+        end
+        keep_tr = false(1,length(keep_tr));
+        keep_tr(ind2) = true; 
     end
 end

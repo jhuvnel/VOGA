@@ -3,48 +3,58 @@
 % LDVOG data sets as much as possible.
 % Cycle average before filtering
 
-function done = MakeCycAvg(path,Seg_Path,Cyc_Path,Experimenter,version,exp_types)
+function done = MakeCycAvg(Path,code_Path,exp_types)
 clc;       
+% Set colors
 load('VNELcolors.mat','colors')
 % Fill colors for cycle selection
-%Color of cycle on long graph
 colors.cyc_keep = [0.85 0.85 0.85];
-%colors.cyc_keep = [0.75 1 0.75]; 
 colors.cyc_bold_k = [0 0.75 0];
 colors.cyc_rm = [1 1 1];
 colors.cyc_bold_r = [0.85 0.85 0.85];
+% Set paths
+Seg_Path = [Path,filesep,'Segmented Files'];
+Cyc_Path = [Path,filesep,'Cycle Averages'];
+% Set Experimentor/version
+if ~any(contains(extractfield(dir(code_Path),'name'),'VerInfo.txt'))
+    writeInfoFile(code_Path);
+end
+data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
+version = data{1,2}{:};
+Experimenter = data{2,2}{:};
 %% Load in data
-progress_tab = assessProgress(path);
+progress_tab = assessProgress(Path);
 progress_i = [find(~progress_tab{:,2}&~progress_tab{:,3});find(progress_tab{:,2}|progress_tab{:,3})]; %put unanalyzed files at the top
 if ~isempty(exp_types)
-    progress_i(ismember(progress_i,find(~contains(progress_tab{:,1},exp_types)))) = [];
+    rel_file = false(length(progress_tab{:,1}),length(exp_types));
+    for i = 1:length(exp_types)
+        components = split(exp_types{i},'-');
+        cont = true(length(progress_tab{:,1}),1);
+        for j = 1:length(components)
+            cont = cont&contains(progress_tab{:,1},components{j});
+        end
+        rel_file(:,i) = cont;
+    end
+    progress_i(~any(rel_file,2)) = [];
 end
-set(0,'units','pixels')  
-Pix_SS = get(0,'MonitorPositions');
-pix_wid = Pix_SS(1,3);
-pix_height = Pix_SS(1,4);
-f = figure;
-set(f,'Units','normalized','Position',[1 - 500/pix_wid, 0, 500/pix_wid, 1])
-uit = uitable(f,'Data',table2cell(progress_tab(progress_i,:)),'ColumnName',progress_tab.Properties.VariableNames);
-uit.Units = 'normalized';
-uit.Position = [20/500, 20/pix_height, 1 - 40/500, 1 - 40/pix_height];
-uit.ColumnWidth = [{320},{55},{50}];
-[indx,tf] = nmlistdlg('PromptString','Select a file to analyze:',...
+%Change color of option depending on whether it's been analyzed
+font_col = repmat({'black'},length(progress_i),1);
+font_col(progress_tab{progress_i,2}) = {'green'};
+font_col(progress_tab{progress_i,3}) = {'red'};
+list = strcat('<HTML><FONT color="',font_col,'">',table2cell(progress_tab(progress_i,1)),'</FONT></HTML>');
+[indx,tf] = nmlistdlg('PromptString','Unattempted = Black, Analyzed = Green, Not Analyzeable = Red. Select a file to analyze:',...
                        'SelectionMode','single',...
-                       'ListSize',[350 300],...
-                       'ListString',table2cell(progress_tab(progress_i,1)));  
-close(f)
+                       'ListSize',[500 600],...
+                       'ListString',list);  
 %If the user selects cancel
 if ~tf
     disp('Operation Ended.')
     done = true;
     return; 
+else
+    done = false;
 end
-done = false;
-a = dir([Seg_Path,filesep,'*.mat']);
-a = {a.name}';
-a = a(progress_i);
-In_FileName = a{indx};
+In_FileName = progress_tab{progress_i(indx),1}{:};
 load([Seg_Path,filesep,In_FileName],'Data');
 %% Initialize Figure
 fig = figure(1);
@@ -69,84 +79,120 @@ info.ver = version;
 info.colors = colors;
 info.TriggerShift2 = 0; %Shifting done manually in this file
 Fs = Data.Fs;
-if contains(info.dataType,'Activation')
-    %preserve the time because this will be used to rejoin them
-    te = Data.Time_Eye;
-    ts = Data.Time_Stim; 
-else
+if contains(info.goggle_ver,'GNO') %No raw position, just velocity
     te = Data.Time_Eye - Data.Time_Eye(1);
     ts = Data.Time_Stim - Data.Time_Stim(1);
-end
-%Assign Trigger
-if contains(info.goggle_ver,'Moogles') %MOOG room coil system
-    stim1 = Data.Trigger;
-else %NKI or LDVOG Trigger = internal gyro or comes from the PCU for eeVOR
-    if contains(info.dataType,'RotaryChair')
-        if isfield(Data,'HeadVel_Z')
-            stim1 = Data.HeadVel_Z;
+    if contains(info.dataType,{'LH','RH'})
+        stim1 = Data.HeadVel_Z;
+    elseif contains(info.dataType,{'LA','RP'})
+        stim1 = Data.HeadVel_L;
+    elseif contains(info.dataType,{'RA','LP'})
+        stim1 = Data.HeadVel_R;
+    else
+        stim1 = Data.HeadVel_Z;
+    end 
+else
+    if contains(info.dataType,'Activation')
+        %preserve the time because this will be used to rejoin them
+        te = Data.Time_Eye;
+        ts = Data.Time_Stim; 
+    else
+        te = Data.Time_Eye - Data.Time_Eye(1);
+        ts = Data.Time_Stim - Data.Time_Stim(1);
+    end
+    %Assign Trigger
+    if contains(info.goggle_ver,'Moogles') %MOOG room coil system
+        stim1 = Data.Trigger;
+    else %NKI or LDVOG Trigger = internal gyro or comes from the PCU for eeVOR
+        if contains(info.dataType,'RotaryChair')
+            if isfield(Data,'HeadVel_Z')
+                stim1 = Data.HeadVel_Z;
+            else
+                stim1 = Data.HeadMPUVel_Z; 
+            end   
+        elseif contains(info.dataType,'aHIT')
+            if contains(info.dataType,'LHRH')
+                stim1 = Data.HeadVel_Z;
+            elseif contains(info.dataType,'LARP')
+                stim1 = (Data.HeadVel_X - Data.HeadVel_Y)/sqrt(2);
+            elseif contains(info.dataType,'RALP')
+                stim1 = (Data.HeadVel_X + Data.HeadVel_Y)/sqrt(2);
+            else
+                stim1 = Data.Trigger;
+            end    
         else
-            stim1 = Data.HeadMPUVel_Z; 
-        end   
-    elseif contains(info.dataType,'aHIT')
-        if contains(info.dataType,'LHRH')
-            stim1 = Data.HeadVel_Z;
-        elseif contains(info.dataType,'LARP')
-            stim1 = (Data.HeadVel_X - Data.HeadVel_Y)/sqrt(2);
-        elseif contains(info.dataType,'RALP')
-            stim1 = (Data.HeadVel_X + Data.HeadVel_Y)/sqrt(2);
+            stim1 = Data.Trigger; 
+        end       
+    end
+    %Fix huge number of NaN values in torsion traces of NKI traces
+    if contains(info.goggle_ver,'NKI')
+        if sum(isnan(Data.LE_Position_X)) > 0.9*length(te) %less than 10% data integrity
+            Data.LE_Position_X = zeros(length(te),1); %set to 0 so no torsion
         else
-            stim1 = Data.Trigger;
+            Data.LE_Position_X = spline(te(~isnan(Data.LE_Position_X)),Data.LE_Position_X(~isnan(Data.LE_Position_X)),te);
         end    
-    else
-        stim1 = Data.Trigger; 
-    end       
+        if sum(isnan(Data.RE_Position_X)) > 0.9*length(te)
+            Data.RE_Position_X = zeros(length(te),1);
+        else
+            Data.RE_Position_X = spline(te(~isnan(Data.RE_Position_X)),Data.RE_Position_X(~isnan(Data.RE_Position_X)),te);
+        end    
+    end
 end
-%Fix huge number of NaN values in torsion traces of NKI traces
-if contains(info.goggle_ver,'NKI')
-    if sum(isnan(Data.LE_Position_X)) > 0.9*length(te) %less than 10% data integrity
-        Data.LE_Position_X = zeros(length(te),1); %set to 0 so no torsion
-    else
-        Data.LE_Position_X = spline(te(~isnan(Data.LE_Position_X)),Data.LE_Position_X(~isnan(Data.LE_Position_X)),te);
-    end    
-    if sum(isnan(Data.RE_Position_X)) > 0.9*length(te)
-        Data.RE_Position_X = zeros(length(te),1);
-    else
-        Data.RE_Position_X = spline(te(~isnan(Data.RE_Position_X)),Data.RE_Position_X(~isnan(Data.RE_Position_X)),te);
-    end    
+% Assign Type
+if contains(info.goggle_ver,'GNO') %No raw pos traces 
+    type = 3;
+elseif contains(info.dataType,{'Activation','Step'}) %No cycle averaging
+    type = 2;
+else
+    type = 1;
 end
-%% Cycle Align
-%Defines a variable type that determines what type of filtering and
-%analysis needs to be done. type = 1: cycle average, 2: full trace (vel
-%step/activation)
-stim = stim1;
-[type,stims,t_snip,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
 %% Set some Defaults
+% Cycle Align
+[~,t_snip] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
 %Filter Traces with intial guesses
 if type == 1
     if contains(info.goggle_ver,'NKI')
         pos_med = [21;21;3;3;3;3];
         pos_spline = [1;1;0.999995;0.999995;0.9999995;0.9999995];
-    else
+        pos_sgolay = [2*ones(6,1);5*ones(6,1)];
+        if contains(info.dataType,'Sine')
+            vel_smooth = round(t_snip(end)*40);
+        else
+            vel_smooth = 30;
+        end
+        vel_spline = NaN;
+        vel_acc = NaN; 
+        vel_med = NaN;
+    else %LDVOG, Moogles
         pos_med = [11;11;3;3;3;3];
         pos_spline = [0.99995;0.99995;0.999995;0.999995;0.9999995;0.9999995];
+        pos_sgolay = [2*ones(6,1);5*ones(6,1)];
+        if contains(info.dataType,'Sine')
+            vel_smooth = round(t_snip(end)*40);
+        else
+            vel_smooth = 30;
+        end
+        vel_spline = NaN;
+        vel_acc = NaN; 
+        vel_med = NaN;
     end
-    pos_sgolay = [2*ones(6,1);5*ones(6,1)];
-    if contains(info.dataType,'Sine')
-        vel_smooth = round(t_snip(end)*40);
-    else
-        vel_smooth = 30;
-    end
-    vel_spline = NaN;
-    vel_acc = NaN; 
-    vel_med = NaN;
-else %velstep and activation
+elseif type == 2 %velstep and activation
     pos_med = [11;11;5;5;3;3];
     pos_spline = NaN(6,1);
     pos_sgolay = [2*ones(6,1);5*ones(6,1)];
     vel_smooth = NaN;
     vel_spline = NaN;
     vel_acc = 10;
-    vel_med = Fs+1-mod(Fs,2);   
+    vel_med = Fs+1-mod(Fs,2); 
+elseif type == 3 
+    %Coded for GNO right now
+    pos_med = NaN(6,1);
+    pos_spline = NaN(6,1);
+    pos_sgolay = NaN(12,1);
+    vel_smooth = 2;
+    vel_spline = NaN;
+    vel_acc = NaN;
+    vel_med = NaN;
 end
 line_wid.norm = 0.5;
 line_wid.bold = 2;
@@ -160,9 +206,13 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         filt_params_p = [pos_med;pos_spline;pos_sgolay];
         filt_params_v = [vel_smooth;vel_spline;vel_acc;vel_med];        
         YLim_Pos = [-30 30];
-        YLim_Vel = [-100 100];
+        if type == 3
+            YLim_Vel = [-50 250];
+        else
+            YLim_Vel = [-100 100];
+        end
         info.TriggerShift2 = 0;
-        [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
+        [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
         keep_tr = true(1,size(keep_inds,2)); 
         [filt,Data_calc,LE_V,RE_V,Data_cal,Data_In] = MakeCycAvg__filterTraces(type,filt_params_p,filt_params_v,te,ts,Data,keep_inds); 
         CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
@@ -223,10 +273,12 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
         end
     elseif strcmp(opts{ind},'Select Cycles')
-        keep_tr = MakeCycAvg__selectCycles(type,keep_tr);
-        CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
-        ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
-        %[keep_tr,ha] = MakeCycAvg__selectCycles(ha,type,colors,line_wid,te,t_snip,stims,Fs,Data,info,filt,LE_V,RE_V,keep_inds,keep_tr,In_FileName);
+        [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V);
+        while tf
+            CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
+            ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
+            [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V);
+        end
     elseif strcmp(opts{ind},'Set Y-axis Lim')
         %Get new parameter values
         prompt = {['Set Y-axis limits',newline,newline,'Position:',newline,newline,'Lower Limit:'],...
@@ -257,6 +309,10 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         elseif type==2
             set(ha(1),'YLim',YLim_Pos)
             set(ha(2),'YLim',YLim_Vel)
+        elseif type==3
+            set(ha(1),'YLim',YLim_Vel)
+            set(ha(2),'YLim',YLim_Vel)
+            set(ha(3),'YLim',YLim_Vel)
         end
     else
         disp('This case not yet been defined.')
@@ -272,7 +328,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
 end
 %% Save
 CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
-savefig([Cyc_Path,filesep,In_FileName(1:end-4),'.fig'])
+savefig([Cyc_Path,filesep,'CycAvg_',In_FileName(1:end-4),'.fig'])
 close;
 %Save if you reached this point
 MakeCycAvg__saveCycAvg(Cyc_Path,In_FileName,CycAvg);

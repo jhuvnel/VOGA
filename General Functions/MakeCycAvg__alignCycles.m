@@ -1,4 +1,4 @@
-function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts,stim1)
+function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1)
     %Shift Trigger if needed
     stim = reshape(stim1,[],1);
     len = length(stim);
@@ -9,10 +9,39 @@ function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts
     elseif TrigShift < 0
         stim = [stim;repmat(stim(end),-TrigShift,1)];
         stim = stim((-TrigShift+1):end);
-    end
-    if contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
+    end  
+    if contains(info.dataType,'Impulse')
+        thresh = 50;
+        abov_i = find(stim>thresh);
+        p_len = 0;
+        spike_i = abov_i;
+        while(p_len~=length(spike_i)) %Just to make sure it's really done running
+            p_len = length(spike_i);
+            for i = 1:p_len
+                snip = spike_i(i) + (-Fs:Fs); %1 second apart at least
+                snip(snip < 1|snip > length(stim)) = [];
+                [~,max_i] = max(abs(stim(snip)));
+                spike_i(i) = snip(1)-1+max_i;
+            end
+            spike_i = unique(spike_i);
+        end
+        spike_i(stim(spike_i)<0)=[];
+        %plot(ts,stim,ts(spike_i),stim(spike_i),'g*')
+        %Consisitent with GNO's PDFs, take 750 ms length trace for the 
+        %cycle with 200ms before max and 550 ms after.
+        starts = spike_i-round(Fs*.2); 
+        ends = spike_i+round(Fs*.55);
+        inv_i = starts<1|ends>length(stim);
+        starts(inv_i)= [];
+        ends(inv_i) = [];
+        t_snip = reshape(ts(1:ends(1)-starts(1)+1)-ts(1),1,[]);
+        keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
+        for i = 1:length(starts)
+            keep_inds(:,i) = starts(i):ends(i);
+        end
+        stims = stim(keep_inds);
+    elseif contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
         if contains(info.dataType,'Sine')
-            type = 1;
             fparts = split(info.dataType,'-');
             freqs = fparts(contains(fparts,'Hz'));
             freq = zeros(1,length(freqs));
@@ -97,19 +126,19 @@ function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts
             end 
             stims = mean(all_stim,2); 
         elseif contains(info.dataType,'Step')
-            type = 2;
             stims = stim;
             starts = 1;
             ends = length(ts);
-        elseif contains(info.dType,'Impulse')
-            %ADD CODE HERE
-            type = 1;
         else
             error('Unknown Data Type (RotaryChair/aHIT)')
         end    
+        t_snip = reshape(ts(1:size(stims,1))-ts(1),1,[]);
+        keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
+        for i = 1:length(starts)
+            keep_inds(:,i) = starts(i):ends(i);
+        end
     elseif contains(info.dataType,'eeVOR') %align using the trigger signal
         if contains(info.dataType,{'65Vector','MultiVector'})
-            type = 1;
             %The trigger is actually showing when the trapezoids start and end. There
             %are only 20 cycles of the stimulus applied and there are 40 trigger
             %toggles. To make the stimulus trace, I assumed the trigger was high when
@@ -133,7 +162,6 @@ function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts
             stims(end1+1:start2-1) = 50*ones(length(end1+1:start2-1),1);
             stims(start2:ind(end)) = linspace(50,0,length(start2:ind(end)));
         elseif contains(info.dataType,'Sine') %sine (toggle = new cycle)
-            type=1;
             trig = abs(diff(stim));
             starts = find(trig==1);
             snip_len = round(median(diff(starts)),0);
@@ -143,14 +171,12 @@ function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts
             amp = str2double(strrep(fparts{contains(fparts,'dps')},'dps',''));
             stims = amp*sin(2*pi*freq*(ts(1:snip_len)));
         elseif contains(info.dataType,{'PulseTrain','Autoscan'}) % (high = on, low = off)
-            type=1;
             trig = (diff(stim));
             starts = find(trig==1);
             snip_len = round(median(diff(starts)));
             ends = starts + snip_len - 1;
             stims = 50*stim(starts(1):ends(1));
         elseif contains(info.dataType,'Activation') % (low = dark, high = light but don't cycle average here)
-            type=2;
             stims = stim;
             starts = 1;
             ends = length(ts);
@@ -161,12 +187,12 @@ function [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts
            starts(end) = [];
            ends(end) = [];
         end
+        t_snip = reshape(ts(1:length(stims))-ts(1),1,[]);
+        keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
+        for i = 1:length(starts)
+            keep_inds(:,i) = starts(i):ends(i);
+        end
     else
         error('Unknown Data Type')
-    end 
-    t_snip = reshape(ts(1:length(stims))-ts(1),1,[]);
-    keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
-    for i = 1:length(starts)
-        keep_inds(:,i) = starts(i):ends(i);
-    end
+    end     
 end

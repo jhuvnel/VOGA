@@ -2,24 +2,27 @@
 %This ignores VOG files that already have notes files.
 function logtoNotes(Raw_Path)
     rel_dir = [dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])]; %update if more file extensions are added
+    if isempty(rel_dir)
+        disp(['No folders or files have been detected in',Raw_Path])
+        return;
+    end
     file_names = extractfield(rel_dir,'name');
     file_date = extractfield(rel_dir,'date');
     Notes_ind = contains(file_names,'-Notes.txt');
     VOG_ind = contains(file_names,{'SESSION','.dat'})&~Notes_ind;
     VOG_ind_num = find(VOG_ind);
     if all(~VOG_ind)
-        error(['No VOG files have been detected in',Raw_Path])
+        disp(['No LDVOG/NKI files have been detected in',Raw_Path])
+        return;
     end
     has_notes = ismember(strrep(strrep(file_names(VOG_ind),'.txt',''),'.dat',''),strrep(file_names(Notes_ind),'-Notes.txt',''));
     VOG_files = file_names(VOG_ind_num(~has_notes));
     VOG_files_date = file_date(VOG_ind_num(~has_notes));    
     if all(VOG_ind|Notes_ind)
-        disp('No log files detected:')
-        disp(Raw_Path)
+        disp(['No log files detected in',Raw_Path])
         return;
     elseif isempty(VOG_files)
-        disp('All VOG files already have Notes files')
-        disp(Raw_Path)
+        disp(['All VOG files already have Notes files in',Raw_Path])
         return;
     end    
     possible_log = file_names(~Notes_ind&~VOG_ind);
@@ -215,7 +218,11 @@ function logtoNotes(Raw_Path)
                                     stim_axis(amp_mat==ax_vec(:,2)) = {'RALP'};
                                     stim_axis(amp_mat==ax_vec(:,3)) = {'LHRH'};
                                     stim_axis(ax_vec(:,1)==ax_vec(:,2)&abs(ax_vec(:,1))>0) = {'X'};
-                                    stim_axis(ax_vec(:,1)==-ax_vec(:,2)&abs(ax_vec(:,1))>0) = {'Y'};                            
+                                    stim_axis(ax_vec(:,1)==-ax_vec(:,2)&abs(ax_vec(:,1))>0) = {'Y'};
+                                    combo_vec = cellfun(@isempty,stim_axis);
+                                    if any(combo_vec)
+                                        stim_axis(combo_vec) = strcat('[',join(cellfun(@num2str,num2cell(ax_vec(combo_vec,:)./repmat(amp_mat(combo_vec),1,3)),'UniformOutput',false),','),']');
+                                    end
                                     experiments = [experiments;strcat(stim_axis,'-',stim_tab(2:end,5),'Hz-',amp_vec,'dps')];                                          
                                 elseif any(contains(stim_tab(1,:),'BSR (pps)'))
                                     exp_type = 'eeVOR-PulseTrain';
@@ -245,14 +252,15 @@ function logtoNotes(Raw_Path)
                                 end
                             end
                             notes = [common_notes;{exp_type};experiments];
-                            prompt = [{[fname,newline,newline,'Subject: '];'Implant Ear (L/R): ';...
-                                'Visit: ';'Date: ';'Goggle Version: ';'Goggle Angle: ';'Experiment Type: '};repmat({'Exp: '},length(experiments),1)];
-                            notes = inputdlgcol(prompt,'Confirm VOG File Parameters',[1 45],notes,'on',2);        
-                            common_notes = notes(1:6);
+                            %prompt = [{[fname,newline,newline,'Subject: '];'Implant Ear (L/R): ';...
+                            %    'Visit: ';'Date: ';'Goggle Version: ';'Goggle Angle: ';'Experiment Type: '};repmat({'Exp: '},length(experiments),1)];
+                            %notes = inputdlgcol(prompt,'Confirm VOG File Parameters',[1 45],notes,'on',2);        
+                            %common_notes = notes(1:6);
                         end
                         %Now make the file
                         filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');
                         w_notes = strcat('"',notes,'"');
+                        disp(w_notes)
                         fprintf(filePh,'%s\n',w_notes{:});
                         fclose(filePh); 
                     end
@@ -260,89 +268,4 @@ function logtoNotes(Raw_Path)
             end
         end 
     end
-%    %% Autoscan 
-%     %Start with log files
-%     [indx_a,tf2] = nmlistdlg('PromptString','Select autoscan files:','ListSize',[300 300],'ListString',possible_log);
-%     if tf2 == 1
-%         logfiles = possible_log(indx_a);
-%         % Find the times of the autoscan files (multiple may correspond to
-%         % one VOG file)
-%         logfile_times = NaT(length(logfiles),1);
-%         logfile_times.Format = 'yyyy-MM-dd HH:mm:ss.SSS'; 
-%         for f = 1:length(logfiles)
-%             logfile_times(f) = datetime(strrep(strrep(logfiles{f},'  DAY @ TIME  ',' '),'.txt',''),'InputFormat','yyyy-MM-dd h-mm-ss-a');    
-%         end        
-%         %% Find relevant text files and make Notes files
-%         %Set some parameters that will likely stay the same but can be edited 
-%         path_parts = strsplit(strrep(strrep(Raw_Path,'_',''),' ',''),filesep);
-%         if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected formatting
-%             sub = path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')};
-%             MVI_num = str2double(sub((-3:1:-1)+strfind(sub,'R')));
-%             if ismember(MVI_num,[1,2,3,4,7,9]) %EXPAND as needed
-%                 ear = 'L';
-%             else
-%                 ear = 'R';
-%             end
-%         else
-%             sub = '';
-%             ear = '';
-%         end
-%         if any(contains(path_parts,'Visit'))
-%            vis = path_parts{contains(path_parts,'Visit')};
-%         else
-%             vis = '';
-%         end
-%         if any(contains(VOG_files,'.txt')) %LDVOG
-%             common_notes = {sub,ear,vis,datestr(logfile_times(1),'yyyymmdd'),'LDVOG2','-170','200','50'};   
-%         else
-%             common_notes = {sub,ear,vis,datestr(logfile_times(1),'yyyymmdd'),'NKI1','0','200','50'};  
-%         end
-%         % For loop
-%         for i = 1:length(VOG_files)
-%             fname = VOG_files{i};
-%             if contains(fname,'.txt') %LDVOG  
-%                 parts = split(fname,'-');
-%                 VOG_times = [datetime(strrep([parts{2},' ',parts{3}],'.txt',''),'InputFormat','yyyyMMMMdd HHmmss'),datetime(VOG_files_date{i})]; 
-%                 VOG_times.Format = 'yyyy-MM-dd HH:mm:ss.SSS';  
-%             else %NKI
-%                 VOG_data = readtable([Raw_Path,filesep,fname]);
-%                 VOG_time = datetime(VOG_files_date{i}); %use file creation/saving time since NKI doesn't output time stamps
-%                 VOG_time.Format = 'yyyy-MM-dd HH:mm:ss.SSS'; 
-%                 VOG_times = [VOG_time-seconds(VOG_data{end,1}) VOG_time];
-%             end
-%             in_range = VOG_times(1) <= logfile_times & VOG_times(end) >= logfile_times;
-%             if any(in_range) %Found corresponding VOG file, this assumes one VOG file to one autoscan file
-%                 %% Get notes on this file
-%                 prompt = {[fname,newline,newline,'Subject: '];'Implant Ear (L/R): ';'Visit: ';'Date: ';'Goggle Version: ';'Goggle Angle: ';'Burst rate (pps): ';'Phase duration (us): '};
-%                 common_notes = inputdlg(prompt,'Set VOG File Parameters',1,common_notes);  
-%                 % Load and parse log file   
-%                 data = readtable([Raw_Path,filesep,logfiles{in_range}],'PreserveVariableNames',0);
-%                 exp_type = 'eeVOR-Autoscan';
-%                 experiments = cell(size(data,1),1);
-%                 %Make cell vector of experiment names
-%                 for j = 1:length(experiments)
-%                     switch data{j,1}{:} %canal
-%                         case {'E3','E4','E5'}
-%                             can = 'P';
-%                         case {'E6','E7','E8'}
-%                             can = 'H';
-%                         case {'E9','E10','E11'}
-%                             can = 'A';
-%                     end
-%                     if strcmp(common_notes{2},'L')
-%                         canal = ['L',can,data{j,1}{:}];
-%                     else
-%                         canal = ['R',can,data{j,1}{:}];
-%                     end
-%                     experiments{j} = [canal,'-',common_notes{7},'pps-',common_notes{8},'us-',num2str(round(data{j,3},0)),'uA']; %rounds to closest uA for file naming
-%                 end               
-%                 notes = [common_notes(1:6);{exp_type};experiments];
-%                 % Don't show because too many entries
-%                 filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');
-%                 w_notes = strcat('"',notes,'"');
-%                 fprintf(filePh,'%s\n',w_notes{:});
-%                 fclose(filePh);  
-%             end
-%        end
-%    end
 end

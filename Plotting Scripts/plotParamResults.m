@@ -6,7 +6,7 @@
 %type = 'SineAmpVelXYZ';
 %type = 'Autoscan';
 
-function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
+function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
     if nargin < 7
         YMax = 100;
     end
@@ -23,7 +23,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             Subs = sub_info{:,1};
             Ears = sub_info{:,2};
             % Load table in question
-            res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
+            res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
             if isempty(res_file)
                 disp('No table with cycle parameters found on this path.')
                 return;
@@ -84,7 +84,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             %figsizeinchesBoxplot=[2.3,4];
             figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
             if annot
-                annotation('textbox',[0 0 1 1],'String',[path,newline,code_Path,filesep,...
+                annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
                         code_name,newline,...
                         'VOGA',version,newline,Experimenter],'FontSize',5,...
                     'EdgeColor','none','interpreter','none');
@@ -158,9 +158,10 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             leg2.ItemTokenSize(1) = 15;
             leg2.Position = [0.0544    0.3410    0.2629    0.1551];
             leg2.Title.NodeChildren.Position = [0.7700    0.8619         0];
-            fig_name = inputdlg('Name this figure','',1,{['SineAmp-',strrep(exp_name,' ','-'),'.fig']});
+            fig_name ={['SineAmpLRZ-',strrep(exp_name,' ','-'),'.fig']};
+            %fig_name = inputdlg('Name this figure','',1,fig_name);
             if ~isempty(fig_name)
-                savefig([path,filesep,fig_name{:}])
+                savefig([Path,filesep,fig_name{:}])
             end
             close;
         case 'SineAmpVelXYZ'   
@@ -175,7 +176,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             Subs = sub_info{:,1};
             Ears = sub_info{:,2};
             % Load table in question
-            res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
+            res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
             if isempty(res_file)
                 disp('No table with cycle parameters found on this path.')
                 return;
@@ -236,7 +237,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             %figsizeinchesBoxplot=[2.3,4];
             figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
             if annot
-                annotation('textbox',[0 0 1 1],'String',[path,newline,code_Path,filesep,...
+                annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
                         code_name,newline,...
                         'VOGA',version,newline,Experimenter],'FontSize',5,...
                     'EdgeColor','none','interpreter','none');
@@ -310,9 +311,10 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             leg2.ItemTokenSize(1) = 15;
             leg2.Position = [0.0544    0.3410    0.2629    0.1551];
             leg2.Title.NodeChildren.Position = [0.7700    0.8619         0];
-            fig_name = inputdlg('Name this figure','',1,{['SineAmp-',strrep(exp_name,' ','-'),'.fig']});
+            fig_name = {['SineAmpXYZ-',strrep(exp_name,' ','-'),'.fig']};
+            %fig_name = inputdlg('Name this figure','',1,fig_name);
             if ~isempty(fig_name)
-                savefig([path,filesep,fig_name{:}])
+                savefig([Path,filesep,fig_name{:}])
             end
             close;
         case 'Autoscan'
@@ -327,7 +329,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
 %             Subs = sub_info{:,1};
 %             Ears = sub_info{:,2};
             % Load table in question
-            res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
+            res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
             if isempty(res_file)
                 disp('No table with cycle parameters found on this path.')
                 return;
@@ -375,7 +377,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             %figsizeinchesBoxplot=[2.3,4];
             figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
             if annot
-                annotation('textbox',[0 0 1 1],'String',[path,newline,code_Path,filesep,...
+                annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
                         code_name,newline,...
                         'VOGA',version,newline,Experimenter],'FontSize',5,...
                     'EdgeColor','none','interpreter','none');
@@ -517,7 +519,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             end
             fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name,' ','-'),'.fig']});
             if ~isempty(fig_name)
-                savefig([path,filesep,fig_name{:}])
+                savefig([Path,filesep,fig_name{:}])
             end
             close;
         case 'SpherePlot'
@@ -531,7 +533,7 @@ function plotParamResults(type,path,code_Path,version,Experimenter,annot,YMax)
             Subs = sub_info{:,1};
             Ears = sub_info{:,2};
             % Load table in question
-            res_file = extractfield(dir([path,filesep,'*Results.mat']),'name')';
+            res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
             if isempty(res_file)
                 disp('No table with cycle parameters found on this path.')
                 return;

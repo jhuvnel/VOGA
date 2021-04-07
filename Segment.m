@@ -2,30 +2,87 @@
 %Make a segmenting pipeline
 %Parameters assume all LDVOG data was recorded AFTER 2016-09-26, consistent
 %with recorded dates for the MVI trial
-function Segment(In_Path,Seg_Path)
+function Segment(In_Path,Seg_Path,dataType)
     %Make sure there is a real path for the input/output files
     if isnumeric(In_Path) || isempty(In_Path)
         error('Input path to Segment.m not valid.') 
     elseif isnumeric(Seg_Path) || isempty(Seg_Path)
         error('Input path to Segment.m not valid.') 
     end
-    %See if notes file already exists and create one if it doesn't
-%     try
-%         fileinfo = importdata([In_Path(1:end-4),'-Notes.txt']);   
-%     catch
-%         slash = find(In_Path == filesep,1,'last');
-%         MakeNotes(In_Path(1:slash-1),{In_Path(slash+1:end)})
-%         fileinfo = importdata([In_Path(1:end-4),'-Notes.txt']);   
-%     end
-%     %Change this to reflect new notes file types when they are created 
-%     info.rawfile = In_Path;
-%     info.rawnotes = [In_Path(1:end-4),'-Notes.txt'];
-%     info.subject = fileinfo{1}(2:end-1);
-%     info.ear = fileinfo{2}(2:end-1);
-%     info.visit = strrep(fileinfo{3}(2:end-1),' ','');
-%     info.exp_date = fileinfo{4}(2:end-1);
-%     info.goggle_ver = fileinfo{5}(2:end-1); %This should say NKI or not
-%     info.goggle_reorient_ang = str2double(fileinfo{6}(2:end-1));    
+    %% GNO File
+    if nargin == 3 
+        file = In_Path(find(In_Path == filesep,1,'last')+1:end);
+        %Figure out the stim axis from the file name
+        if contains(file,'Lateral')            
+            stim_axis = [0,0,1];
+            dataType1 = strrep(dataType,'LHRH','LH');
+            dataType2 = strrep(dataType,'LHRH','RH');
+        elseif contains(file,'LARP')
+            stim_axis = [1,0,0];
+            dataType1 = strrep(dataType,'LARP','LA');
+            dataType2 = strrep(dataType,'LARP','RP');
+        elseif contains(file,'RALP')
+            stim_axis = [0,1,0];
+            dataType1 = strrep(dataType,'RALP','RA');
+            dataType2 = strrep(dataType,'RALP','LP');
+        else
+            stim_axis = [0,0,0];
+            dataType1 = dataType;
+            dataType2 = dataType;
+        end
+        dash = strfind(file,'_');
+        info.rawfile = In_Path;
+        info.rawnotes = '';
+        info.subject = strrep(file(1:dash(2)),'_','');
+        info.ear = 'NA';
+        info.visit = 'NA';
+        info.exp_date = strrep(file(dash(2):dash(5)),'_','');
+        info.exp_time = strrep(file(dash(5):dash(8)),'_','');
+        info.goggle_ver = 'GNO';
+        info.goggle_reorient_angle = 0;
+        info.TriggerShift = 0;      
+        info.dataType = dataType1;
+        info.stim_axis = stim_axis;
+        fname = [info.subject,'-',info.visit,'-',info.exp_date,'_',info.exp_time,'-',info.dataType];
+        info.name = fname;
+        %Load the values
+        dat = table2array(readtable(In_Path));
+        time = (dat(:,1) - dat(1,1))/10e6;
+        %Make the Data struct
+        Data.info = info;
+        Data.Fs = round(1/median(diff(time)));
+        Data.Time_Eye = time;
+        Data.Time_Stim = time;
+        Data.raw_start_t = time(1);
+        Data.raw_end_t = time(end);
+        Data.RE_Vel_Y = dat(:,6);
+        Data.RE_Vel_Z = dat(:,5);
+        Data.HeadVel_Z = dat(:,4);
+        Data.HeadVel_L = dat(:,3);
+        Data.HeadVel_R = dat(:,2);
+        Data.rawfile = {In_Path};
+        %Save Items
+        save([Seg_Path,filesep,fname,'.mat'],'Data')
+        fig = plotSegment(Data);
+        savefig(fig,[Seg_Path,filesep,fname,'.fig'])
+        close(fig) 
+        %Second File
+        info.dataType = dataType2;
+        fname = [info.subject,'-',info.visit,'-',info.exp_date,'_',info.exp_time,'-',info.dataType];
+        info.name = fname;
+        Data.info = info;
+        Data.RE_Vel_Y = -dat(:,6);
+        Data.RE_Vel_Z = -dat(:,5);
+        Data.HeadVel_Z = -dat(:,4);
+        Data.HeadVel_L = -dat(:,3);
+        Data.HeadVel_R = -dat(:,2);
+        save([Seg_Path,filesep,fname,'.mat'],'Data')
+        fig = plotSegment(Data);
+        savefig(fig,[Seg_Path,filesep,fname,'.fig'])
+        close(fig) 
+       return; 
+    end
+    %% LDVOG or NKI
     try
         fileinfo = table2cell(readtable([In_Path(1:end-4),'-Notes.txt'],'ReadVariableNames',false,'Delimiter',' '));
     catch
