@@ -30,12 +30,9 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                 linkaxes(ha([1,2]),'x')
                 linkaxes(ha([2,3]),'y')
                 linkaxes(ha([3,4,5]),'xy')
-                %Make cycle labels
-                cyc_num_labs = 1:length(keep_tr);
-                x_tick = te(round(floor(mean(keep_inds)),0));
                 %Set Labels
                 %ha1
-                set(ha(1),'XLim',XLim_Long,'YLim',YLim_Pos,'XTick',x_tick,'XTickLabel',cyc_num_labs,'Xaxislocation','top')
+                set(ha(1),'XLim',XLim_Long,'YLim',YLim_Pos)
                 ylabel(ha(1),'Angular Position (deg)','FontWeight','bold')
                 %xlabel(ha(1),'Cycle Number')
                 %title(ha(1),'Angular Position')
@@ -66,6 +63,11 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                     fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm,'Tag',['Cycle_',num2str(j)]);
                 end
             end
+            %Make cycle labels
+            cyc_num_labs = 1:length(keep_tr);
+            x_tick = te(round(floor(mean(keep_inds)),0));
+            set(ha(1),'XTick',x_tick,'XTickLabel',cyc_num_labs,'Xaxislocation','top')
+            
             %Plot Cycles
             h(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
             %Raw Data

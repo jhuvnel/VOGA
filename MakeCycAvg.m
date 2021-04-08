@@ -58,9 +58,12 @@ In_FileName = progress_tab{progress_i(indx),1}{:};
 load([Seg_Path,filesep,In_FileName],'Data');
 %% Initialize Figure
 fig = figure(1);
-delete(findall(gcf,'type','annotation')) %in case there are leftover anotations
+clf; %in case there are leftover anotations
+fig.Units = 'normalized';
+fig.Position = [0 0 1 1];
 fig.Units = 'inches';
-fig.Position = [0 0 11 10];
+screen_size = fig.Position;
+fig.Position = screen_size - [0 0 4 0];
 %Title
 if contains(In_FileName,'[')&&contains(In_FileName,']')
     fig_title = strrep(strrep(strrep(In_FileName,'_',' '),'-',' '),'.mat','');
@@ -231,10 +234,10 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         end
         return;
     elseif strcmp(opts{ind},'Shift Trigger')
-        new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ','Shift',[1 15],{num2str(info.TriggerShift2)},'on',1,[11 6.5 1.75 1.25]));
+        new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ','Shift',[1 15],{num2str(info.TriggerShift2)},'on',1,[screen_size(3)-4 screen_size(4)-1.25 1.75 1.25]));
         if ~isempty(new_TrigShift)
             info.TriggerShift2 = round(new_TrigShift);
-            [type,stims,t_snip,keep_inds,stim] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
+            [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
             if size(keep_inds,2) > length(keep_tr)
                 old_keep_tr = keep_tr;
                 keep_tr = [old_keep_tr;true(1,size(keep_inds,2)-length(keep_tr))];
@@ -253,7 +256,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
              ['Sav-Gol 2',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:'};
         dlgtitle = 'Filter position';
         definput = strrep(cellfun(@(x) num2str(x,10),num2cell(filt_params_p),'UniformOutput',false),'NaN','');
-        temp_filt_params_p = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],definput,'on',4,[11 6.5 3.5 4]));
+        temp_filt_params_p = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],definput,'on',4,[screen_size(3)-3.5 screen_size(4)-4 3.5 4]));
         if ~isempty(temp_filt_params_p) %Didn't hit cancel
             filt_params_p = temp_filt_params_p;
             [filt,Data_calc,LE_V,RE_V,Data_cal,Data_In] = MakeCycAvg__filterTraces(type,filt_params_p,filt_params_v,te,ts,Data,keep_inds); 
@@ -265,7 +268,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         prompt = {'Irrlsmooth','Spline','Accel Thresh:','Median Filter:'};
         dlgtitle = 'Filter velocity';
         definput = strrep(cellfun(@(x) num2str(x,10),num2cell(filt_params_v),'UniformOutput',false),'NaN','');
-        temp_filt_params_v = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 20],definput,'on',1,[11 7.25 2.25 3.25]));
+        temp_filt_params_v = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 20],definput,'on',1,[screen_size(3)-4 screen_size(4)-3.25 2.25 3.25]));
         if ~isempty(temp_filt_params_v) %Didn't hit cancel
             filt_params_v = temp_filt_params_v;
             [filt,Data_calc,LE_V,RE_V,Data_cal,Data_In] = MakeCycAvg__filterTraces(type,filt_params_p,filt_params_v,te,ts,Data,keep_inds); 
@@ -273,11 +276,11 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
         end
     elseif strcmp(opts{ind},'Select Cycles')
-        [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V);
+        [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V,screen_size);
         while tf
             CycAvg = MakeCycAvg__makeStruct(LE_V,RE_V,keep_tr,Data,Fs,t_snip,stims,info,filt,In_FileName);
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr);
-            [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V);
+            [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V,screen_size);
         end
     elseif strcmp(opts{ind},'Set Y-axis Lim')
         %Get new parameter values
@@ -285,7 +288,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
             'Upper Limit:',['Velocity:',newline,newline,'Lower Limit:'],'Upper Limit:'};
         dlgtitle = 'Y-axis Limits';
         definput = cellfun(@(x) num2str(x,10),num2cell([YLim_Pos,YLim_Vel]),'UniformOutput',false);
-        out_nums = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 18],definput,'on',2,[11 8.25 3 2.25]));
+        out_nums = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 18],definput,'on',2,[screen_size(3)-4 screen_size(4)-2.25 3 2.25]));
         if ~isempty(out_nums)
             %Check to make sure they aren't reversed
             if out_nums(1)>out_nums(2) 
@@ -321,7 +324,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
                        'SelectionMode','single',...
                        'ListSize',[100 100],...
                        'ListString',opts,...
-                       'Position',[11,7.75,2,2.75]);  
+                       'Position',[screen_size(3)-4,screen_size(4)-2.75,2,2.75]);  
     if tf2 == 0 %Treat this like an exit
         return;
     end

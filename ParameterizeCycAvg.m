@@ -7,8 +7,6 @@
 %2. Exponential Fit (Tau, Magnititude)
 %3. Linear Fit (Gain, Latency, Saccade Analysis)
 %4. Magnitude (Max Magnitude, Misalignment)
-%These tables can ONLY be concatenated to other tables of the same type
-%because they have different labels.
 
 function [CycAvg,type] = ParameterizeCycAvg(CycAvg,fname)
 %% Extract the relevant descriptive parameters

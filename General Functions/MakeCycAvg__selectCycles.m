@@ -1,4 +1,4 @@
-function [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V)    
+function [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,RE_V,screen_size)    
     if type == 2
         disp('No cycle selection for this data type')
         return;
@@ -7,7 +7,7 @@ function [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,
                        'SelectionMode','multiple',...
                        'ListSize',[100 80],...
                        'ListString',{'Click','List'},...
-                       'Position',[11,8,2,3]); 
+                       'Position',[screen_size(3)-4,screen_size(4)-3,2,3]); 
     if ~tf
         return;
     end
@@ -38,7 +38,7 @@ function [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,t_snip,stims,LE_V,
                            'InitialValue',cyc_num(keep_tr),...
                            'ListSize',[100 250],...
                            'ListString',cellstr(num2str(cyc_num')),...
-                           'Position',[11,5.25,2,5.25]);           
+                           'Position',[screen_size(3)-4,screen_size(4)-5.25,2,5.25]);           
         if ~tf
             return;
         end
