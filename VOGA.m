@@ -39,18 +39,7 @@ while tf1
     elseif strcmp(opts{ind},'Generate Figures')
         flag = VOGA__checkFolders;
         if ~flag  
-            Path = cd;
-            Seg_Path = [Path,filesep,'Segmented Files'];
-            Cyc_Path = [Path,filesep,'Cycle Averages'];
-            % Get version and experimenter info from the file
-            if ~any(contains(extractfield(dir(code_Path),'name'),'VerInfo.txt'))
-                writeInfoFile(code_Path);
-            end
-            data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
-            version = data{1,2}{:};
-            Experimenter = data{2,2}{:};
-            annot_q = questdlg('Descriptive annotation on figures?','','Yes','No','Yes');
-            annot = strcmp(annot_q,'Yes');
+            VOGA__makePlots(code_Path)
         end
         return;
     elseif strcmp(opts{ind},'Set Version')

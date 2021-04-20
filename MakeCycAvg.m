@@ -24,7 +24,6 @@ version = data{1,2}{:};
 Experimenter = data{2,2}{:};
 %% Load in data
 progress_tab = assessProgress(Path);
-progress_i = [find(~progress_tab{:,2}&~progress_tab{:,3});find(progress_tab{:,2}|progress_tab{:,3})]; %put unanalyzed files at the top
 if ~isempty(exp_types)
     rel_file = false(length(progress_tab{:,1}),length(exp_types));
     for i = 1:length(exp_types)
@@ -35,8 +34,9 @@ if ~isempty(exp_types)
         end
         rel_file(:,i) = cont;
     end
-    progress_i(~any(rel_file,2)) = [];
+    progress_tab(~any(rel_file,2),:) = [];
 end
+progress_i = [find(~progress_tab{:,2}&~progress_tab{:,3});find(progress_tab{:,2}|progress_tab{:,3})]; %put unanalyzed files at the top
 %Change color of option depending on whether it's been analyzed
 font_col = repmat({'black'},length(progress_i),1);
 font_col(progress_tab{progress_i,2}) = {'green'};
@@ -212,7 +212,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         if type == 3
             YLim_Vel = [-50 250];
         else
-            YLim_Vel = [-100 100];
+            YLim_Vel = [-50 50];
         end
         info.TriggerShift2 = 0;
         [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);

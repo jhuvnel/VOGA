@@ -1,6 +1,6 @@
-In_Path = 'SESSION-2021Feb22-134413.txt';
-%TEMP_In_Path = '   ';
-TEMP_In_Path = 'SESSION-2021Feb22-131754.txt';
+In_Path = 'SESSION-2021Apr15-160008.txt';
+TEMP_In_Path = '   ';
+%TEMP_In_Path = 'SESSION-2021Apr15-160719.txt';
 % Standardize Colors
 colors.l_x = [237,150,33]/255;
 colors.l_y = [125,46,143]/255;
@@ -203,14 +203,14 @@ set(gca,'YLim',[-30 30])
 %% Make Templates
 %Frequency Sweep High to Low
 %Set time chunk to look at
-shift = -40;
-t1 = 5; %s 
-t2 = 50; %s 
+shift = -7100;
+t1 = 120; %s 
+t2 = 148; %s 
 [~,t1_ind] = min(abs(Time_Eye-t1));
 [~,t2_ind] = min(abs(Time_Eye-t2));
 
 template = Stim;
-template(t1_ind:t2_ind) = TEMP_Stim((t1_ind:t2_ind)+shift);
+template(t1_ind:t2_ind) = Stim((t1_ind:t2_ind)+shift);
 %Detect cycle size
 % spike = diff(find(abs(diff(Stim(t1_ind:t2_ind)))>0));
 % spike(spike==1) = [];
@@ -303,14 +303,14 @@ plot(Time_Eye,100*Stim,'b')
 plot(Time_Eye,100*template,'g')
 hold off
 %% Keep changes
- Stim(t1_ind:t2_ind) = template(t1_ind:t2_ind);
+Stim(t1_ind:t2_ind) = template(t1_ind:t2_ind);
 % if Stim(t2_ind) ~= Stim(t2_ind+1)
 %    Stim(t2_ind+1:end) = 1-Stim(t2_ind+1:end);
 % end
 %Stim(t1_ind:end) = template(t1_ind:end);
 %Stim(t2_ind:end) = Stim(t2_ind);
 
-Stim = template;
+%Stim = template;
 %Stim = TEMP_Stim;
 %Stim = TEMP_Stim2;
 %% Save to file

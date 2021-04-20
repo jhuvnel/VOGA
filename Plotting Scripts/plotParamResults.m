@@ -1,34 +1,37 @@
 %% Plot Param Results.m
-% This function makes figures from the Results.mat tables 
-% It detects the different possible figures based on the table given.
-
-%type = 'SineAmpVelLRZ';
-%type = 'SineAmpVelXYZ';
-%type = 'Autoscan';
+% This function makes figures from the Results.mat tables. 
+% Defined Types:
+%   SineAmpVelLRZ
+%   SineAmpVelXYZ
+%   Autoscan
+%   SpherePlot
+%   SineFreqGainPhase
 
 function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
     if nargin < 7
         YMax = 100;
     end
+    %% Load common items
+    % Initialize
+    close all;
+    load('VNELcolors.mat','colors')
+    code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
+    warning('off')
+    sub_info = readtable('SubjectInfo.xlsx');
+    warning('on')
+    Subs = sub_info{:,1};
+    Ears = sub_info{:,2};
+    % Load table in question
+    res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
+    if isempty(res_file)
+        disp('No table with cycle parameters found on this path.')
+        return;
+    end
+    load(res_file{end},'all_results')
+    %% Plots
     switch type
         case 'SineAmpVelLRZ'   
-            %% Make Figure like Boutros 2019 Figure 6
-            % Initialize
-            close all;
-            load('VNELcolors.mat','colors')
-            code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
-            warning('off')
-            sub_info = readtable('SubjectInfo.xlsx');
-            warning('on')
-            Subs = sub_info{:,1};
-            Ears = sub_info{:,2};
-            % Load table in question
-            res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
-            if isempty(res_file)
-                disp('No table with cycle parameters found on this path.')
-                return;
-            end
-            load(res_file{end},'all_results') 
+            %% Make Figure like Boutros 2019 Figure 6 
             %Pick files to run
             [indx,tf] = listdlg('ListString',all_results.File,...
                 'PromptString','Pick the files to plot','ListSize',[400 300],...
@@ -165,23 +168,7 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
             end
             close;
         case 'SineAmpVelXYZ'   
-            %% Make Figure like Boutros 2019 Figure 6 but X, Y and Z
-            % Initialize
-            close all;
-            load('VNELcolors.mat','colors')
-            code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
-            warning('off')
-            sub_info = readtable('SubjectInfo.xlsx');
-            warning('on')
-            Subs = sub_info{:,1};
-            Ears = sub_info{:,2};
-            % Load table in question
-            res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
-            if isempty(res_file)
-                disp('No table with cycle parameters found on this path.')
-                return;
-            end
-            load(res_file{end},'all_results') 
+            %% Make Figure like Boutros 2019 Figure 6 but X, Y and Z 
             %Pick files to graph
             [indx,tf] = listdlg('ListString',all_results.File,...
                 'PromptString','Pick the files to plot','ListSize',[400 300],...
@@ -319,22 +306,6 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
             close;
         case 'Autoscan'
             %% Make Figure like Boutros 2019 Figure 4 but Magnitude and Misalignment
-            % Initialize
-            close all;
-            load('VNELcolors.mat','colors')
-            code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
-%             warning('off')
-%             sub_info = readtable('SubjectInfo.xlsx');
-%             warning('on')
-%             Subs = sub_info{:,1};
-%             Ears = sub_info{:,2};
-            % Load table in question
-            res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
-            if isempty(res_file)
-                disp('No table with cycle parameters found on this path.')
-                return;
-            end
-            load(res_file{end},'all_results') 
             %Now figure out which files to plot
             all_exps = all_results.Condition;
             parts = split(all_exps{1},' ');
@@ -358,7 +329,7 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
             N = [min(all_results.Cycles(any(E_inds(:,1:3),2))),...
                 min(all_results.Cycles(any(E_inds(:,4:6),2))),...
                 min(all_results.Cycles(any(E_inds(:,7:9),2)))];
-            %Make some bold ( if you know which one was activated on)
+            %Make some bold (if you know which one was activated on)
             E_bold = false(1,9);
             indx = listdlg('ListString',strcat('E',cellfun(@num2str,num2cell(3:11),'UniformOutput',false)),...
                 'PromptString','Pick the electrodes to bold. Press Cancel for none.','ListSize',[400 300],'SelectionMode','multiple');
@@ -524,22 +495,7 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
             close;
         case 'SpherePlot'
             %% Disco Ball plot
-            close all;
-            load('VNELcolors.mat','colors')
-            code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
-            warning('off')
-            sub_info = readtable('SubjectInfo.xlsx');
-            warning('on')
-            Subs = sub_info{:,1};
-            Ears = sub_info{:,2};
-            % Load table in question
-            res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
-            if isempty(res_file)
-                disp('No table with cycle parameters found on this path.')
-                return;
-            end
-            load(res_file{end},'all_results') 
-            %Pick files to graph
+            %Pick files to graph, full range to chose any
             [indx,tf] = listdlg('ListString',all_results.File,...
                 'PromptString','Pick the files to plot','ListSize',[400 300],...
                 'SelectionMode','multiple');
@@ -549,6 +505,12 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
             all_results2 = all_results(indx,:);
             subject = all_results2.Subject{1};
             hg = figure;
+            if annot
+                annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
+                        code_name,newline,...
+                        'VOGA',version,newline,Experimenter],'FontSize',5,...
+                    'EdgeColor','none','interpreter','none');
+            end
             Function = 2;
             plotstimaxis = 0;
             plotelecaxis = 1;
@@ -568,5 +530,157 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
                 end
                 hg = MakeSpherePlot(CycAvg,hg,Function,plotstimaxis,plotelecaxis,normlen,plot_colors,stim_ear);
             end
+        case 'SineFreqGainPhase'
+            %% Rotary Chair and eeVOR Freq Sweep along one axis gain and phase
+            all_results(~contains(all_results.Condition,'Sine'),:) = [];
+            ear = Ears{ismember(Subs,all_results.Subject{end})}; %only one subject expected
+            if any(contains(all_results.Experiment,'RotaryChair'))
+                load('RotaryChairNormativeData.mat','norm_dat');
+                freq = norm_dat.freq;
+                norm_gain_m = norm_dat.gain;
+                norm_gain_std = norm_dat.gain_std;
+                norm_phase_m = norm_dat.phase;
+                norm_phase_std = norm_dat.phase_std;
+            end
+            %Figure out which frequenicies are needed
+            [freq_ax,indf] = sort(cellfun(@str2double,strrep(unique(all_results.Frequency)','Hz','')));
+            freqs = unique(all_results.Frequency);
+            freqs = freqs(indf);
+            fnum = length(freqs);
+            %Figure out how many canals were tested (one graph per canal
+            %needed)
+            all_canals = {'LHRH','LARP','RALP','X','Y'};
+            canals = all_canals([any(contains(all_results.Condition,'LHRH')),...
+                               any(contains(all_results.Condition,'LARP')),...
+                               any(contains(all_results.Condition,'RALP')),...
+                               any(contains(all_results.Condition,{'X'})),...
+                               any(contains(all_results.Condition,{'Y'}))]);
+            if isempty(canals)
+                error('Could not detect any valid canal names in the file names')
+            end
+            for c = 1:length(canals)  
+                canal = canals{c};
+                sub_results = all_results(contains(all_results.Condition,canal),:);
+                fig_title = [sub_results.Subject{1},' ',sub_results.Visit{1},' ',sub_results.Experiment{1},' ',canal,' Sinusoidal Frequency Sweep'];
+                %Figure out which experiments to plot
+                conds = [sub_results.Goggle,cellstr(datestr(sub_results.Date)),split(sub_results.Condition,' ')];
+                conds(:,any(contains(conds,{'Hz','dps','Sine',canal}))) = [];
+                conds = join(conds,{' '});
+                exp_name = unique(conds,'stable')';
+                enum = length(exp_name);    
+                %Create arrays for graphing
+                excludedatawithgainbelow=0.015;
+                %Make the items to plot
+                gain = NaN(enum,fnum);
+                gain_sd = NaN(enum,fnum);
+                phase = NaN(enum,fnum);
+                phase_sd = NaN(enum,fnum);
+                for i = 1:enum
+                    eparts = split(exp_name(i),' ');
+                    inds = find(contains(sub_results.Goggle,eparts{1})&sub_results.Date==datetime(eparts{2})&contains(sub_results.Condition,eparts{3}));
+                    [~,f_ind] = ismember(sub_results.Frequency(inds),freqs);
+                    switch canal %Column name in table
+                        case 'LHRH'
+                            ax = 'Z';
+                        case 'LARP'
+                            ax = 'L';
+                        case 'RALP'
+                            ax = 'R';
+                        case 'X'
+                            ax = 'X';
+                        case 'Y'
+                            ax = 'Y';    
+                    end
+                    switch ear
+                        case 'L'
+                            side = '_HIGH';
+                        case 'R'
+                            side = '_LOW';
+                    end
+                    col = [ax,side];
+                    [sub_gain,eye] = max([sub_results.(['Gain_L',col])(inds)';sub_results.(['Gain_R',col])(inds)']);
+                    sub_gain_sd = sub_results.(['Gain_L',col,'_sd'])(inds)';
+                    sub_gain_sd(eye==2) = sub_results.(['Gain_R',col,'_sd'])(inds(eye==2));
+                    sub_phase = sub_results.Phase_L(inds);
+                    sub_phase(eye==2) = sub_results.Phase_R(inds(eye==2));
+                    sub_phase_sd = sub_results.Phase_L_sd(inds);
+                    sub_phase_sd(eye==2) = sub_results.Phase_R_sd(inds(eye==2));
+                    sub_phase(sub_gain < excludedatawithgainbelow) = NaN;
+                    sub_phase_sd(sub_gain < excludedatawithgainbelow) = NaN;
+                    %remove SD for n=1
+                    n = sub_results.Cycles(inds);
+                    sub_gain_sd(n==1) = NaN;
+                    sub_phase_sd(n==1) = NaN;
+                    %Put into mats
+                    gain(i,f_ind) = sub_gain;
+                    gain_sd(i,f_ind) = sub_gain_sd;
+                    phase(i,f_ind) = sub_phase;
+                    phase_sd(i,f_ind) = sub_phase_sd;
+                end
+                % Plot
+                h=gobjects(1,enum+3);
+                ha = gobjects(1,2);
+                logxshift=1.03; %how much to multiply the x value to offset its marker rightward (divide to move left)
+                %markerbig=5;
+                %markersmall=4;
+                linethick=2;
+                linethin=1;
+                errorbarcapsize=1;
+                graydark=0.85;
+                graylight=0.95;
+                figsizeinches=[7,6];
+                %figsizeinchesBoxplot=[2.3,4];
+                plot_offset = [logxshift^-1, logxshift^-2, 1, logxshift, logxshift^2];
+                figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
+                annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                        'plotRotaryChairVisitSummary.m',newline,...
+                        'VOGA',version,newline,Experimenter],'FontSize',5,...
+                    'EdgeColor','none','interpreter','none');
+                ha(1) = subplot(2,1,1);
+                ha(1).Position = [0.1,0.55,0.85,0.4];
+                ha(2) = subplot(2,1,2);
+                ha(2).Position = [0.1,0.10,0.85,0.4];
+                axes(ha(1))
+                hold on
+                if any(contains(all_results.Experiment,'RotaryChair')) %Normative horizontal rotary chair
+                    h(enum+3) = fill([freq,fliplr(freq)],[norm_gain_m+2*norm_gain_std,fliplr(norm_gain_m-2*norm_gain_std)],graylight*[1 1 1],'LineStyle','none');
+                    h(enum+2) = fill([freq,fliplr(freq)],[norm_gain_m+1*norm_gain_std,fliplr(norm_gain_m-1*norm_gain_std)],graydark*[1 1 1],'LineStyle','none');
+                    h(enum+1) = plot(freq,norm_gain_m,'k--','LineWidth',linethick);
+                end
+                for i = 1:enum
+                    h(i) = plot(plot_offset(i)*freq_ax,gain(i,:),'LineWidth',linethick);
+                    errorbar(plot_offset(i)*freq_ax,gain(i,:),gain_sd(i,:),'Color',h(i).Color,'LineStyle','none','LineWidth',linethin,'CapSize',errorbarcapsize)
+                end
+                hold off
+                if any(contains(all_results.Experiment,'RotaryChair'))
+                    legend(h,[exp_name,{'Normal mean','Normal±1SD','Normal±2SD'}],'Location','NorthWest','NumColumns',2)
+                else
+                    legend(h,exp_name,'Location','NorthWest','NumColumns',2)
+                end
+                title(fig_title)
+                ylabel([canal,' VOR Gain'])
+                set(ha(1),'XTick',freq_ax,'XTickLabel',[])
+                axes(ha(2))
+                hold on
+                if any(contains(all_results.Experiment,'RotaryChair'))
+                    fill([freq,fliplr(freq)],[norm_phase_m+2*norm_phase_std,fliplr(norm_phase_m-2*norm_phase_std)],graylight*[1 1 1],'LineStyle','none')
+                    fill([freq,fliplr(freq)],[norm_phase_m+1*norm_phase_std,fliplr(norm_phase_m-1*norm_phase_std)],graydark*[1 1 1],'LineStyle','none')
+                    plot(freq,norm_phase_m,'k--','LineWidth',linethick)
+                end
+                for i = 1:enum
+                    plot(plot_offset(i)*freq_ax,phase(i,:),'Color',h(i).Color,'LineWidth',linethick);
+                    errorbar(plot_offset(i)*freq_ax,phase(i,:),phase_sd(i,:),'Color',h(i).Color,'LineStyle','none','LineWidth',linethin,'CapSize',errorbarcapsize)
+                end
+                hold off
+                ylabel('Phase Lead (deg)')
+                set(ha(2),'XTick',freq_ax,'XTickLabel',freq_ax)
+                xlabel('Frequency [Hz]')
+                set(ha,'XLim',[0.9*freq_ax(1),2.2],'YTickLabelMode','auto','XScale','log')
+                set(ha(1),'YLim',[0 0.85],'YTick',0.1:0.1:0.8)
+                set(ha(2),'YLim',[-30,100],'YTick',-20:20:100)
+                savefig([Path,filesep,strrep(fig_title,' ','-'),'.fig'])
+            end            
+        case 'RotaryChairOverTime'
+            
     end
 end

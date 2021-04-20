@@ -1,10 +1,15 @@
-function plotCycAvg(CycAvg,type,plot_fits,lrz_xyz)  
-    %type should be 1 for a cycle average and 2 for activation data/vel step
+function plotCycAvg(CycAvg,plot_fits,lrz_xyz)  
+    %First, assign type
+    if contains(CycAvg.info.dataType,{'Activation','Step'}) %No cycle averaging
+        type = 2;
+    else
+        type = 1;
+    end
     %plot_fits 0 or no input does not try to plot fits (if they are
     %available)
     %zlr_xyz 0 or no input = Z, LARP, RALP on graph and 1 is X Y Z
     figure;
-    if nargin < 3
+    if nargin < 2
         plot_fits = 0;
     elseif plot_fits~=0 %Check to see if fits exist 
         fields = fieldnames(CycAvg);
@@ -13,33 +18,14 @@ function plotCycAvg(CycAvg,type,plot_fits,lrz_xyz)
             plot_fits = 0;
         end
     end
-    if nargin < 4
-        lrz_xyz = 0;
+    if nargin < 3
+        lrz_xyz = 'lrz';
     end
-    %figure;
+    
     %Colors
     % Normal colors
-    colors.l_x = [237,150,33]/255;
-    colors.l_y = [125,46,143]/255;
-    colors.l_z = [1 0 0];
-    colors.l_l = [0,128,0]/255;
-    colors.l_r = [0 0 1];
-    colors.r_x = [237,204,33]/255;
-    colors.r_y = [125,46,230]/255;
-    colors.r_z = [1,0,1];
-    colors.r_l = [0 1 0];
-    colors.r_r = [64,224,208]/255;
-    % Faded colors
-    colors.l_x_s = colors.l_x + 0.5*(1-colors.l_x);
-    colors.l_y_s = colors.l_y + 0.5*(1-colors.l_y);
-    colors.l_z_s = colors.l_z + 0.5*(1-colors.l_z);
-    colors.l_l_s = colors.l_l + 0.5*(1-colors.l_l);
-    colors.l_r_s = colors.l_r + 0.5*(1-colors.l_r);
-    colors.r_x_s = colors.r_x + 0.5*(1-colors.r_x);
-    colors.r_y_s = colors.r_y + 0.5*(1-colors.r_y);
-    colors.r_z_s = colors.r_z + 0.5*(1-colors.r_z);
-    colors.r_l_s = colors.r_l + 0.5*(1-colors.r_l);
-    colors.r_r_s = colors.r_r + 0.5*(1-colors.r_r);
+    load('VNELcolors.mat','colors')
+    figure;
     switch type
         case 1 %Sine or other cycle average
             fields = fieldnames(CycAvg);
@@ -62,7 +48,7 @@ function plotCycAvg(CycAvg,type,plot_fits,lrz_xyz)
             h(1) = plot(CycAvg.t(s),CycAvg.stim(s),'k');
             hold on
             %Now add the fills and standard deviations and means
-            if ~lrz_xyz  
+            if contains(lrz_xyz,{'lrz','LRZ'})  
                 %LE-LARP
                 fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.ll_cycavg(s),fliplr((CycAvg.ll_cycavg(s) + CycAvg.ll_cycstd(s)))],colors.l_l_s)
                 fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.ll_cycavg(s),fliplr((CycAvg.ll_cycavg(s) - CycAvg.ll_cycstd(s)))],colors.l_l_s)
@@ -128,7 +114,7 @@ function plotCycAvg(CycAvg,type,plot_fits,lrz_xyz)
             plot(CycAvg.t(s),CycAvg.rz_cycavg(s) - CycAvg.rz_cycstd(s),'Color',colors.r_z)
             h(7) = plot(CycAvg.t(s),CycAvg.rz_cycavg(s),'Color',colors.r_z,'LineWidth',2);
             if plot_fits
-                if ~lrz_xyz
+                if contains(lrz_xyz,{'lrz','LRZ'})  
                     plot(CycAvg.t(s),CycAvg.ll_cycavg_fit(s),'--','Color',colors.l_l,'LineWidth',2)
                     plot(CycAvg.t(s),CycAvg.rl_cycavg_fit(s),'--','Color',colors.r_l,'LineWidth',2)
                     plot(CycAvg.t(s),CycAvg.lr_cycavg_fit(s),'--','Color',colors.l_r,'LineWidth',2)
@@ -159,7 +145,7 @@ function plotCycAvg(CycAvg,type,plot_fits,lrz_xyz)
             ts = CycAvg.t;
             h2(1) = plot(ts,CycAvg.stim,'k');
             hold on
-            if ~lrz_xyz
+            if contains(lrz_xyz,{'lrz','LRZ'})  
                 h2(2) = plot(ts,CycAvg.ll_cyc,'.','Color',colors.l_l);
                 h2(3) = plot(ts,CycAvg.rl_cyc,'.','Color',colors.r_l);
                 h2(4) = plot(ts,CycAvg.lr_cyc,'.','Color',colors.l_r);
@@ -175,7 +161,7 @@ function plotCycAvg(CycAvg,type,plot_fits,lrz_xyz)
             h2(6) = plot(ts,CycAvg.lz_cyc,'.','Color',colors.l_z);
             h2(7) = plot(ts,CycAvg.lz_cyc,'.','Color',colors.r_z);            
             if plot_fits
-                if ~lrz_xyz
+                if contains(lrz_xyz,{'lrz','LRZ'})  
                     plot(ts,CycAvg.ll_cycavg_fit,'Color',colors.l_l,'LineWidth',2)
                     plot(ts,CycAvg.rl_cycavg_fit,'Color',colors.r_l,'LineWidth',2)
                     plot(ts,CycAvg.lr_cycavg_fit,'Color',colors.l_r,'LineWidth',2)

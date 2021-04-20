@@ -102,7 +102,7 @@ function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim
             if length(starts) > 1
                 snip_len1 = round(median(diff(starts)));
                 snip_len2 = length(stim) - starts(end);
-                if abs(snip_len2-snip_len)/snip_len < 0.01 %Less than 1% off of the expected cycle length
+                if abs(snip_len2-snip_len1)/snip_len1 < 0.01 %Less than 1% off of the expected cycle length
                     snip_len = min([snip_len1 snip_len2]);
                 else
                     snip_len = snip_len1; 
