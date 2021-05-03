@@ -8,7 +8,7 @@
 %   SineFreqGainPhase
 
 function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
-    if nargin < 7
+    if nargin < 7 || isempty(YMax)
         YMax = 100;
     end
     %% Load common items
@@ -33,13 +33,14 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
         case 'SineAmpVelLRZ'   
             %% Make Figure like Boutros 2019 Figure 6 
             %Pick files to run
-            [indx,tf] = listdlg('ListString',all_results.File,...
-                'PromptString','Pick the files to plot','ListSize',[400 300],...
-                'SelectionMode','multiple');
-            if tf == 0
-                return;
-            end
-            all_results2 = all_results(indx,:);
+%             [indx,tf] = listdlg('ListString',all_results.File,...
+%                 'PromptString','Pick the files to plot','ListSize',[400 300],...
+%                 'SelectionMode','multiple');
+%             if tf == 0
+%                 return;
+%             end
+%            all_results2 = all_results(indx,:);
+            all_results2 = all_results;
             ear = Ears{ismember(Subs,all_results2.Subject{end})}; %only one subject expected
             canals = {'RALP','LHRH','LARP'};
             amps = {'20dps','50dps','100dps','200dps','300dps','400dps'};
@@ -170,13 +171,14 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
         case 'SineAmpVelXYZ'   
             %% Make Figure like Boutros 2019 Figure 6 but X, Y and Z 
             %Pick files to graph
-            [indx,tf] = listdlg('ListString',all_results.File,...
-                'PromptString','Pick the files to plot','ListSize',[400 300],...
-                'SelectionMode','multiple');
-            if tf == 0
-                return;
-            end
-            all_results2 = all_results(indx,:);
+%             [indx,tf] = listdlg('ListString',all_results.File,...
+%                 'PromptString','Pick the files to plot','ListSize',[400 300],...
+%                 'SelectionMode','multiple');
+%             if tf == 0
+%                 return;
+%             end
+%             all_results2 = all_results(indx,:);
+            all_results2 = all_results;
             ear = Ears{ismember(Subs,all_results2.Subject{end})}; %only one subject expected
             canals = {'X','Y','LHRH'};
             amps = {'20dps','50dps','100dps','200dps','300dps','400dps'};
@@ -560,10 +562,11 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
             end
             for c = 1:length(canals)  
                 canal = canals{c};
-                sub_results = all_results(contains(all_results.Condition,canal),:);
-                fig_title = [sub_results.Subject{1},' ',sub_results.Visit{1},' ',sub_results.Experiment{1},' ',canal,' Sinusoidal Frequency Sweep'];
+                sub_results = all_results(contains(all_results.Condition,canal),:);                
                 %Figure out which experiments to plot
                 conds = [sub_results.Goggle,cellstr(datestr(sub_results.Date)),split(sub_results.Condition,' ')];
+                amp_num = mode(str2double(strrep(conds(contains(conds,'dps')),'dps','')));
+                amp = [num2str(amp_num),'dps'];
                 conds(:,any(contains(conds,{'Hz','dps','Sine',canal}))) = [];
                 conds = join(conds,{' '});
                 exp_name = unique(conds,'stable')';
@@ -575,9 +578,19 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
                 gain_sd = NaN(enum,fnum);
                 phase = NaN(enum,fnum);
                 phase_sd = NaN(enum,fnum);
+                fig_title = [sub_results.Subject{1},' ',sub_results.Visit{1},' ',datestr(sub_results.Date(1),'yyyymmdd'),' ',sub_results.Experiment{1},' Sine ',canal,' ',amp,' ',sub_results.Goggle{1},' FrequencySweep'];
                 for i = 1:enum
                     eparts = split(exp_name(i),' ');
-                    inds = find(contains(sub_results.Goggle,eparts{1})&sub_results.Date==datetime(eparts{2})&contains(sub_results.Condition,eparts{3}));
+                    if length(eparts)==2 %no MotionMod vs Constant Rate
+                        inds = find(contains(sub_results.Goggle,eparts{1})&...
+                            sub_results.Date==datetime(eparts{2})&...
+                            contains(sub_results.Condition,amp));
+                    else
+                        inds = find(contains(sub_results.Goggle,eparts{1})&...
+                            sub_results.Date==datetime(eparts{2})&...
+                            contains(sub_results.Condition,eparts{3})&...
+                            contains(sub_results.Condition,amp));
+                    end
                     [~,f_ind] = ismember(sub_results.Frequency(inds),freqs);
                     switch canal %Column name in table
                         case 'LHRH'
@@ -618,7 +631,7 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
                     phase_sd(i,f_ind) = sub_phase_sd;
                 end
                 % Plot
-                h=gobjects(1,enum+3);
+                
                 ha = gobjects(1,2);
                 logxshift=1.03; %how much to multiply the x value to offset its marker rightward (divide to move left)
                 %markerbig=5;
@@ -632,7 +645,7 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
                 %figsizeinchesBoxplot=[2.3,4];
                 plot_offset = [logxshift^-1, logxshift^-2, 1, logxshift, logxshift^2];
                 figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
-                annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
                         'plotRotaryChairVisitSummary.m',newline,...
                         'VOGA',version,newline,Experimenter],'FontSize',5,...
                     'EdgeColor','none','interpreter','none');
@@ -643,9 +656,12 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
                 axes(ha(1))
                 hold on
                 if any(contains(all_results.Experiment,'RotaryChair')) %Normative horizontal rotary chair
+                    h=gobjects(1,enum+3);
                     h(enum+3) = fill([freq,fliplr(freq)],[norm_gain_m+2*norm_gain_std,fliplr(norm_gain_m-2*norm_gain_std)],graylight*[1 1 1],'LineStyle','none');
                     h(enum+2) = fill([freq,fliplr(freq)],[norm_gain_m+1*norm_gain_std,fliplr(norm_gain_m-1*norm_gain_std)],graydark*[1 1 1],'LineStyle','none');
                     h(enum+1) = plot(freq,norm_gain_m,'k--','LineWidth',linethick);
+                else
+                    h=gobjects(1,enum);
                 end
                 for i = 1:enum
                     h(i) = plot(plot_offset(i)*freq_ax,gain(i,:),'LineWidth',linethick);
@@ -675,12 +691,12 @@ function plotParamResults(type,Path,code_Path,version,Experimenter,annot,YMax)
                 ylabel('Phase Lead (deg)')
                 set(ha(2),'XTick',freq_ax,'XTickLabel',freq_ax)
                 xlabel('Frequency [Hz]')
-                set(ha,'XLim',[0.9*freq_ax(1),2.2],'YTickLabelMode','auto','XScale','log')
-                set(ha(1),'YLim',[0 0.85],'YTick',0.1:0.1:0.8)
+                set(ha,'XLim',[0.9*freq_ax(1),1.1*freq_ax(end)],'YTickLabelMode','auto','XScale','log')
+                set(ha(1),'YLim',[0 YMax/amp_num],'YTick',0.1:0.1:0.8)
                 set(ha(2),'YLim',[-30,100],'YTick',-20:20:100)
                 savefig([Path,filesep,strrep(fig_title,' ','-'),'.fig'])
+                close;
             end            
         case 'RotaryChairOverTime'
-            
     end
 end

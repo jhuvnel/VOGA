@@ -7,7 +7,7 @@ function Segment(In_Path,Seg_Path,dataType)
     if isnumeric(In_Path) || isempty(In_Path)
         error('Input path to Segment.m not valid.') 
     elseif isnumeric(Seg_Path) || isempty(Seg_Path)
-        error('Input path to Segment.m not valid.') 
+        error('Segment path to Segment.m not valid.') 
     end
     %% GNO File
     if nargin == 3 
@@ -83,13 +83,22 @@ function Segment(In_Path,Seg_Path,dataType)
        return; 
     end
     %% LDVOG or NKI
-    try
-        fileinfo = table2cell(readtable([In_Path(1:end-4),'-Notes.txt'],'ReadVariableNames',false,'Delimiter',' '));
-    catch
-    	slash = find(In_Path == filesep,1,'last');
-        MakeNotes(In_Path(1:slash-1),{In_Path(slash+1:end)})
-        fileinfo = table2cell(readtable([In_Path(1:end-4),'-Notes.txt'],'ReadVariableNames',false,'Delimiter',' '));
+    if contains(In_Path,'_UpdatedTrigger')
+        i_e = strfind(In_Path,'_UpdatedTrigger')-1;
+    else
+        i_e = length(In_Path)-4;
     end
+    slash = find(In_Path == filesep,1,'last');
+    notesfile = extractfield(dir([In_Path(1:i_e),'*-Notes.txt']),'name');
+    if isempty(notesfile)
+        MakeNotes(In_Path(1:slash-1),{In_Path(slash+1:end)})
+        notesfile = extractfield(dir([In_Path(1:i_e),'*-Notes.txt']),'name');
+    end
+    if length(notesfile)>1
+        disp(In_Path)
+        error('Too many notes files were found for this file')
+    end
+    fileinfo = table2cell(readtable([In_Path(1:slash-1),filesep,notesfile{:}],'ReadVariableNames',false,'Delimiter',' '));
     %Change this to reflect new notes file types when they are created 
     info.rawfile = In_Path;
     info.rawnotes = [In_Path(1:end-4),'-Notes.txt'];
@@ -699,6 +708,7 @@ function Segment(In_Path,Seg_Path,dataType)
                 %Plot and save figure of the segment
                 fig = plotSegment(Data);
                 savefig(fig,[Seg_Path,filesep,fname,'.fig'])
+                close;
             end
         end
     end

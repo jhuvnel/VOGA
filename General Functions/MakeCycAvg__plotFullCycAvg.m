@@ -1,18 +1,21 @@
 %% Make Full Plot Cyc Avg
-function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,te,ts,t_snip,stim,stims,Data,Data_In,Data_cal,Data_calc,LE_V,RE_V,CycAvg,keep_inds,keep_tr)
+function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg)
     switch type
-        case 1 %Cycle Averaging
+        case 1 %Position, Velocity, and Cycle Averaging
+            te = CycAvg.Data_rawpos.te;
+            ts = CycAvg.Data_rawpos.ts;
+            t_s = CycAvg.t;
+            stim = CycAvg.Data_rawpos.stim;
+            stims = CycAvg.stim;
+            keep_inds = CycAvg.Data_allcyc.keep_inds;
+            keep_tr = CycAvg.keep_tr;
             if isempty(ha) %first time running
                 ha = gobjects(5,1);
                 XLim_Long = [te(1) te(end)];
-                XLim_Short = [t_snip(1) t_snip(end)];
+                XLim_Short = [t_s(1) t_s(end)];
                 %For plots with cycles to select
-                x1 = 0.06;
-                x2 = 0.37;
-                x3 = 0.68;
-                y1 = 0.045;
-                y2 = 0.38;
-                y3 = 0.67; %0.68;
+                x = [0.06;0.37;0.68];
+                y = [0.045;0.38;0.67]; 
                 wid_x_s = 0.30;
                 wid_x_b = 0.92;
                 height_y = 0.27;
@@ -21,34 +24,26 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                 ha(3) = subplot(3,3,7);
                 ha(4) = subplot(3,3,8);
                 ha(5) = subplot(3,3,9);
-                ha(1).Position = [x1 y3 wid_x_b height_y];
-                ha(2).Position = [x1 y2 wid_x_b height_y];
-                ha(3).Position = [x1 y1 wid_x_s height_y];
-                ha(4).Position = [x2 y1 wid_x_s height_y];
-                ha(5).Position = [x3 y1 wid_x_s height_y];
+                ha(1).Position = [x(1) y(3) wid_x_b height_y];
+                ha(2).Position = [x(1) y(2) wid_x_b height_y];
+                ha(3).Position = [x(1) y(1) wid_x_s height_y];
+                ha(4).Position = [x(2) y(1) wid_x_s height_y];
+                ha(5).Position = [x(3) y(1) wid_x_s height_y];
                 %Link Axes
                 linkaxes(ha([1,2]),'x')
                 linkaxes(ha([2,3]),'y')
                 linkaxes(ha([3,4,5]),'xy')
                 %Set Labels
-                %ha1
                 set(ha(1),'XLim',XLim_Long,'YLim',YLim_Pos)
                 ylabel(ha(1),'Angular Position (deg)','FontWeight','bold')
-                %xlabel(ha(1),'Cycle Number')
-                %title(ha(1),'Angular Position')
-                %ha2
                 set(ha(2),'XLim',XLim_Long,'YLim',YLim_Vel)
                 ylabel(ha(2),'Angular Velocity (dps)','FontWeight','bold')
                 xlabel(ha(2),'Time (s)')
-                %title(ha(2),'Cycle Number')
-                %ha3
                 set(ha(3),'XLim',XLim_Short,'YLim',YLim_Vel)
                 ylabel(ha(3),'Velocity (dps)')
                 title(ha(3),'All Filtered Cycles')
-                %ha4
                 set(ha(4),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
                 xlabel(ha(4),'Time (s)')
-                %ha5
                 set(ha(5),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
                 title(ha(5),'Cycle Averages')
             end
@@ -67,90 +62,112 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             cyc_num_labs = 1:length(keep_tr);
             x_tick = te(round(floor(mean(keep_inds)),0));
             set(ha(1),'XTick',x_tick,'XTickLabel',cyc_num_labs,'Xaxislocation','top')
-            
             %Plot Cycles
+            % Position Data
+            h = gobjects(1,length(traces_pos)+1);
             h(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
-            %Raw Data
-            plot(ts,Data.LE_Position_X,'Color',colors.l_x_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.LE_Position_Y,'Color',colors.l_y_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.LE_Position_Z,'Color',colors.l_z_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.RE_Position_X,'Color',colors.r_x_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.RE_Position_Y,'Color',colors.r_y_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.RE_Position_Z,'Color',colors.r_z_s,'LineWidth',line_wid.norm)
-            %Filtered Data
-            h(2) = plot(ts,Data_In.Data_LE_Pos_X,'Color',colors.l_x,'LineWidth',line_wid.norm);
-            h(3) = plot(ts,Data_In.Data_LE_Pos_Y,'Color',colors.l_y,'LineWidth',line_wid.norm);
-            h(4) = plot(ts,Data_In.Data_LE_Pos_Z,'Color',colors.l_z,'LineWidth',line_wid.norm);
-            h(5) = plot(ts,Data_In.Data_RE_Pos_X,'Color',colors.r_x,'LineWidth',line_wid.norm);
-            h(6) = plot(ts,Data_In.Data_RE_Pos_Y,'Color',colors.r_y,'LineWidth',line_wid.norm);
-            h(7) = plot(ts,Data_In.Data_RE_Pos_Z,'Color',colors.r_z,'LineWidth',line_wid.norm);
+            % Raw Traces
+            for i = 1:length(traces_pos)
+                if isfield(CycAvg.Data_rawpos,[traces_pos{i}(1),'E_Position_',traces_pos{i}(2:end)])
+                    plot(te,CycAvg.Data_rawpos.([traces_pos{i}(1),'E_Position_',traces_pos{i}(2:end)]),'Color',colors.([lower(traces_pos{i}(1)),'_',lower(traces_pos{i}(2)),'_s']),'LineWidth',line_wid.norm)
+                end
+            end
+            % Filtered Traces
+            for i = 1:length(traces_pos)
+                if isfield(CycAvg.Data_filtpos,[traces_pos{i}(1),'E_Position_',traces_pos{i}(2:end)])
+                    h(i+1) = plot(ts,CycAvg.Data_filtpos.([traces_pos{i}(1),'E_Position_',traces_pos{i}(2:end)]),'Color',colors.([lower(traces_pos{i}(1)),'_',lower(traces_pos{i}(2))]),'LineWidth',line_wid.norm);
+                else
+                    h(i+1) = plot(NaN,NaN,'Color',colors.([lower(traces_pos{i}(1)),'_',lower(traces_pos{i}(2))]));
+                end
+            end
             hold off
-            leg1 = legend(h,{'Stim','L X','L Y','L Z','R X','R Y','R Z'},'NumColumns',7);
+            leg1 = legend(h,[{'Stim'};reshape(traces_pos,[],1)],'NumColumns',length(traces_pos)+1);
             leg1.ItemTokenSize(1) = 7;
-            %All Raw and Filtered Position
+            % Velocity Data
             axes(ha(2))
             hold on
             cla; 
             for j = 1:size(keep_inds,2)
                 if keep_tr(j)
-                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep,'Tag',['Cycle_',num2str(j)]);
+                    fill([ts(keep_inds(1,j)),ts(keep_inds(end,j)),ts(keep_inds(end,j)),ts(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep,'Tag',['Cycle_',num2str(j)]);
                 else
-                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm,'Tag',['Cycle_',num2str(j)]);
+                    fill([ts(keep_inds(1,j)),ts(keep_inds(end,j)),ts(keep_inds(end,j)),ts(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm,'Tag',['Cycle_',num2str(j)]);
                 end
             end
+            h1 = gobjects(1,length(traces_vel)+1);
             h1(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
-            %Raw Data
-            plot(ts,Data_cal.LE_Vel_LARP,'Color',colors.l_l_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.LE_Vel_RALP,'Color',colors.l_r_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.RE_Vel_LARP,'Color',colors.r_l_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.RE_Vel_RALP,'Color',colors.r_r_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.LE_Vel_Z,'Color',colors.l_z_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.RE_Vel_Z,'Color',colors.r_z_s,'LineWidth',line_wid.norm)
-            %Filtered Data
-            h1(2) = plot(ts,Data_calc.LE_Vel_LARP,'Color',colors.l_l,'LineWidth',line_wid.norm);
-            h1(3) = plot(ts,Data_calc.LE_Vel_RALP,'Color',colors.l_r,'LineWidth',line_wid.norm);
-            h1(4) = plot(ts,Data_calc.LE_Vel_Z,'Color',colors.l_z,'LineWidth',line_wid.norm);
-            h1(5) = plot(ts,Data_calc.RE_Vel_LARP,'Color',colors.r_l,'LineWidth',line_wid.norm);
-            h1(6) = plot(ts,Data_calc.RE_Vel_RALP,'Color',colors.r_r,'LineWidth',line_wid.norm);
-            h1(7) = plot(ts,Data_calc.RE_Vel_Z,'Color',colors.r_z,'LineWidth',line_wid.norm);
+            % Raw Traces
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_rawvel,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(ts,CycAvg.Data_rawvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
+                end
+            end
+            % Filtered Traces
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_filtvel,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    h1(i+1) = plot(ts,CycAvg.Data_filtvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm);
+                else
+                    h1(i+1) = plot(NaN,NaN,'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]));
+                end
+            end
             hold off
-            leg2 = legend(h1,{'Stim','L L','L R','L Z','R L','R R','R Z'},'NumColumns',7);
+            leg2 = legend(h1,[{'Stim'};reshape(traces_vel,[],1)],'NumColumns',length(traces_vel)+1);
             leg2.ItemTokenSize(1) = 7;
             axes(ha(3))
             hold on
             cla;
-            plot(t_snip,stims,'k','LineWidth',line_wid.norm)
-            %Filtered Data Only
-            for j = 1:size(keep_inds,2)
-                plot(t_snip,LE_V.LARP(:,j),'Color',colors.l_l,'LineWidth',line_wid.norm,'Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,LE_V.RALP(:,j),'Color',colors.l_r,'LineWidth',line_wid.norm,'Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,RE_V.LARP(:,j),'Color',colors.r_l,'LineWidth',line_wid.norm,'Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,RE_V.RALP(:,j),'Color',colors.r_r,'LineWidth',line_wid.norm,'Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,LE_V.LHRH(:,j),'Color',colors.l_z,'LineWidth',line_wid.norm,'Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,RE_V.LHRH(:,j),'Color',colors.r_z,'LineWidth',line_wid.norm,'Tag',['Cycle_',num2str(j)]);
+            plot(t_s,stims,'k','LineWidth',line_wid.norm)
+            %All Filtered Velocity Data
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
+                end
             end
             hold off
             axes(ha(4))
             hold on
             cla;
-            plot(t_snip,stims,'k','LineWidth',line_wid.norm)
-            for j = 1:size(keep_inds,2)
-                if keep_tr(j)
-                    visible = 'on';
-                else
-                    visible = 'off';
+            plot(t_s,stims,'k','LineWidth',line_wid.norm)
+            %Only Selected Filtered Velocity Data
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])(:,keep_tr),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
                 end
-                plot(t_snip,LE_V.LARP(:,j),'Color',colors.l_l,'LineWidth',line_wid.norm,'Visible',visible','Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,LE_V.RALP(:,j),'Color',colors.l_r,'LineWidth',line_wid.norm,'Visible',visible','Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,RE_V.LARP(:,j),'Color',colors.r_l,'LineWidth',line_wid.norm,'Visible',visible','Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,RE_V.RALP(:,j),'Color',colors.r_r,'LineWidth',line_wid.norm,'Visible',visible','Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,LE_V.LHRH(:,j),'Color',colors.l_z,'LineWidth',line_wid.norm,'Visible',visible','Tag',['Cycle_',num2str(j)]);
-                plot(t_snip,RE_V.LHRH(:,j),'Color',colors.r_z,'LineWidth',line_wid.norm,'Visible',visible','Tag',['Cycle_',num2str(j)]);
             end
             hold off
             title(ha(4),['Accepted Cycles: ',num2str(sum(keep_tr)),' of ',num2str(length(keep_tr))])
-            MakeCycAvg__plotCycAvg(ha(5),type,colors,CycAvg);
-        case 2 %Just traces
+            axes(ha(5))
+            if length(CycAvg.t) > 1000
+                s = round(linspace(1,length(CycAvg.t),1000));
+            else
+                s = 1:length(CycAvg.t);
+            end
+            hold on
+            cla;
+            if isfield(CycAvg,'stim_cyc') %Mutiple head traces to show
+                trace = 'stim';
+                fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[(CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s)),fliplr((CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s)))],0.5*[1,1,1])
+                plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color','k')
+                plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color','k')
+                plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s),'Color','k','LineWidth',line_wid.bold);
+            else %Only 1
+                plot(CycAvg.t(s),CycAvg.stim(s),'k','LineWidth',line_wid.bold);
+            end
+            %Only Selected Filtered Velocity Data
+            for i = 1:length(traces_vel)
+                trace = lower(traces_vel{i}(1:2));
+                if isfield(CycAvg,[trace,'_cycavg'])&&isfield(CycAvg,[trace,'_cycstd'])
+                    fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[(CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s)),fliplr((CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s)))],colors.([trace(1),'_',trace(2),'_s']))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color',colors.([trace(1),'_',trace(2)]))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color',colors.([trace(1),'_',trace(2)]))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',line_wid.bold);
+                end
+            end    
+            hold off
+        case 2 %Position and Velocity Traces but NO Cycle Averages
+            te = CycAvg.Data_rawpos.te;
+            ts = CycAvg.Data_rawpos.ts;
+            stim = CycAvg.Data_rawpos.stim;
             if isempty(ha) %first time running
                 ha = gobjects(2,1);
                 XLim_Long = [te(1) te(end)];
@@ -179,62 +196,66 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             %Raw and Filtered Position
             axes(ha(1))
             hold on 
-            cla;
-            h(1) = plot(ts,stim,'k');
-            %Raw Data
-            plot(ts,Data.LE_Position_X,'Color',colors.l_x_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.LE_Position_Y,'Color',colors.l_y_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.LE_Position_Z,'Color',colors.l_z_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.RE_Position_X,'Color',colors.r_x_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.RE_Position_Y,'Color',colors.r_y_s,'LineWidth',line_wid.norm)
-            plot(ts,Data.RE_Position_Z,'Color',colors.r_z_s,'LineWidth',line_wid.norm)
-            %Filtered Data
-            h(2) = plot(ts,Data_In.Data_LE_Pos_X,'Color',colors.l_x,'LineWidth',line_wid.norm);
-            h(3) = plot(ts,Data_In.Data_LE_Pos_Y,'Color',colors.l_y,'LineWidth',line_wid.norm);
-            h(4) = plot(ts,Data_In.Data_LE_Pos_Z,'Color',colors.l_z,'LineWidth',line_wid.norm);
-            h(5) = plot(ts,Data_In.Data_RE_Pos_X,'Color',colors.r_x,'LineWidth',line_wid.norm);
-            h(6) = plot(ts,Data_In.Data_RE_Pos_Y,'Color',colors.r_y,'LineWidth',line_wid.norm);
-            h(7) = plot(ts,Data_In.Data_RE_Pos_Z,'Color',colors.r_z,'LineWidth',line_wid.norm);
+            cla;            
+            %Plot Cycles
+            % Position Data
+            h = gobjects(1,length(traces_pos)+1);
+            h(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
+            % Raw Traces
+            for i = 1:length(traces_pos)
+                if isfield(CycAvg.Data_rawpos,[traces_pos{i}(1),'E_Position_',traces_pos{i}(2:end)])
+                    plot(te,CycAvg.Data_rawpos.([traces_pos{i}(1),'E_Position_',traces_pos{i}(2:end)]),'Color',colors.([lower(traces_pos{i}(1)),'_',lower(traces_pos{i}(2)),'_s']),'LineWidth',line_wid.norm)
+                end
+            end
+            % Filtered Traces
+            for i = 1:length(traces_pos)
+                if isfield(CycAvg.Data_filtpos,[traces_pos{i}(1),'E_Position_',traces_pos{i}(2:end)])
+                    h(i+1) = plot(ts,CycAvg.Data_filtpos.([traces_pos{i}(1),'E_Position_',traces_pos{i}(2:end)]),'Color',colors.([lower(traces_pos{i}(1)),'_',lower(traces_pos{i}(2))]),'LineWidth',line_wid.norm);
+                else
+                    h(i+1) = plot(NaN,NaN,'Color',colors.([lower(traces_pos{i}(1)),'_',lower(traces_pos{i}(2))]));
+                end
+            end
             hold off
-            leg1 = legend(h,{'Stim','L X','L Y','L Z','R X','R Y','R Z'},'NumColumns',7);
+            leg1 = legend(h,[{'Stim'};reshape(traces_pos,[],1)],'NumColumns',length(traces_pos)+1);
             leg1.ItemTokenSize(1) = 7;
+            % Velocity Data
             axes(ha(2))
             hold on
-            cla;
-            plot(ts,stim,'k');
-            %Raw Data
-            plot(ts,Data_cal.LE_Vel_X,'.','Color',colors.l_x_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.LE_Vel_Y,'.','Color',colors.l_y_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.RE_Vel_X,'.','Color',colors.r_x_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.RE_Vel_Y,'.','Color',colors.r_y_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.LE_Vel_Z,'.','Color',colors.l_z_s,'LineWidth',line_wid.norm)
-            plot(ts,Data_cal.RE_Vel_Z,'.','Color',colors.r_z_s,'LineWidth',line_wid.norm)
-            %Filtered Data
-            plot(ts,Data_calc.LE_Vel_X,'.','Color',colors.l_x,'LineWidth',line_wid.norm);
-            plot(ts,Data_calc.LE_Vel_Y,'.','Color',colors.l_y,'LineWidth',line_wid.norm);
-            plot(ts,Data_calc.LE_Vel_Z,'.','Color',colors.l_z,'LineWidth',line_wid.norm);
-            plot(ts,Data_calc.RE_Vel_X,'.','Color',colors.r_x,'LineWidth',line_wid.norm);
-            plot(ts,Data_calc.RE_Vel_Y,'.','Color',colors.r_y,'LineWidth',line_wid.norm);
-            plot(ts,Data_calc.RE_Vel_Z,'.','Color',colors.r_z,'LineWidth',line_wid.norm);
-            hold off
-        case 3 %No raw position
-            if contains(Data.info.dataType,{'LH','RH'})
-                eye_c = 'z';
-            elseif contains(Data.info.dataType,{'LA','RP'})
-                eye_c = 'l';
-            elseif contains(Data.info.dataType,{'RA','LP'})
-                eye_c = 'r';
+            cla; 
+            h1 = gobjects(1,length(traces_vel)+1);
+            h1(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
+            % Raw Traces
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_rawvel,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(ts,CycAvg.Data_rawvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'.','Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
+                end
             end
+            % Filtered Traces
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_filtvel,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    h1(i+1) = plot(ts,CycAvg.Data_filtvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'.','Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm);
+                else
+                    h1(i+1) = plot(NaN,NaN,'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'.');
+                end
+            end
+            hold off
+            leg2 = legend(h1,[{'Stim'};reshape(traces_vel,[],1)],'NumColumns',length(traces_vel)+1);
+            leg2.ItemTokenSize(1) = 7;
+        case 3 %No Position Traces, Just Velocity and Cycle Averaging
+            te = CycAvg.Data_rawpos.te;
+            ts = CycAvg.Data_rawpos.ts;
+            t_s = CycAvg.t;
+            stim = CycAvg.Data_rawpos.stim;
+            stims = CycAvg.stim;
+            keep_inds = CycAvg.Data_allcyc.keep_inds;
+            keep_tr = CycAvg.keep_tr;
             if isempty(ha) %first time running
                 ha = gobjects(3,1);
                 XLim_Long = [te(1) te(end)];
-                XLim_Short = [t_snip(1) t_snip(end)];
+                XLim_Short = [t_s(1) t_s(end)];
                 %For plots with cycles to select
-                x1 = 0.06;
-                x2 = 0.37;
-                x3 = 0.68;
-                y1 = 0.045;
-                y2 = 0.51;
+                x = [0.06;0.37;0.68];
+                y = [0.045;0.51];
                 wid_x_s = 0.30;
                 wid_x_b = 0.92;
                 height_y = 0.43;
@@ -242,10 +263,10 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                 ha(2) = subplot(2,3,4);
                 ha(3) = subplot(2,3,5);
                 ha(4) = subplot(2,3,6);
-                ha(1).Position = [x1 y2 wid_x_b height_y];
-                ha(2).Position = [x1 y1 wid_x_s height_y];
-                ha(3).Position = [x2 y1 wid_x_s height_y];
-                ha(4).Position = [x3 y1 wid_x_s height_y];
+                ha(1).Position = [x(1) y(2) wid_x_b height_y];
+                ha(2).Position = [x(1) y(1) wid_x_s height_y];
+                ha(3).Position = [x(2) y(1) wid_x_s height_y];
+                ha(4).Position = [x(3) y(1) wid_x_s height_y];
                 %Link Axes
                 linkaxes(ha([1,2]),'y')
                 linkaxes(ha([2,3,4]),'xy')
@@ -280,36 +301,75 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                     fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm,'Tag',['Cycle_',num2str(j)]);
                 end
             end
-            %Plot Cycles
+            h = gobjects(1,length(traces_vel)+1);
             h(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
-            plot(ts,Data_cal,'Color',colors.(['l_',eye_c,'_s']),'LineWidth',line_wid.norm)
-            h(2) = plot(ts,Data_calc,'Color',colors.(['l_',eye_c]),'LineWidth',line_wid.norm);
+            % Raw Traces
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_rawvel,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(ts,CycAvg.Data_rawvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
+                end
+            end
+            % Filtered Traces
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_filtvel,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    h(i+1) = plot(ts,CycAvg.Data_filtvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm);
+                else
+                    h(i+1) = plot(NaN,NaN,'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]));
+                end
+            end
             hold off
-            leg1 = legend(h,{'Head','Eye'});
-            leg1.ItemTokenSize(1) = 7;
+            leg2 = legend(h,[{'Stim'};reshape(traces_vel,[],1)],'NumColumns',length(traces_vel)+1);
+            leg2.ItemTokenSize(1) = 7;
             axes(ha(2))
             hold on
             cla;
-            plot(t_snip,stims,'k','LineWidth',line_wid.norm)
-            %Filtered Data Only
-            for j = 1:size(keep_inds,2)
-                plot(t_snip,RE_V(:,j),'Color',colors.(['l_',eye_c]),'LineWidth',line_wid.norm,'Tag',['Cycle_',num2str(j)]);
+            plot(t_s,stims,'k','LineWidth',line_wid.norm)
+            %All Filtered Velocity Data
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
+                end
             end
             hold off
             axes(ha(3))
             hold on
             cla;
-            plot(t_snip,stims(:,keep_tr),'k','LineWidth',line_wid.norm)
-            for j = 1:size(keep_inds,2)
-                if keep_tr(j)
-                    visible = 'on';
-                else
-                    visible = 'off';
+            plot(t_s,stims,'k','LineWidth',line_wid.norm)
+            %Only Selected Filtered Velocity Data
+            for i = 1:length(traces_vel)
+                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])(:,keep_tr),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
                 end
-                plot(t_snip,RE_V(:,j),'Color',colors.(['l_',eye_c]),'LineWidth',line_wid.norm,'Visible',visible','Tag',['Cycle_',num2str(j)]);
             end
             hold off
-            title(ha(3),['Accepted Cycles: ',num2str(sum(keep_tr)),' of ',num2str(length(keep_tr))])  
-            MakeCycAvg__plotCycAvg(ha(4),type,colors,CycAvg);
+            title(ha(3),['Accepted Cycles: ',num2str(sum(keep_tr)),' of ',num2str(length(keep_tr))])
+            axes(ha(4))
+            if length(CycAvg.t) > 1000
+                s = round(linspace(1,length(CycAvg.t),1000));
+            else
+                s = 1:length(CycAvg.t);
+            end
+            hold on
+            cla;
+            if isfield(CycAvg,'stim_cyc') %Mutiple head traces to show
+                trace = 'stim';
+                fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[(CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s)),fliplr((CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s)))],0.5*[1,1,1])
+                plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color','k')
+                plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color','k')
+                plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s),'Color','k','LineWidth',line_wid.bold);
+            else %Only 1
+                plot(CycAvg.t(s),CycAvg.stim(s),'k','LineWidth',line_wid.bold);
+            end
+            %Only Selected Filtered Velocity Data
+            for i = 1:length(traces_vel)
+                trace = lower(traces_vel{i}(1:2));
+                if isfield(CycAvg,[trace,'_cycavg'])&&isfield(CycAvg,[trace,'_cycstd'])
+                    fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[(CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s)),fliplr((CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s)))],colors.([trace(1),'_',trace(2),'_s']))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color',colors.([trace(1),'_',trace(2)]))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color',colors.([trace(1),'_',trace(2)]))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',line_wid.bold);
+                end
+            end    
+            hold off
     end         
 end

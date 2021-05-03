@@ -1,5 +1,5 @@
 function trace_out = spline_filt(t_in,trace_in,t_out,param)
-    if nargin < 4 || length(param)~=1
+    if nargin < 4 || length(param)~=1 || isnan(param)
         trace_out = trace_in;
     else
         %Spline filter and resample

@@ -27,23 +27,23 @@ while tf1
     elseif strcmp(opts{ind},'Cycle Average')
         flag = VOGA__checkFolders;
         if ~flag
-            VOGA__CycAvg(code_Path);
+            VOGA__CycAvg;
         end
     elseif strcmp(opts{ind},'Summary Table')
         flag = VOGA__checkFolders;
         if ~flag
             Path = cd;
             Cyc_Path = [Path,filesep,'Cycle Averages'];
-            MakeCycleSummaryTable(Path,Cyc_Path);
+            rerun = ~strcmp(questdlg('If a parameter table already exists, use that one or rerun?','','Use existing table','Rerun','Rerun'),'Use existing table');
+            MakeCycleSummaryTable(Path,Cyc_Path,rerun);
         end
     elseif strcmp(opts{ind},'Generate Figures')
         flag = VOGA__checkFolders;
         if ~flag  
-            VOGA__makePlots(code_Path)
+            VOGA__makePlots;
         end
-        return;
     elseif strcmp(opts{ind},'Set Version')
-        VOGA__setVersion(code_Path);
+        VOGA__setVersion;
     end
     %% Poll for new reponse
     [ind,tf1] = nmlistdlg('PromptString','Select an action:',...

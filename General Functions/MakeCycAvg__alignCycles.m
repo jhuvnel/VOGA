@@ -161,10 +161,11 @@ function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim
             stims(ind(1):end1) = linspace(0,50,length(ind(1):end1));
             stims(end1+1:start2-1) = 50*ones(length(end1+1:start2-1),1);
             stims(start2:ind(end)) = linspace(50,0,length(start2:ind(end)));
-        elseif contains(info.dataType,'Sine') %sine (toggle = new cycle)
+        elseif contains(info.dataType,'Sine') %sine (toggle = new cycle), remove last cycle
             trig = abs(diff(stim));
             starts = find(trig==1);
             snip_len = round(median(diff(starts)),0);
+            starts(end) = []; %last cycle is the change to rest
             ends = starts + snip_len - 1;
             fparts = split(info.dataType,'-');
             freq = str2double(strrep(fparts{contains(fparts,'Hz')},'Hz',''));
@@ -194,5 +195,5 @@ function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim
         end
     else
         error('Unknown Data Type')
-    end     
+    end  
 end

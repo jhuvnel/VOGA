@@ -12,8 +12,7 @@ function MakeCycAvg__plotCycAvg(ax,type,colors,CycAvg)
             plot(CycAvg.t(s),CycAvg.stim(s),'k');
             %Now add the fills and standard deviations and means
             %LE-LHRH
-            fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[CycAvg.lz_cycavg(s),fliplr((CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s)))],colors.l_z_s)
-            fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[CycAvg.lz_cycavg(s),fliplr((CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s)))],colors.l_z_s)
+            fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[(CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s)),fliplr((CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s)))],colors.l_z_s)
             plot(CycAvg.t(s),CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s),'Color',colors.l_z)
             plot(CycAvg.t(s),CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s),'Color',colors.l_z)
             plot(CycAvg.t(s),CycAvg.lz_cycavg(s),'Color',colors.l_z,'LineWidth',2);

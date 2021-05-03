@@ -1,4 +1,5 @@
-function VOGA__setVersion(code_Path)
+function VOGA__setVersion
+    code_Path = [userpath,filesep,'VOGA'];
     prompt = {['Set VOGA parameters.',newline,newline,'Version: '];...
     'Experimenter: '};
     try 

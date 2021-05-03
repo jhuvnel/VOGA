@@ -1,5 +1,6 @@
-function VOGA__CycAvg(code_Path)
+function VOGA__CycAvg
     Path = cd;
+    code_Path = [userpath,filesep,'VOGA'];
     done = false;
     % Experiment types
     progress_tab = assessProgress(Path);

@@ -1,5 +1,5 @@
 function trace_out = sgolay_filt(trace_in,param)
-    if nargin < 2 || length(param)~=2
+    if nargin < 2 || length(param)~=2 || any(isnan(param))
         trace_out = trace_in;
     else
         trace_out = sgolayfilt(trace_in,param(1),param(2));
