@@ -22,7 +22,7 @@ function VOGA__makePlots
         if strcmp(opts{ind},'Raw VOG')
             in_args = inputdlg({'Plot eye movements (0/1): ','Plot head movement in XYZ or LRZ (xyz/lrz):'},'Plot settings',[1 50],{'0','lrz'});
             if ~isempty(in_args)
-                plot_eyes = str2num(in_args{1});
+                plot_eyes = str2double(in_args{1});
                 lrz_xyz = in_args{2};
                 plotRawVOG(params.Raw_Path,plot_eyes,lrz_xyz) %Select file inside this function
             end
@@ -39,7 +39,7 @@ function VOGA__makePlots
         elseif strcmp(opts{ind},'Cycle Average')
             in_args = inputdlg({'Plot fits (0/1): ','Plot head movement in XYZ or LRZ (xyz/lrz):'},'Plot settings',[1 50],{'0','lrz'});
             if ~isempty(in_args)
-                plot_fits = str2num(in_args{1});
+                plot_fits = str2double(in_args{1});
                 lrz_xyz = in_args{2};
                 %Select files first
                 all_files = extractfield(dir([params.Cyc_Path,filesep,'*Cyc*.mat']),'name');
@@ -54,8 +54,8 @@ function VOGA__makePlots
         elseif strcmp(opts{ind},'Group Cycle Avg')  
             in_args = inputdlg({'Descriptive annotation on figure (0/1): ','Y-axis maximum (dps). Leave empty for default:'},'Plot settings',[1 50],{'1',''});
             if ~isempty(in_args)
-                params.annot = str2num(in_args{1});
-                params.YMax = str2num(in_args{2});
+                params.annot = str2double(in_args{1});
+                params.YMax = str2double(in_args{2});
                 plotGroupCycAvg(params);
             end          
         elseif strcmp(opts{ind},'Parameterized')  

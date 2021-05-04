@@ -48,7 +48,7 @@ function plotGroupCycAvg(params)
         all_freq = cell(length(cyc_files),1);
         all_amp = cell(length(cyc_files),1);
         for i = 1:length(cyc_files)
-            fname = strrep(strrep(cyc_files{i},'CycAvg_',''),'.mat','');
+            fname = strrep(strrep(strrep(cyc_files{i},'CycAvg_',''),'.mat',''),' ','');
             fparts = split(fname,'-');
             file_parts(i,:) = fparts;
             all_freq(i,1) = fparts(contains(fparts,'Hz'));
@@ -56,7 +56,7 @@ function plotGroupCycAvg(params)
         end
         conds1 = unique(join(file_parts(:,~contains(file_parts(1,:),{'Hz','dps'})),' '));
         freqs = unique(all_freq);
-        [~,indf] = sort(cellfun(@str2double,strrep(freqs,'Hz',''))); %make sure it's in numerical order
+        [~,indf] = sort(cellfun(@str2double,strrep(strrep(freqs,'Hz',''),'p','.'))); %make sure it's in numerical order
         freqs = freqs(indf);
         fnum = length(freqs);
         amps = unique(all_amp);
@@ -94,14 +94,16 @@ function plotGroupCycAvg(params)
         enum = size(conds,1);
         %Figure out the google type
         load([Cyc_Path,filesep,cyc_files{1}],'CycAvg')
-        goggle = CycAvg.info.goggle_ver;
-        for j = 1:enum
-            fig_name = [conds{j},' ',goggle];
-            if contains(conds{j},{'X','Y'})
-                canal = 'XY';
-            else
-                canal = 'LRZ';
+        try    
+            goggle = CycAvg.info.goggle_ver;
+            if isnumeric(goggle)
+                goggle = ['LDVOG',num2str(goggle)];
             end
+        catch
+            goggle = 'LDVOG';
+        end
+        for j = 1:enum
+            %Set up labels
             if contains(conds(j),'Hz') %Amp Sweep
                 labs = amps;                    
             elseif contains(conds(j),'dps') %Freq Sweep
@@ -109,98 +111,114 @@ function plotGroupCycAvg(params)
             else %Combo
                 labs = unique(join(file_parts(:,contains(file_parts(1,:),{'Hz','dps'})),' '));
             end
+            %Find files to plot
             rel_files = cell(length(labs),1);
             for i = 1:length(labs)
-                rel_files(i) = cyc_files(sum(ismember(file_parts,[split(conds(j));split(labs(i))]'),2)==length([split(conds(j));split(labs(i))]));
-            end
-            figure('Units','inches','Position',[0.2778    5.8472   17.2222    3.8333],'Color',[1,1,1])
-            %Title
-            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
-            'HorizontalAlignment','center','EdgeColor','none');
-            if annot
-                annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
-                    code_name,newline,...
-                    'VOGA',version,newline,Experimenter],'FontSize',5,...
-                'EdgeColor','none','interpreter','none');
-            end
-            ha = gobjects(1,length(labs));
-            x_space = 0.02;
-            x_min = 0.04;
-            x_max = 0.98;
-            x_wid = (x_max-x_min-x_space*(length(labs)-1))/length(labs);
-            y_height = 0.75;
-            x_pos = x_min:(x_wid+x_space):x_max;
-            y_pos = 0.12;
-            YMax_vals = NaN(1,length(length(labs)));
-            for i = 1:length(rel_files)                  
-                ha(i) = subplot(1000,1000,1);
-                ha(i).Position = [x_pos(i) y_pos x_wid y_height];
-                if ~isempty(rel_files{i})
-                    load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
-                    fields = fieldnames(CycAvg);       
-                    if ~ismember('t',fields)
-                        CycAvg.t = reshape((0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs),[],1);
-                    else
-                        CycAvg.t = reshape(CycAvg.t,[],1);
-                    end
-                    if length(CycAvg.t) > 1000
-                        s = round(linspace(1,length(CycAvg.t),1000));
-                    else
-                        s = 1:length(CycAvg.t);
-                    end
-                    [aa,ab] = size(CycAvg.stim);
-                    if aa == length(CycAvg.t) && ab ~=1
-                        CycAvg.stim = mean(CycAvg.stim,2)';
-                    elseif ab == length(CycAvg.t) && aa ~=1
-                        CycAvg.stim = mean(CycAvg.stim,1);
-                    end
-                    h = gobjects(7,1);
-                    h(1) = plot(CycAvg.t(s),-CycAvg.stim(s),'k');
-                    hold on
-                    %Now add the fills and standard deviations and means
-                    if strcmp(canal,'XY')
-                        leg_text = {'Inv Stim','Left X','Right X',...
-                            'Left Y','Right Y','Left Z','Right Z'};
-                        canals = {'lx','rx','ly','ry','lz','rz'};
-                    else
-                        leg_text = {'Inv Stim','Left LARP','Right LARP',...
-                            'Left RALP','Right RALP','Left Z','Right Z'};
-                        canals = {'ll','rl','lr','rr','lz','rz'};
-                    end
-                    max_eyevel = zeros(1,length(canals));
-                    for ii = 1:length(canals)
-                        max_eyevel(ii) = max(abs([reshape(CycAvg.([canals{ii},'_cycavg'])(s)-CycAvg.([canals{ii},'_cycstd'])(s),1,[]),reshape(CycAvg.([canals{ii},'_cycavg'])(s)+CycAvg.([canals{ii},'_cycstd'])(s),1,[])]));
-                        fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.([canals{ii},'_cycavg'])(s)-CycAvg.([canals{ii},'_cycstd'])(s),fliplr((CycAvg.([canals{ii},'_cycavg'])(s)+CycAvg.([canals{ii},'_cycstd'])(s)))],colors.([canals{ii}(1),'_',canals{ii}(2),'_s']))
-                        plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s) + CycAvg.([canals{ii},'_cycstd'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]))
-                        plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s) - CycAvg.([canals{ii},'_cycstd'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]))
-                        h(ii+1) = plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',2);
-                    end                        
-                    hold off
-                else 
-                    plot(NaN,NaN)
+                files = cyc_files(sum(ismember(file_parts,[split(conds(j));split(labs(i))]'),2)==length([split(conds(j));split(labs(i))]));
+                if ~isempty(files)
+                    rel_files(i) = files;
                 end
-                title(labs{i})
-                xlabel('Time (s)')
-                YMax_vals(i) = max(max_eyevel);
-                if i == 1
-                    ylabel('Angular Velocity (dps)') 
-                    leg_reord = [2,4,6,1,3,5,7];
-                    leg = legend(ha(1),h(leg_reord),leg_text(leg_reord),'NumColumns',2);
-                    leg.ItemTokenSize(1) = 7;
-                    leg_pos = leg.Position; %legend position
-                    perc_pos = ((y_height+y_pos)-leg_pos(2))/y_height; %percentage of the axes that are just the legend
-                    YMax_vals(i) = max(max_eyevel)*0.5/(0.5-perc_pos);
-                end 
-                set(gca,'XLim',[0,CycAvg.t(end)])
-            end 
-            if isempty(YMax)
-                YLim = [-1 1]*ceil(1.1*max(YMax_vals)/10)*10; %Round up to the nearest 10; 
-            else
-                YLim = [-YMax YMax]; 
             end
-            set(ha,'YLim',YLim)               
-            savefig([Path,filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'])
-            close;
+            %Only plot if there are more than two CycAvg for the
+            %experiments
+            if sum(~cellfun(@isempty,rel_files))>1
+                fig_name = [conds{j},' ',goggle];
+                if contains(conds{j},{'X','Y'})
+                    leg_text = {'Inv Stim','Left X','Right X',...
+                        'Left Y','Right Y','Left Z','Right Z'};
+                    canals = {'lx','rx','ly','ry','lz','rz'};
+                else
+                    leg_text = {'Inv Stim','Left LARP','Right LARP',...
+                        'Left RALP','Right RALP','Left Z','Right Z'};
+                    canals = {'ll','rl','lr','rr','lz','rz'};
+                end
+                figure('Units','inches','Position',[0.2778    5.8472   17.2222    3.8333],'Color',[1,1,1])
+                %Title
+                annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
+                'HorizontalAlignment','center','EdgeColor','none');
+                if annot
+                    annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                        code_name,newline,...
+                        'VOGA',version,newline,Experimenter],'FontSize',5,...
+                    'EdgeColor','none','interpreter','none');
+                end
+                ha = gobjects(1,length(labs));
+                x_space = 0.02;
+                x_min = 0.04;
+                x_max = 0.98;
+                x_wid = (x_max-x_min-x_space*(length(labs)-1))/length(labs);
+                y_height = 0.75;
+                x_pos = x_min:(x_wid+x_space):x_max;
+                y_pos = 0.12;
+                YMax_vals = NaN(1,length(length(labs)));
+                for i = 1:length(rel_files)                  
+                    ha(i) = subplot(1000,1000,1);
+                    ha(i).Position = [x_pos(i) y_pos x_wid y_height];
+                    if ~isempty(rel_files{i})
+                        load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
+                        fields = fieldnames(CycAvg);       
+                        if ~ismember('t',fields)
+                            CycAvg.t = reshape((0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs),[],1);
+                        else
+                            CycAvg.t = reshape(CycAvg.t,[],1);
+                        end
+                        if length(CycAvg.t) > 1000
+                            s = round(linspace(1,length(CycAvg.t),1000));
+                        else
+                            s = 1:length(CycAvg.t);
+                        end
+                        [aa,ab] = size(CycAvg.stim);
+                        if aa == length(CycAvg.t) && ab ~=1
+                            CycAvg.stim = mean(CycAvg.stim,2)';
+                        elseif ab == length(CycAvg.t) && aa ~=1
+                            CycAvg.stim = mean(CycAvg.stim,1);
+                        end
+                        h = gobjects(length(canals)+1,1);
+                        h(1) = plot(CycAvg.t(s),-CycAvg.stim(s),'k');
+                        hold on
+                        %Now add the fills and standard deviations and means
+                        max_eyevel = zeros(1,length(canals));
+                        for ii = 1:length(canals)
+                            max_eyevel(ii) = max(abs([reshape(CycAvg.([canals{ii},'_cycavg'])(s)-CycAvg.([canals{ii},'_cycstd'])(s),1,[]),reshape(CycAvg.([canals{ii},'_cycavg'])(s)+CycAvg.([canals{ii},'_cycstd'])(s),1,[])]));
+                            fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.([canals{ii},'_cycavg'])(s)-CycAvg.([canals{ii},'_cycstd'])(s),fliplr((CycAvg.([canals{ii},'_cycavg'])(s)+CycAvg.([canals{ii},'_cycstd'])(s)))],colors.([canals{ii}(1),'_',canals{ii}(2),'_s']))
+                            plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s) + CycAvg.([canals{ii},'_cycstd'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]))
+                            plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s) - CycAvg.([canals{ii},'_cycstd'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]))
+                            h(ii+1) = plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',2);
+                        end                        
+                        hold off
+                    else 
+                        h = gobjects(length(canals)+1,1);
+                        h(1) = plot(NaN,NaN,'k');
+                        hold on
+                        for ii = 1:length(canals)
+                             h(ii+1) = plot(NaN,NaN,'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',2);
+                        end   
+                        hold off
+                        max_eyevel = 0;
+                    end
+                    title(labs{i})
+                    xlabel('Time (s)')
+                    YMax_vals(i) = max(max_eyevel);
+                    if i == 1
+                        ylabel('Angular Velocity (dps)') 
+                        leg_reord = [2,4,6,1,3,5,7];
+                        leg = legend(ha(1),h(leg_reord),leg_text(leg_reord),'NumColumns',2);
+                        leg.ItemTokenSize(1) = 7;
+                        leg_pos = leg.Position; %legend position
+                        perc_pos = ((y_height+y_pos)-leg_pos(2))/y_height; %percentage of the axes that are just the legend
+                        YMax_vals(i) = max(max_eyevel)*0.5/(0.5-perc_pos);
+                    end 
+                    set(gca,'XLim',[0,CycAvg.t(end)])
+                end 
+                if isempty(YMax)
+                    YLim = [-1 1]*ceil(1.1*max(YMax_vals)/10)*10; %Round up to the nearest 10; 
+                else
+                    YLim = [-YMax YMax]; 
+                end
+                set(ha,'YLim',YLim)               
+                savefig([Path,filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'])
+                close;
+            end
         end
         % Parameterized Graphs
         

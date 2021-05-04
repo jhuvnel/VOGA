@@ -185,6 +185,7 @@ if type == 1
     filt1.vel.irlssmooth(end) = round(length(t_snip)*0.16); %heuristic
 elseif type == 2 %velstep and activation
     filt1.vel.median(end) = (Fs+1-mod(Fs,2));
+    filt1.vel.irlssmooth(end) = 20;
 elseif type == 3 
     %Coded for GNO right now
     filt1.vel.irlssmooth(end) = 2;
