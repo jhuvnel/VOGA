@@ -2,102 +2,185 @@
 %This function takes in a CycAvg file (either PJB with added info or AA)
 %and parameterizes accordingly. It adds the results table and any
 %appropriate fits to the CycAvg struct.
-%Type tells you what kind of output to expect
-%1. Sine Fit (Gain, Phase, Misalignment)
-%2. Exponential Fit (Tau, Magnititude)
-%3. Linear Fit (Gain, Latency, Saccade Analysis)
+%Type tells you what kind of output to expect:
+%1. Sine Fit (Half-Cycle Magnitude, Phase, Misalignment)
+%2. Exponential Fit (Tau, Magnititude, Misalignment)
+%3. Linear Fit (Magnitude, Latency, Saccade Analysis)
 %4. Magnitude (Max Magnitude, Misalignment)
 
-function [CycAvg,type] = ParameterizeCycAvg(CycAvg,fname)
+function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
 %% Extract the relevant descriptive parameters
-% This assumes the file is named properly. Please reference the
-% makeNotes.m for proper naming conventions and use fixFileName.m as needed
-if nargin < 2
-    fname = CycAvg.name;
+% Subject, Visit, Date, 
+% Experiment (RotaryChair/eeVOR/aHIT/Manual), 
+% Type(Sine/Exponential/Impulse/PulseTrain),
+% Condition (MotionMod/ConstantRate/NoStim/NoStimLight/eeVOR),
+% axis_name (X/Y/LHRH/LARP/RALP/''),
+% stim_vect ([L,R,Z] coordinates)
+% If applicable:
+% Frequency (Hz)
+% Amplitude (dps)
+% Electrode (e.g. LPE3)
+% Pulses (pps)
+% PhaseDur (us)
+% CurrAmp (uA)
+fname = strrep(CycAvg.name,'CycAvg_','');
+if contains(fname,'_')
+    und = strfind(fname,'_');
+    fname = fname(1:und(1)-1);
 end
 fparts = split(fname,'-');
 % Subject
 if contains(fname,'MVI')
-    subject = strrep(fparts{contains(fparts,'MVI')},'CycAvg_','');
-elseif any(~isnan(str2double(strrep(strrep(fparts,'CycAvg_',''),'R','')))&contains(fparts,'R')) %in form R#
-    subject = strrep(fparts{~isnan(str2double(strrep(strrep(fparts,'CycAvg_',''),'R','')))&contains(fparts,'R')},'CycAvg_','');
+    subject = fparts{contains(fparts,'MVI')};
+    fparts(contains(fparts,'MVI'))= [];
+elseif any(~isnan(str2double(strrep(fparts,'R','')))&contains(fparts,'R')) %in form R#
+    subject = fparts{~isnan(str2double(strrep(fparts,'R','')))&contains(fparts,'R')};
+    fparts(~isnan(str2double(strrep(fparts,'R','')))&contains(fparts,'R')) = [];
 else
     subject = '';
 end
 % Visit
 if any(contains(fparts,'Visit'))
     visit = strrep(fparts{contains(fparts,'Visit')},' ','');
+    fparts(contains(fparts,'Visit')) = [];
 else
     visit = 'NA';
 end
 % Date
 date = datetime(fparts{cellfun(@str2double,fparts)>20160000},'InputFormat','yyyyMMdd');
-% Experiment, Condition, and Stim Axes
-known_exps = {'RotaryChair','aHIT','eeVOR'};
+fparts(cellfun(@str2double,fparts)>20160000) = [];
+% Experiment
+known_exps = {'RotaryChair','aHIT','eeVOR','Manual'};
 if contains(fname,known_exps)
     experiment = known_exps(cellfun(@(x) contains(fname,x),known_exps));
-    condition = strrep(strjoin(fparts(find(contains(fparts,experiment))+1:end)),'.mat','');        
+    fparts(contains(fparts,experiment)) = [];
 else
-    experiment = '';
-    condition = '';
+    disp('Cannot parameterize and assign experiment type to:')
+    disp(fname)
+    return;
 end   
 %Stim Vector
-if contains(condition,{'LARP','RP'})
+if contains(fname,{'LARP','RP'})
     stim_vect = [1 0 0];
-elseif contains(condition,'LA')
+    axis_name = 'LARP';
+elseif contains(fname,'LA')
     stim_vect = [-1 0 0];  
-elseif contains(condition,{'RALP','RA'})
+    axis_name = 'LARP';
+elseif contains(fname,{'RALP','RA'})
     stim_vect = [0 1 0];
-elseif contains(condition,'LP')
+    axis_name = 'RALP';
+elseif contains(fname,'LP')
     stim_vect = [0 -1 0];
-elseif contains(condition,{'LHRH','LH'})
+    axis_name = 'RALP';
+elseif contains(fname,{'LHRH','LH','RotaryChair'})
     stim_vect = [0 0 1];
-elseif contains(condition,'RH')
+    axis_name = 'LHRH';
+elseif contains(fname,'RH')
     stim_vect = [0 0 -1];
-elseif contains(condition,'X')
+    axis_name = 'LHRH';
+elseif contains(fname,'X')
     stim_vect = [0.707 0.707 0];
-elseif contains(condition,'Y')
+    axis_name = 'X';
+elseif contains(fname,'Y')
     stim_vect = [-0.707 0.707 0];
-elseif contains(condition,'Activation')
+    axis_name = 'Y';
+elseif contains(fname,'[')&&contains(fname,']') %MultiVector, SineMultivector
+    b1 = strfind(fname,'[');
+    b2 = strfind(fname,']');
+    stim_vect = str2num(strrep(fname(b1+1:b2-1),' ','-'));
+    axis_name = '';
+else %Including Activation
     stim_vect = [0,0,0];
-elseif contains(condition,'Vect') %MultiVector
-    b1 = strfind(condition,'[');
-    b2 = strfind(condition,']');
-    stim_vect = str2num(strrep(condition(b1+1:b2-1),' ','-'));
+    axis_name = '';
+end
+% Electrode #
+if any(contains(fparts,{'LAE','LHE','LPE','RAE','RHE','RPE'}))
+    electrode = fparts{contains(fparts,{'LAE','LHE','LPE','RAE','RHE','RPE'})};
 else
-    stim_vect = [0,0,0];
-end    
-%Make the type switch
-if contains(condition,{'Sine','Sinusoid'}) %Sine fit
+    electrode = '';
+end
+fparts(contains(fparts,{'LA','LH','LP','RA','RH','RP','['})) = [];
+%Amplitude
+if any(~isnan(str2double(strrep(fparts,'dps','')))&contains(fparts,'dps'))
+    amp = fparts{~isnan(str2double(strrep(fparts,'dps','')))&contains(fparts,'dps')};
+    fparts(~isnan(str2double(strrep(fparts,'dps','')))&contains(fparts,'dps')) = [];
+else
+    amp = '';
+end
+% Pulses per second
+if any(~isnan(str2double(strrep(fparts,'pps','')))&contains(fparts,'pps'))
+    pps = fparts{~isnan(str2double(strrep(fparts,'pps','')))&contains(fparts,'pps')};
+    fparts(~isnan(str2double(strrep(fparts,'pps','')))&contains(fparts,'pps')) = [];
+else
+    pps = '';
+end
+%PhaseDur
+if any(~isnan(str2double(strrep(strrep(fparts,'us',''),'uS','')))&contains(fparts,{'us','uS'}))
+    phase_dur = fparts{~isnan(str2double(strrep(strrep(fparts,'us',''),'uS','')))&contains(fparts,{'us','uS'})};
+    fparts(~isnan(str2double(strrep(strrep(fparts,'us',''),'uS','')))&contains(fparts,{'us','uS'})) = [];
+else
+    phase_dur = '';
+end
+%Current Amplitude
+if any(~isnan(str2double(strrep(strrep(fparts,'ua',''),'uA','')))&contains(fparts,{'ua','uA'}))
+    curr_amp = fparts{~isnan(str2double(strrep(strrep(fparts,'ua',''),'uA','')))&contains(fparts,{'ua','uA'})};
+    fparts(~isnan(str2double(strrep(strrep(fparts,'ua',''),'uA','')))&contains(fparts,{'ua','uA'})) = [];
+else
+    curr_amp = '';
+end
+%% Type/Condition
+Types = {'Sine','Exponential','Impulse','PulseTrain'};
+if contains(fname,{'Sine','Sinusoid','Sin'}) %Sine fit
     type = 1;
-    % Frequency
-    freqs = fparts(contains(fparts,'Hz'));
+    %Frequency
+    freqs = strrep(strrep(fparts(contains(fparts,'Hz')),'p','.'),'.mat','');
     if isempty(freqs) %Nothing contains Hz so look for # after sinusoid (don't worry about multiple frequencies)
         freqs = fparts(find(contains(fparts,{'Sin','Sine','Sinusoid'}))+1);
+        fparts(find(contains(fparts,{'Sin','Sine','Sinusoid'}))+1) = [];
     end
-    nf = length(freqs);
-    freq = zeros(1,nf);
-    for i = 1:nf
-        freqs{i} = [strrep(strrep(strrep(freqs{i},'p','.'),'.mat',''),'Hz',''),'Hz'];
-        freq(i) = str2double(strrep(freqs{i},'Hz',''));
-    end  
-elseif contains(condition,{'VelStep','Activation'}) %Exponential fit
+    freq = str2double(strrep(freqs,'Hz','')); 
+    fparts(contains(fparts,'Hz')) = [];
+    fparts(contains(fparts,{'Sine','Sinusoid','Sin'})) = [];
+    %Condition
+    if contains(fparts,'eeVOR')
+        condition = 'eeVOR';
+    elseif contains(fparts,{'Baseline','Constant'})
+        condition = 'ConstantRate';
+    elseif contains(fparts,{'Motion,ModON'})
+        condition = 'MotionMod';
+    elseif contains(fparts,{'Light','LIGHT'})
+        condition = 'Light';
+    elseif contains(fparts,{'NoStim','Dark','DARK'})
+        condition = 'NoStim';
+    else
+        condition = strjoin(fparts,' ');
+    end
+elseif contains(fname,{'VelStep','Activation'}) %Exponential fit
     type = 2;
-    nf = 1;
+    fparts(contains(fparts,{'VelStep','Activation'})) = [];
+    %Frequency
     freqs = {''};
-elseif contains(condition,{'Impulse'}) %Linear Fit
+    condition = strjoin(fparts,' ');
+elseif contains(fname,{'Impulse'}) %Impulse w/ Head Motion
     type = 3;
-    nf = 1;
+    fparts(contains(fparts,{'Impulse'})) = [];
+    %Frequency
     freqs = {''};
-elseif contains(experiment,'eeVOR') %Pulse Stim
+    condition = strjoin(fparts,' ');    
+elseif contains(fname,'eeVOR') %Pulse Stim, Autoscan
     type = 4;
-    nf = 1;
+    fparts(contains(fparts,{'eeVOR'})) = [];
+    %Frequency
     freqs = {''};
+    condition = strjoin(fparts,' ');
 else 
     disp('Cannot parameterize and assign experiment type to:')
     disp(fname)
     return;
 end
+Type = Types{type};
+nf = length(freqs);
+
 if ~isfield(CycAvg,'info')
    goggle = 'LDVOG';
 elseif ~isfield(CycAvg.info,'goggle_ver')
@@ -113,14 +196,12 @@ if ~isfield(CycAvg,'lx_cyc')
     CycAvg.lx_cyc = (CycAvg.ll_cyc+CycAvg.lr_cyc)/sqrt(2);
     CycAvg.lx_cycavg = (CycAvg.ll_cycavg+CycAvg.lr_cycavg)/sqrt(2);
     CycAvg.rx_cyc = (CycAvg.rl_cyc+CycAvg.rr_cyc)/sqrt(2);
-    CycAvg.rx_cycavg = (CycAvg.rl_cycavg+CycAvg.rr_cycavg)/sqrt(2);
-    
+    CycAvg.rx_cycavg = (CycAvg.rl_cycavg+CycAvg.rr_cycavg)/sqrt(2);    
     CycAvg.ly_cyc = (-CycAvg.ll_cyc+CycAvg.lr_cyc)/sqrt(2);
     CycAvg.ly_cycavg = (-CycAvg.ll_cycavg+CycAvg.lr_cycavg)/sqrt(2);
     CycAvg.ry_cyc = (-CycAvg.rl_cyc+CycAvg.rr_cyc)/sqrt(2);
     CycAvg.ry_cycavg = (-CycAvg.rl_cycavg+CycAvg.rr_cycavg)/sqrt(2);
 end
-
 traces = {'lz','rz','ll','rl','lr','rr','lx','rx','ly','ry'};
 options = optimset('Display','off'); %suppress output from fminsearch
 %initialize vectors for the table
@@ -384,8 +465,8 @@ labs = [{'Cycles'};...
     {'Phase_L';'Phase_L_sd';'Phase_R';'Phase_R_sd'};...
     {'Align_L_HIGH';'Align_L_HIGH_sd';'Align_L_LOW';'Align_L_LOW_sd';'Align_R_HIGH';'Align_R_HIGH_sd';'Align_R_LOW';'Align_R_LOW_sd'};...
     {'Disc_HIGH';'Disc_HIGH_sd';'Disc_LOW';'Disc_LOW_sd'}];
-tab1 = cell2table([repmat({fname,subject,visit,date,goggle,experiment,condition},nf,1),freqs]);
-tab1.Properties.VariableNames = {'File','Subject','Visit','Date','Goggle','Experiment','Condition','Frequency'};
+tab1 = cell2table([repmat({CycAvg.name,subject,visit,date,goggle,experiment,Type,condition,axis_name,{stim_vect},electrode,pps,phase_dur,curr_amp,amp},nf,1),freqs]);
+tab1.Properties.VariableNames = {'File','Subject','Visit','Date','Goggle','Experiment','Type','Condition','AxisName','StimAxis','Electrode','PulseFreq','PhaseDur','CurrentAmp','Amplitude','Frequency'};
 tab2 = array2table([nc*ones(nf,1),MaxVel,Gain,Tau,RMSE,Latency,Phase,Align,Disc]);
 tab2.Properties.VariableNames = labs;
 results = [tab1,tab2];

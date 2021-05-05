@@ -1,7 +1,8 @@
+clear;
+clc;
 VOGA__makeFolders;
 Path = cd;
-Cyc_Path = [Path,filesep,'Cycle Averages'];
-MakeCycleSummaryTable(Path,Cyc_Path,1);
+MakeCycleSummaryTable(Path,[Path,filesep,'Cycle Averages'],1);
 code_Path = [userpath,filesep,'VOGA'];
 params.Path = cd;
 params.Raw_Path = [cd,filesep,'Raw Files'];
@@ -14,6 +15,4 @@ params.Experimenter = data{2,2}{:};
 params.annot = 1;
 params.YMax = [];
 plotGroupCycAvg(params);
-clear;
-clc;
 disp('Done')

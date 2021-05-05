@@ -7,7 +7,7 @@
 %This version takes in all CycAvg types that have been defined and saves a
 %table for each
 
-function MakeCycleSummaryTable(out_path,cyc_path,rerun)
+function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
     if nargin < 1
         out_path = cd;
     end
@@ -67,21 +67,6 @@ function MakeCycleSummaryTable(out_path,cyc_path,rerun)
       rerun = 1; 
    end
     %% Now analyze each file and get the table
-    %Initialize table, assumes 1 CycAvg = 1 row so no sumsine
-%     all_results = table('Size',[length(files),185],...
-%         'VariableTypes',[repmat("cell",3,1);"datetime";repmat("cell",4,1);repmat("double",185-8,1)]);
-%     traces = {'lz','rz','ll','rl','lr','rr','lx','rx','ly','ry'};
-%     labs = [{'File';'Subject';'Visit';'Date';'Goggle';'Experiment';'Condition';'Frequency';'Cycles'};...
-%     reshape(strcat('MaxVel_',repmat(upper(traces),4,1),repmat({'_HIGH';'_HIGH_sd';'_LOW';'_LOW_sd'},1,length(traces))),[],1);...
-%     reshape(strcat('Gain_',repmat(upper(traces),4,1),repmat({'_HIGH';'_HIGH_sd';'_LOW';'_LOW_sd'},1,length(traces))),[],1);...
-%     reshape(strcat('Tau_',repmat(upper(traces),4,1),repmat({'_HIGH';'_HIGH_sd';'_LOW';'_LOW_sd'},1,length(traces))),[],1);...
-%     reshape(strcat('RMSE_',repmat(upper(traces),2,1),repmat({'_HIGH';'_LOW'},1,length(traces))),[],1);...
-%     reshape(strcat('Latency_',repmat(upper(traces),2,1),repmat({'';'_sd'},1,length(traces))),[],1);...
-%     {'Phase_L';'Phase_L_sd';'Phase_R';'Phase_R_sd'};...
-%     {'Align_L_HIGH';'Align_L_HIGH_sd';'Align_L_LOW';'Align_L_LOW_sd';'Align_R_HIGH';'Align_R_HIGH_sd';'Align_R_LOW';'Align_R_LOW_sd'};...
-%     {'Disc_HIGH';'Disc_HIGH_sd';'Disc_LOW';'Disc_LOW_sd'}];
-%     all_results.Properties.VariableNames = labs;
-    % Fill table
     tabs = cell(length(files),1);
     for i = 1:length(files)
        disp(i)
