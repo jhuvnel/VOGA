@@ -61,6 +61,8 @@ function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
             disp([num2str(length(fnames)),' files found.'])
         else
             disp(['No Cycle Average Files found in this directory: ',cyc_path])
+            all_results = [];
+            return;
         end
     end       
    if nargin < 3

@@ -23,7 +23,7 @@ function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
 % Pulses (pps)
 % PhaseDur (us)
 % CurrAmp (uA)
-fname = strrep(CycAvg.name,'CycAvg_','');
+fname = strrep(strrep(CycAvg.name,'CycAvg_',''),'.mat','');
 if contains(fname,'_')
     und = strfind(fname,'_');
     fname = fname(1:und(1)-1);
@@ -101,9 +101,10 @@ else
 end
 fparts(contains(fparts,{'LA','LH','LP','RA','RH','RP','['})) = [];
 %Amplitude
-if any(~isnan(str2double(strrep(fparts,'dps','')))&contains(fparts,'dps'))
-    amp = fparts{~isnan(str2double(strrep(fparts,'dps','')))&contains(fparts,'dps')};
-    fparts(~isnan(str2double(strrep(fparts,'dps','')))&contains(fparts,'dps')) = [];
+amp_cond = ~isnan(str2double(strrep(strrep(fparts,'dps',''),'n','-')))&contains(fparts,'dps');
+if any(amp_cond)
+    amp = strrep(fparts{amp_cond},'n','-');
+    fparts(amp_cond) = [];
 else
     amp = '';
 end
@@ -141,38 +142,21 @@ if contains(fname,{'Sine','Sinusoid','Sin'}) %Sine fit
     freq = str2double(strrep(freqs,'Hz','')); 
     fparts(contains(fparts,'Hz')) = [];
     fparts(contains(fparts,{'Sine','Sinusoid','Sin'})) = [];
-    %Condition
-    if contains(fparts,'eeVOR')
-        condition = 'eeVOR';
-    elseif contains(fparts,{'Baseline','Constant'})
-        condition = 'ConstantRate';
-    elseif contains(fparts,{'Motion,ModON'})
-        condition = 'MotionMod';
-    elseif contains(fparts,{'Light','LIGHT'})
-        condition = 'Light';
-    elseif contains(fparts,{'NoStim','Dark','DARK'})
-        condition = 'NoStim';
-    else
-        condition = strjoin(fparts,' ');
-    end
 elseif contains(fname,{'VelStep','Activation'}) %Exponential fit
     type = 2;
     fparts(contains(fparts,{'VelStep','Activation'})) = [];
     %Frequency
     freqs = {''};
-    condition = strjoin(fparts,' ');
 elseif contains(fname,{'Impulse'}) %Impulse w/ Head Motion
     type = 3;
     fparts(contains(fparts,{'Impulse'})) = [];
     %Frequency
-    freqs = {''};
-    condition = strjoin(fparts,' ');    
+    freqs = {''};   
 elseif contains(fname,'eeVOR') %Pulse Stim, Autoscan
     type = 4;
     fparts(contains(fparts,{'eeVOR'})) = [];
     %Frequency
     freqs = {''};
-    condition = strjoin(fparts,' ');
 else 
     disp('Cannot parameterize and assign experiment type to:')
     disp(fname)
@@ -180,6 +164,20 @@ else
 end
 Type = Types{type};
 nf = length(freqs);
+%Condition
+if contains(fname,'eeVOR')&&type==1
+    condition = 'eeVOR';
+elseif contains(fname,{'Baseline','Constant'})
+    condition = 'ConstantRate';
+elseif contains(fname,{'Motion','Mod'})
+    condition = 'MotionMod';
+elseif contains(fname,{'Light','LIGHT'})
+    condition = 'Light';
+elseif contains(fname,{'NoStim','Dark','DARK'})
+    condition = 'NoStim';
+else
+    condition = strjoin(fparts,' ');
+end
 
 if ~isfield(CycAvg,'info')
    goggle = 'LDVOG';
@@ -321,7 +319,7 @@ switch type
         %Make sure stim trace is time points long (1 x nt)
         if max(abs(CycAvg.stim)) > 1 %Triggered by motion. Should be one high/low and then a period of 0
             stim = reshape(CycAvg.stim,1,[]);
-            max_vel = str2double(strrep(strrep(fparts{contains(fparts,'dps')},'dps.mat',''),'n','-'));
+            max_vel = str2double(strrep(amp,'dps',''));
             Stim = NaN(1,length(t));
             Stim(abs(stim)>0.9*abs(max_vel)) = 1;
             after_motion = zeros(1,length(Stim));
