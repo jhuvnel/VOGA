@@ -10,6 +10,7 @@ for i = 1:length(visit_folds)
     rel_fold = extractfield(dir([Path,filesep,visit_folds{i},filesep,exp_type,filesep,'*Results.mat']),'name');
     if ~isempty(rel_fold) %Has a Results folder
         if strcmp(table_acq,'rerun')
+            delete([Path,filesep,visit_folds{i},filesep,exp_type,filesep,'*Results.mat']) %Remove outdated versions
             disp([Path,filesep,visit_folds{i},filesep,exp_type])
             all_results = MakeCycleSummaryTable([Path,filesep,visit_folds{i},filesep,exp_type],[Path,filesep,visit_folds{i},filesep,exp_type,filesep,'Cycle Averages'],1);            
             if isempty(all_results)
@@ -27,6 +28,7 @@ all_results = sortrows(vertcat(tabs{:}),'Date','ascend');
 if ~strcmp(all_results.Subject{1},all_results.Subject{end})&&contains(all_results.Subject{end},all_results.Subject{1})
     all_results.Subject(~contains(all_results.Subject,all_results.Subject{end})) = all_results.Subject(end);
 end
+delete(['*',exp_type,'Results.mat']) %Remove outdated versions
 save([Path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_',subject,'_',strrep(exp_type,' ',''),'Results.mat'],'all_results')
 disp('Done')
 %% Combine Multiple Subject's tables

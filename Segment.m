@@ -43,7 +43,7 @@ function Segment(In_Path,Seg_Path,dataType)
         info.TriggerShift = 0;      
         info.dataType = dataType1;
         info.stim_axis = stim_axis;
-        fname = [info.subject,'-',info.visit,'-',info.exp_date,'_',info.exp_time,'-',info.dataType];
+        fname = [info.subject,'-',info.visit,'-',info.exp_date,'-',info.exp_time,'-',info.goggle_ver,'-',info.dataType];
         info.name = fname;
         %Load the values
         dat = table2array(readtable(In_Path));
@@ -68,7 +68,7 @@ function Segment(In_Path,Seg_Path,dataType)
         close(fig) 
         %Second File
         info.dataType = dataType2;
-        fname = [info.subject,'-',info.visit,'-',info.exp_date,'_',info.exp_time,'-',info.dataType];
+        fname = [info.subject,'-',info.visit,'-',info.exp_date,'-',info.exp_time,'-',info.dataType];
         info.name = fname;
         Data.info = info;
         Data.RE_Vel_Y = -dat(:,6);
@@ -106,6 +106,10 @@ function Segment(In_Path,Seg_Path,dataType)
     info.ear = fileinfo{2,end};
     info.visit = strrep(fileinfo{3,end},' ','');
     info.exp_date = fileinfo{4,end};
+    if length(info.exp_date)<15 %Just date, add time
+        VOG_time = split(strrep(cell2mat(extractfield(dir(In_Path),'date')),':',''));  %use file creation/saving time
+        info.exp_date = [info.exp_date,'-',VOG_time{2}];
+    end
     info.goggle_ver = fileinfo{5,end}; %This should say NKI or not
     info.goggle_reorient_ang = str2double(fileinfo{6,end});
     if contains(info.goggle_ver,'NKI')
@@ -663,7 +667,7 @@ function Segment(In_Path,Seg_Path,dataType)
             Data.rawfile = {info.rawfile};
             %Save but make a new ending if there are multiple segments with
             %the same information
-            fname = [info.subject,'-',info.visit,'-',info.exp_date,'-',info.dataType];
+            fname = [info.subject,'-',info.visit,'-',info.exp_date,'-',info.goggle_ver,'-',info.dataType];
             save_flag = 1;
             if exist([Seg_Path,filesep,fname,'.mat'],'file') %Already an instance of this file
                 Data2 = Data; %set the segment to Data 2 to check against current file

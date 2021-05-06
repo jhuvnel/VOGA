@@ -123,11 +123,11 @@ function logtoNotes(Raw_Path)
                 vis = '';
             end
             if any(contains(VOG_files,'.txt')) %LDVOG
-                common_notes = {sub,ear,vis,datestr(logfile_times(1),'yyyymmdd'),'LDVOG2','-170','200','50'};   
+                common_notes = {sub,ear,vis,datestr(logfile_times(1),'yyyymmdd-HHMMss'),'LDVOG2','-170'};   
             else
-                common_notes = {sub,ear,vis,datestr(logfile_times(1),'yyyymmdd'),'NKI1','0','200','50'};  
+                common_notes = {sub,ear,vis,datestr(logfile_times(1),'yyyymmdd-HHMMss'),'NKI1','0'};  
             end   
-            prompt = {['Set the initial parameters.',newline,newline,'Subject: '];'Implant Ear (L/R): ';'Visit: ';'Date: ';'Goggle Version: ';'Goggle Angle: '};
+            prompt = {['Set the initial parameters.',newline,newline,'Subject: '];'Implant Ear (L/R): ';'Visit: ';'Date/Time: ';'Goggle Version: ';'Goggle Angle: '};
             common_notes = inputdlg(prompt,'Set VOG File Parameters',1,common_notes);        
             %% For loop
             for i = 1:length(VOG_files)
@@ -200,13 +200,13 @@ function logtoNotes(Raw_Path)
                             if length(stim_ends) < length(stim_starts)
                                 stim_ends = [find(stim_change==-1);find(stim_ind,1,'last')];
                             end
-                            experiments = [];   
+                            experiments = cell(length(stim_starts),1);   
                             for j = 1:length(stim_starts)
                                 stim_tab = rel_dat(stim_starts(j):stim_ends(j),2:end);
                                 %Figure out what type of experiment it is            
                                 if any(contains(stim_tab(1,:),'Depth of Modulation'))                
                                     exp_type = 'eeVOR-MultiVector';
-                                    experiments = [experiments;strcat('[',stim_tab(2:end,2),',',stim_tab(2:end,3),',',stim_tab(2:end,4),']')];              
+                                    experiments(j) = strcat('[',stim_tab(2:end,2),',',stim_tab(2:end,3),',',stim_tab(2:end,4),']');              
                                 elseif any(contains(stim_tab(1,:),'Frequency'))
                                     exp_type = 'eeVOR-Sine';
                                     ax_vec = str2double(stim_tab(2:end,2:4));
@@ -223,7 +223,7 @@ function logtoNotes(Raw_Path)
                                     if any(combo_vec)
                                         stim_axis(combo_vec) = strcat('[',join(cellfun(@num2str,num2cell(ax_vec(combo_vec,:)./repmat(amp_mat(combo_vec),1,3)),'UniformOutput',false),','),']');
                                     end
-                                    experiments = [experiments;strcat(stim_axis,'-',stim_tab(2:end,5),'Hz-',amp_vec,'dps')];                                          
+                                    experiments(j) = strcat(stim_axis,'-',stim_tab(2:end,5),'Hz-',amp_vec,'dps');                                          
                                 elseif any(contains(stim_tab(1,:),'BSR (pps)'))
                                     exp_type = 'eeVOR-PulseTrain';
                                     %Figure out axis and if it's PFM or PAM
@@ -245,19 +245,14 @@ function logtoNotes(Raw_Path)
                                     pulse_amp(inds==5|inds==6) = stim_tab(find(inds==5|inds==6)+1,13);
                                     %Round pulse_amp numbers
                                     pulse_amp_round = cellfun(@num2str,num2cell(round(str2double(pulse_amp),0)),'UniformOutput',false);
-                                    experiments = [experiments;strcat(experiment_type,'-',pulse_freq,'pps-',pulse_amp_round,'uA')];    
+                                    experiments(j) = strcat(experiment_type,'-',pulse_freq,'pps-',pulse_amp_round,'uA');    
                                 else
                                     disp([fname,': Experiment type was not detected.'])
                                     exp_type = 'Unknown';
                                 end
                             end
-                            notes = [common_notes;{exp_type};experiments];
-                            %prompt = [{[fname,newline,newline,'Subject: '];'Implant Ear (L/R): ';...
-                            %    'Visit: ';'Date: ';'Goggle Version: ';'Goggle Angle: ';'Experiment Type: '};repmat({'Exp: '},length(experiments),1)];
-                            %notes = inputdlgcol(prompt,'Confirm VOG File Parameters',[1 45],notes,'on',2);        
-                            %common_notes = notes(1:6);
+                            notes = [common_notes;{exp_type};vertcat(experiments{:})];
                         end
-                        %Now make the file
                         filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');
                         w_notes = strcat('"',notes,'"');
                         disp(w_notes)
