@@ -1,6 +1,6 @@
 %% One subject's Rotary Chair or eeVOR results
-table_acq = 'rerun'; %or load
-exp_type = 'Rotary Chair';
+table_acq = 'rerun'; %load or rerun
+exp_type = 'eeVOR';
 if ispc %AIA lab machine
     drive_name = 'Z:';
 else %AIA Mac
@@ -8,8 +8,12 @@ else %AIA Mac
 end
 sub_Path = [drive_name,filesep,'Study Subjects'];
 sub_folds = extractfield(dir(sub_Path),'name',extractfield(dir(sub_Path),'isdir')&contains(extractfield(dir(sub_Path),'name'),'MVI')&contains(extractfield(dir(sub_Path),'name'),'_R'));
-for s = 1:length(sub_folds)
-    Path = [sub_Path,filesep,sub_folds{s}]; %run from that subject's folder
+[idx,tf] = listdlg('PromptString','Select folders to analyze','SelectionMode','multiple','ListString',sub_folds,'InitialValue',1:length(sub_folds));
+if ~tf
+    error('No subjects selected')
+end
+for s = 1:length(idx)
+    Path = [sub_Path,filesep,sub_folds{idx(s)}]; %run from that subject's folder
     path_parts = split(Path,filesep);
     subject = strrep(path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')},'_','');
     visit_folds = extractfield(dir(Path),'name',extractfield(dir(Path),'isdir')&contains(extractfield(dir(Path),'name'),'Visit'));
@@ -41,7 +45,7 @@ for s = 1:length(sub_folds)
 end
 disp('Done Done')
 %% Combine Multiple Subject's tables
-exp_type = 'Rotary Chair';
+exp_type = 'eeVOR';
 if ispc %AIA lab machine
     drive_name = 'Z:';
 else %AIA Mac
@@ -63,4 +67,4 @@ for i = 1:length(sub_folds)
 end
 delete([out_Path,filesep,'*',strrep(exp_type,' ',''),'Results.mat']) %Remove outdated versions
 all_results = vertcat(tabs{:});
-save([out_Path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_AllSubjects',strrep(exp_type,' ',''),'Results.mat'],'all_results')
+save([out_Path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_AllSubjects_',strrep(exp_type,' ',''),'Results.mat'],'all_results')
