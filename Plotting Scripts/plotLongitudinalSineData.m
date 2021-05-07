@@ -14,13 +14,19 @@ tab_labs = all_results.Properties.VariableNames;
 desc_labs = tab_labs(find(contains(tab_labs,'File'))+1:find(contains(tab_labs,'Cycles'))-1);
 desc_labs(contains(desc_labs,'Date')) = [];
 for i = 1:length(desc_labs)
-    try
-        contents.(desc_labs{i}) = unique(all_results.(desc_labs{i}));
-    catch %array of numbers
-        contents.(desc_labs{i}) = unique(cell2mat(all_results.(desc_labs{i})),'rows');
-    end
+    column = all_results.(desc_labs{i});
+    out_lab = strrep(strrep(desc_labs{i},'(','_'),')','');
+    if isnumeric(column)
+        column(isnan(column)) = [];
+        contents.(out_lab) = unique(column);
+    elseif isnumeric(column{1})
+        column = cell2mat(column); 
+        contents.(out_lab) = unique(column,'rows');
+    else
+        contents.(out_lab) = unique(column);
+    end    
     disp([desc_labs{i},': '])
-    disp(contents.(desc_labs{i}))
+    disp(contents.(out_lab))
 end
 % Select outputs to plot: Magnitude, Gain, Phase, Misalignment, Disc
 %all_results = all_results(contains(all_results.Type,'Sine'),:); %Constrain to sinusoids

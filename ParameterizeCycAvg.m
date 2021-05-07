@@ -103,31 +103,31 @@ fparts(contains(fparts,{'LA','LH','LP','RA','RH','RP','['})) = [];
 %Amplitude
 amp_cond = ~isnan(str2double(strrep(strrep(fparts,'dps',''),'n','-')))&contains(fparts,'dps');
 if any(amp_cond)
-    amp = strrep(fparts{amp_cond},'n','-');
+    amp = str2double(strrep(strrep(fparts{amp_cond},'n','-'),'dps',''));
     fparts(amp_cond) = [];
 else
-    amp = '';
+    amp = NaN;
 end
 % Pulses per second
 if any(~isnan(str2double(strrep(fparts,'pps','')))&contains(fparts,'pps'))
-    pps = fparts{~isnan(str2double(strrep(fparts,'pps','')))&contains(fparts,'pps')};
+    pps = str2double(strrep(fparts{~isnan(str2double(strrep(fparts,'pps','')))&contains(fparts,'pps')},'pps',''));
     fparts(~isnan(str2double(strrep(fparts,'pps','')))&contains(fparts,'pps')) = [];
 else
-    pps = '';
+    pps = NaN;
 end
 %PhaseDur
 if any(~isnan(str2double(strrep(strrep(fparts,'us',''),'uS','')))&contains(fparts,{'us','uS'}))
-    phase_dur = fparts{~isnan(str2double(strrep(strrep(fparts,'us',''),'uS','')))&contains(fparts,{'us','uS'})};
+    phase_dur = str2double(strrep(strrep(fparts{~isnan(str2double(strrep(strrep(fparts,'us',''),'uS','')))&contains(fparts,{'us','uS'})},'us',''),'uS',''));
     fparts(~isnan(str2double(strrep(strrep(fparts,'us',''),'uS','')))&contains(fparts,{'us','uS'})) = [];
 else
-    phase_dur = '';
+    phase_dur = NaN;
 end
 %Current Amplitude
 if any(~isnan(str2double(strrep(strrep(fparts,'ua',''),'uA','')))&contains(fparts,{'ua','uA'}))
-    curr_amp = fparts{~isnan(str2double(strrep(strrep(fparts,'ua',''),'uA','')))&contains(fparts,{'ua','uA'})};
+    curr_amp = str2double(strrep(strrep(fparts{~isnan(str2double(strrep(strrep(fparts,'ua',''),'uA','')))&contains(fparts,{'ua','uA'})},'ua',''),'uA',''));
     fparts(~isnan(str2double(strrep(strrep(fparts,'ua',''),'uA','')))&contains(fparts,{'ua','uA'})) = [];
 else
-    curr_amp = '';
+    curr_amp = NaN;
 end
 %% Type/Condition
 Types = {'Sine','Exponential','Impulse','PulseTrain'};
@@ -139,24 +139,24 @@ if contains(fname,{'Sine','Sinusoid','Sin'}) %Sine fit
         freqs = fparts(find(contains(fparts,{'Sin','Sine','Sinusoid'}))+1);
         fparts(find(contains(fparts,{'Sin','Sine','Sinusoid'}))+1) = [];
     end
-    freq = str2double(strrep(freqs,'Hz','')); 
+    freqs = str2double(strrep(freqs,'Hz','')); 
     fparts(contains(fparts,'Hz')) = [];
     fparts(contains(fparts,{'Sine','Sinusoid','Sin'})) = [];
 elseif contains(fname,{'VelStep','Activation'}) %Exponential fit
     type = 2;
     fparts(contains(fparts,{'VelStep','Activation'})) = [];
     %Frequency
-    freqs = {''};
+    freqs = NaN;
 elseif contains(fname,{'Impulse'}) %Impulse w/ Head Motion
     type = 3;
     fparts(contains(fparts,{'Impulse'})) = [];
     %Frequency
-    freqs = {''};   
+    freqs = NaN;   
 elseif contains(fname,'eeVOR') %Pulse Stim, Autoscan
     type = 4;
     fparts(contains(fparts,{'eeVOR'})) = [];
     %Frequency
-    freqs = {''};
+    freqs = NaN;
 else 
     disp('Cannot parameterize and assign experiment type to:')
     disp(fname)
@@ -255,14 +255,14 @@ switch type
             t = tt;
         end
         % Find gain, phase, and misalignment for each trace
-        makefit = @(trace) fminsearchbnd(@(p) sum((sine_fit(t,freq,p)-trace).^2,'omitnan'),repmat([abs(min(trace));abs(max(trace));0],nf,1),repmat([0;0;-180],1,nf),repmat([inf,inf,180],1,nf),options); 
+        makefit = @(trace) fminsearchbnd(@(p) sum((sine_fit(t,freqs,p)-trace).^2,'omitnan'),repmat([abs(min(trace));abs(max(trace));0],nf,1),repmat([0;0;-180],1,nf),repmat([inf,inf,180],1,nf),options); 
         All_Cyc = NaN(nc,3*length(traces),nf);
         cyc_fit = NaN(nc,length(tt),length(traces));
         for i = 1:nc
             for j = 1:length(traces)
                 if ~all(isnan(CycAvg.([traces{j},'_cyc'])(i,:)))
                     All_Cyc(i,(3*j-2):3*j,:) = reshape(makefit(spline(tt,CycAvg.([traces{j},'_cyc'])(i,:),t)),1,3,nf);
-                    cyc_fit(i,:,j) = sine_fit(tt,freq,makefit(spline(tt,CycAvg.([traces{j},'_cyc'])(i,:),t)));
+                    cyc_fit(i,:,j) = sine_fit(tt,freqs,makefit(spline(tt,CycAvg.([traces{j},'_cyc'])(i,:),t)));
                 end
             end
         end
@@ -289,7 +289,7 @@ switch type
         Gain = MaxVel/ChairAmp;
         %RMSE
         for i = 1:length(traces)
-            RMSE(:,[i,i+length(traces)]) = sum((CycAvg.([traces{i},'_cycavg'])-sine_fit(tt,freq,makefit(spline(tt,CycAvg.([traces{i},'_cycavg']),t)))).^2)/length(tt);
+            RMSE(:,[i,i+length(traces)]) = sum((CycAvg.([traces{i},'_cycavg'])-sine_fit(tt,freqs,makefit(spline(tt,CycAvg.([traces{i},'_cycavg']),t)))).^2)/length(tt);
         end
         % Misalignment
         A = NaN(1,8);
@@ -309,7 +309,7 @@ switch type
         Disc = repmat(B,nf,1);
         % Add fits to the CycAvg Struct
         for i = 1:length(traces)
-            CycAvg.([traces{i},'_cycavg_fit']) = sine_fit(tt,freq,makefit(spline(tt,CycAvg.([traces{i},'_cycavg']),t)));
+            CycAvg.([traces{i},'_cycavg_fit']) = sine_fit(tt,freqs,makefit(spline(tt,CycAvg.([traces{i},'_cycavg']),t)));
             CycAvg.([traces{i},'_cyc_fit']) = reshape(cyc_fit(:,:,i),nc,nt);
         end
     case 2 
@@ -319,7 +319,7 @@ switch type
         %Make sure stim trace is time points long (1 x nt)
         if max(abs(CycAvg.stim)) > 1 %Triggered by motion. Should be one high/low and then a period of 0
             stim = reshape(CycAvg.stim,1,[]);
-            max_vel = str2double(strrep(amp,'dps',''));
+            max_vel = amp;
             Stim = NaN(1,length(t));
             Stim(abs(stim)>0.9*abs(max_vel)) = 1;
             after_motion = zeros(1,length(Stim));
@@ -454,7 +454,7 @@ switch type
         end
 end
 %% Make the table
-labs = [{'Cycles'};...
+labs = [{'Frequency(Hz)';'Amplitude(dps)';'PulseFreq(pps)';'PhaseDur(us)';'CurrentAmp(uA)';'Cycles'};...
     reshape(strcat('MaxVel_',repmat(upper(traces),4,1),repmat({'_HIGH';'_HIGH_sd';'_LOW';'_LOW_sd'},1,length(traces))),[],1);...
     reshape(strcat('Gain_',repmat(upper(traces),4,1),repmat({'_HIGH';'_HIGH_sd';'_LOW';'_LOW_sd'},1,length(traces))),[],1);...
     reshape(strcat('Tau_',repmat(upper(traces),4,1),repmat({'_HIGH';'_HIGH_sd';'_LOW';'_LOW_sd'},1,length(traces))),[],1);...
@@ -463,9 +463,9 @@ labs = [{'Cycles'};...
     {'Phase_L';'Phase_L_sd';'Phase_R';'Phase_R_sd'};...
     {'Align_L_HIGH';'Align_L_HIGH_sd';'Align_L_LOW';'Align_L_LOW_sd';'Align_R_HIGH';'Align_R_HIGH_sd';'Align_R_LOW';'Align_R_LOW_sd'};...
     {'Disc_HIGH';'Disc_HIGH_sd';'Disc_LOW';'Disc_LOW_sd'}];
-tab1 = cell2table([repmat({CycAvg.name,subject,visit,date,goggle,experiment,Type,condition,axis_name,{stim_vect},electrode,pps,phase_dur,curr_amp,amp},nf,1),freqs]);
-tab1.Properties.VariableNames = {'File','Subject','Visit','Date','Goggle','Experiment','Type','Condition','AxisName','StimAxis','Electrode','PulseFreq','PhaseDur','CurrentAmp','Amplitude','Frequency'};
-tab2 = array2table([nc*ones(nf,1),MaxVel,Gain,Tau,RMSE,Latency,Phase,Align,Disc]);
+tab1 = cell2table(repmat({CycAvg.name,subject,visit,date,goggle,experiment,Type,condition,axis_name,{stim_vect},electrode},nf,1));
+tab1.Properties.VariableNames = {'File','Subject','Visit','Date','Goggle','Experiment','Type','Condition','AxisName','StimAxis','Electrode'};
+tab2 = array2table([freqs,repmat([amp,pps,phase_dur,curr_amp,nc],nf,1),MaxVel,Gain,Tau,RMSE,Latency,Phase,Align,Disc]);
 tab2.Properties.VariableNames = labs;
 results = [tab1,tab2];
 CycAvg.parameterized = results;  
