@@ -10,7 +10,7 @@ function VOGA__CycAvg
         if length(n_spl{3})>8 %If time is included
             n_spl{3} = n_spl{3}(1:8);
         end
-        all_exp_names(i) = join(n_spl(3:5),'-');
+        all_exp_names(i) = join(n_spl(3:find(contains(n_spl,{'RotaryChair','eeVOR','aHIT','Manual'}))+1),'-');
     end
     exp_names = unique(all_exp_names);
     if length(exp_names)>1
