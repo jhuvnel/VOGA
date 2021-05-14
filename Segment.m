@@ -106,12 +106,26 @@ function Segment(In_Path,Seg_Path,dataType)
     info.ear = fileinfo{2,end};
     info.visit = strrep(fileinfo{3,end},' ','');
     info.exp_date = fileinfo{4,end};
-    if length(info.exp_date)<15 %Just date, add time
-        VOG_time = split(strrep(cell2mat(extractfield(dir(In_Path),'date')),':',''));  %use file creation/saving time
-        info.exp_date = [info.exp_date,'-',VOG_time{2}];
-    end
     info.goggle_ver = fileinfo{5,end}; %This should say NKI or not
-    info.goggle_reorient_ang = str2double(fileinfo{6,end});
+    info.goggle_reorient_ang = str2double(fileinfo{6,end});    
+    if length(info.exp_date)==14 %Just missing '-' in between date and time
+        info.exp_date = [info.exp_date(1:8),'-',info.exp_date(9:end)];
+    elseif length(info.exp_date)<15 %Just date, add time
+        rawfile = In_Path(slash+1:end-4);
+        underscore = strfind(rawfile,'_');
+        if contains(info.goggle_ver,'NKI')
+            VOG_time = datestr(datetime(rawfile(underscore(4)+1:underscore(7)-1),'InputFormat','hh_mm_a'),'HHMMSS');
+        elseif contains(info.goggle_ver,'LDVOG')
+            if ~isempty(underscore)
+                rawfile = rawfile(1:underscore(1));
+            end
+            rawparts = split(rawfile,'-');
+            VOG_time = rawparts{3};
+        else
+            VOG_time = '000000';
+        end
+        info.exp_date = [info.exp_date,'-',VOG_time];
+    end    
     if contains(info.goggle_ver,'NKI')
         info.TriggerShift = 0; %measure and change 
         %Suppress the warning that one of the columns is not a proper
@@ -551,12 +565,12 @@ function Segment(In_Path,Seg_Path,dataType)
             end
             temp2(isnan(start)) = [];
             start(isnan(start)) = [];
-            ends(isnan(ends)) = [];
-            start = start-temp2;
+            ends(isnan(ends)) = []; 
+            start(~ismember(start,ends)) = start(~ismember(start,ends))-temp2(~ismember(start,ends));
             ends = ends+temp2;
             start(start<0) = 1;
             ends(ends>length(Time_Stim)) = length(Time_Stim);
-            plot(Time_Stim,Stim,'k',Time_Stim(round(start,0)),Stim(round(start,0)),'r*',Time_Stim(round(ends,0)),Stim(round(ends,0)),'b*')
+            %plot(Time_Stim,Stim,'k',Time_Stim(round(start,0)),Stim(round(start,0)),'r*',Time_Stim(round(ends,0)),Stim(round(ends,0)),'b*')
         end
         stim = Stim;
         start = round(start);
@@ -665,41 +679,16 @@ function Segment(In_Path,Seg_Path,dataType)
             Data.HeadAccel_Y = YAxisAccelHead(i1:i2);
             Data.HeadAccel_Z = ZAxisAccelHead(i1:i2);
             Data.rawfile = {info.rawfile};
+            save_flag = 1;            
+            fname = [info.subject,'-',info.visit,'-',info.exp_date,'-',info.goggle_ver,'-',info.dataType];
             %Save but make a new ending if there are multiple segments with
             %the same information
-            fname = [info.subject,'-',info.visit,'-',info.exp_date,'-',info.goggle_ver,'-',info.dataType];
-            save_flag = 1;
             if exist([Seg_Path,filesep,fname,'.mat'],'file') %Already an instance of this file
                 Data2 = Data; %set the segment to Data 2 to check against current file
                 load([Seg_Path,filesep,fname,'.mat'],'Data')
                 if ~any(ismember(Data.rawfile,Data2.rawfile)&Data.raw_start_t==Data2.raw_start_t)
                     disp([fname,' already exists in this folder and they were combined.'])
-                    %Make the time vectors continuous with the first segment
-                    Time_Eye2 = Data2.Time_Eye - Data2.Time_Eye(1) + Data.Time_Eye(end) + mean(diff(Data2.Time_Eye));
-                    Time_Stim2 = Data2.Time_Stim - Data2.Time_Stim(1) + Data.Time_Stim(end) + mean(diff(Data2.Time_Stim));
-                    %Figure out how many copies of info there are 
-                    copynum = sum(contains(fieldnames(Data),'info'))+1;
-                    %Combine all of the items
-                    Data.(['info',num2str(copynum)]) = info; %as many info copies as needed
-                    Data.(['Data',num2str(copynum)]) = Data2;
-                    Data.Time_Eye = [reshape(Data.Time_Eye,[],1);reshape(Time_Eye2,[],1)];
-                    Data.Time_Stim = [reshape(Data.Time_Stim,[],1);reshape(Time_Stim2,[],1)];
-                    Data.raw_start_t = [Data.raw_start_t;Data2.raw_start_t];
-                    Data.raw_end_t = [Data.raw_end_t;Data.raw_end_t];
-                    Data.Trigger = [Data.Trigger;Data2.Trigger];
-                    Data.LE_Position_X = [Data.LE_Position_X;Data2.LE_Position_X];
-                    Data.LE_Position_Y = [Data.LE_Position_Y;Data2.LE_Position_Y];
-                    Data.LE_Position_Z = [Data.LE_Position_Z;Data2.LE_Position_Z];
-                    Data.RE_Position_X = [Data.RE_Position_X;Data2.RE_Position_X];
-                    Data.RE_Position_Y = [Data.RE_Position_Y;Data2.RE_Position_Y];
-                    Data.RE_Position_Z = [Data.RE_Position_Z;Data2.RE_Position_Z];
-                    Data.HeadVel_X = [reshape(Data.HeadVel_X,[],1);reshape(Data2.HeadVel_X,[],1)];
-                    Data.HeadVel_Y = [reshape(Data.HeadVel_Y,[],1);reshape(Data2.HeadVel_Y,[],1)];
-                    Data.HeadVel_Z = [reshape(Data.HeadVel_Z,[],1);reshape(Data2.HeadVel_Z,[],1)];
-                    Data.HeadAccel_X = [reshape(Data.HeadAccel_X,[],1);reshape(Data2.HeadAccel_X,[],1)];
-                    Data.HeadAccel_Y = [reshape(Data.HeadAccel_Y,[],1);reshape(Data2.HeadAccel_Y,[],1)];
-                    Data.HeadAccel_Z = [reshape(Data.HeadAccel_Z,[],1);reshape(Data2.HeadAccel_Z,[],1)];
-                    Data.rawfile = [Data.rawfile;Data2.rawfile];
+                    Data = CombineSegments(Data,Data2);
                     delete([Seg_Path,filesep,fname,'.mat'])
                 else
                     disp([fname,' already exists in this folder and was ignored.'])

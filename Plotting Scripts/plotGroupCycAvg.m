@@ -19,6 +19,7 @@ function plotGroupCycAvg(params)
     end
     if isfield(params,'YMax')
         YMax = params.YMax;
+        YMax(isnan(YMax)) = [];
     else
         YMax = [];
     end
@@ -39,39 +40,25 @@ function plotGroupCycAvg(params)
         res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
     end
     load(res_file{end},'all_results')
-    %%
-    if any(contains(all_results.Condition,{'Sine','Sinusoid'}))
+    if any(contains(all_results.Type,'Sine'))
         %% Sinusoids
         % Plot Group Cycle Average Results
-        cyc_files = all_results.File(contains(all_results.Condition,{'Sine','Sinusoid'}));
-        file_parts = cell(length(cyc_files),length(split(cyc_files{1},'-')));
-        all_freq = cell(length(cyc_files),1);
-        all_amp = cell(length(cyc_files),1);
-        for i = 1:length(cyc_files)
-            fname = strrep(strrep(strrep(cyc_files{i},'CycAvg_',''),'.mat',''),' ','');
-            fparts = split(fname,'-');
-            file_parts(i,:) = fparts;
-            all_freq(i,1) = fparts(contains(fparts,'Hz'));
-            all_amp(i,1) = fparts(contains(fparts,'dps'));
-        end
-        conds1 = unique(join(file_parts(:,~contains(file_parts(1,:),{'Hz','dps'})),' '));
-        freqs = unique(all_freq);
-        [~,indf] = sort(cellfun(@str2double,strrep(strrep(freqs,'Hz',''),'p','.'))); %make sure it's in numerical order
-        freqs = freqs(indf);
+        cyc_files = all_results.File(contains(all_results.Type,{'Sine','Sinusoid'}));
+        freqs = unique(all_results.('Frequency(Hz)'));
         fnum = length(freqs);
-        amps = unique(all_amp);
-        [~,indf] = sort(cellfun(@str2double,strrep(amps,'dps',''))); %make sure it's in numerical order
-        amps = amps(indf);
+        amps = unique(all_results.('Amplitude(dps)'));
         anum = length(amps);
         exps = zeros(fnum,anum);
         for i = 1:length(cyc_files)
-            exps(ismember(freqs,all_freq(i)),ismember(amps,all_amp(i))) = 1;
+            exps(ismember(freqs,all_results.('Frequency(Hz)')(i)),ismember(amps,all_results.('Amplitude(dps)')(i))) = 1;
         end
+        file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Condition,all_results.AxisName,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('Frequency(Hz)'))),' ',''),'Hz'),strcat(strrep(cellstr(num2str(all_results.('Amplitude(dps)'))),' ',''),'dps')];
+        conds1 = unique(join(file_parts(:,1:6)));
         if any(sum(exps,2)>1)
             rel_freqs = freqs(sum(exps,2)>1);
             conds_f = repmat(conds1,1,length(rel_freqs));
             for i = 1:length(rel_freqs)
-                conds_f(:,i) = strcat(conds1,{' '},rel_freqs(i));
+                conds_f(:,i) = strcat(conds1,{[' ',num2str(rel_freqs(i)),'Hz']});
             end
             conds_f = reshape(conds_f,[],1);
         else
@@ -81,7 +68,7 @@ function plotGroupCycAvg(params)
             rel_amps = amps(sum(exps,1)>1);
             conds_a = repmat(conds1,1,length(rel_amps));
             for i = 1:length(rel_amps)
-                conds_a(:,i) = strcat(conds1,{' '},rel_amps(i));
+                conds_a(:,i) = strcat(conds1,{[' ',num2str(rel_amps(i)),'dps']});
             end
             conds_a = reshape(conds_a,[],1);
         else
@@ -92,28 +79,18 @@ function plotGroupCycAvg(params)
             conds = conds1;
         end
         enum = size(conds,1);
-        %Figure out the google type
-        load([Cyc_Path,filesep,cyc_files{1}],'CycAvg')
-        try    
-            goggle = CycAvg.info.goggle_ver;
-            if isnumeric(goggle)
-                goggle = ['LDVOG',num2str(goggle)];
-            end
-        catch
-            goggle = 'LDVOG';
-        end
         for j = 1:enum
             %Set up labels
             if contains(conds(j),'Hz') %Amp Sweep
-                labs = amps;                    
+                labs = strcat(strrep(cellstr(num2str(amps)),' ',''),'dps');                    
             elseif contains(conds(j),'dps') %Freq Sweep
-                labs = freqs;
+                labs = strcat(strrep(cellstr(num2str(freqs)),' ',''),'Hz');
             else %Combo
-                labs = unique(join(file_parts(:,contains(file_parts(1,:),{'Hz','dps'})),' '));
+                labs = unique(join(file_parts(:,7:8)));
             end
-            %Find files to plot
+            %Find files to plot--NEED TO FIX THIS
             rel_files = cell(length(labs),1);
-            for i = 1:length(labs)
+            for i = 1:length(labs)                
                 files = cyc_files(sum(ismember(file_parts,[split(conds(j));split(labs(i))]'),2)==length([split(conds(j));split(labs(i))]));
                 if ~isempty(files)
                     rel_files(i) = files;
@@ -122,7 +99,7 @@ function plotGroupCycAvg(params)
             %Only plot if there are more than two CycAvg for the
             %experiments
             if sum(~cellfun(@isempty,rel_files))>1
-                fig_name = [conds{j},' ',goggle];
+                fig_name = conds{j};
                 if contains(conds{j},{'X','Y'})
                     leg_text = {'Inv Stim','Left X','Right X',...
                         'Left Y','Right Y','Left Z','Right Z'};

@@ -8,9 +8,9 @@ clc;
 %% Filter defaults
 %Order: lx,rx,ly,ry,lz,rz,ll,rl,lr,rr,All
 pos_median_NKI = [11;11;3;3;3;3;NaN;NaN;NaN;NaN;NaN];
-pos_spline_NKI = [0.99995;0.99995;0.999995;0.999995;0.9999995;0.9999995;NaN;NaN;NaN;NaN;NaN];
+pos_spline_NKI = [1;1;0.999995;0.999995;0.9999995;0.9999995;NaN;NaN;NaN;NaN;NaN];
 pos_median_LDVOG = [11;11;3;3;3;3;NaN;NaN;NaN;NaN;NaN];
-pos_spline_LDVOG = [0.99995;0.99995;0.999995;0.999995;0.9999995;0.9999995;NaN;NaN;NaN;NaN;NaN];
+pos_spline_LDVOG = [1;1;0.999995;0.999995;0.9999995;0.9999995;NaN;NaN;NaN;NaN;NaN];
 %% Plot defaults
 all_traces = {'LX','RX','LY','RY','LZ','RZ','LLARP','RLARP','LRALP','RRALP'};
 YLim_Pos1_NKI = [-10 10];

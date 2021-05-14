@@ -1,5 +1,5 @@
 %% One subject's Rotary Chair or eeVOR results
-table_acq = 'rerun'; %load or rerun
+table_acq = 'load'; %load or rerun
 exp_type = 'eeVOR';
 if ispc %AIA lab machine
     drive_name = 'Z:';
@@ -23,7 +23,6 @@ for s = 1:length(idx)
         if ~isempty(rel_fold) %Has a Results folder
             if strcmp(table_acq,'rerun')
                 delete([Path,filesep,visit_folds{i},filesep,exp_type,filesep,'*Results.mat']) %Remove outdated versions
-                disp([Path,filesep,visit_folds{i},filesep,exp_type])
                 all_results = MakeCycleSummaryTable([Path,filesep,visit_folds{i},filesep,exp_type],[Path,filesep,visit_folds{i},filesep,exp_type,filesep,'Cycle Averages'],1);                        
             else %load
                 fname = [Path,filesep,visit_folds{i},filesep,exp_type,filesep,rel_fold{end}]; %get the most recent item

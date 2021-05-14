@@ -71,7 +71,7 @@ function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
     %% Now analyze each file and get the table
     tabs = cell(length(files),1);
     for i = 1:length(files)
-       disp(i)
+       disp([cyc_path,': ',num2str(i),'/',num2str(length(files))])
        a = load(files{i});
        b = fieldnames(a);
        CycAvg = a.(b{1});

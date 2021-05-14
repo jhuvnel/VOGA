@@ -7,8 +7,11 @@ function VOGA__CycAvg
     all_exp_names = progress_tab.Segment;
     for i = 1:length(all_exp_names)
         n_spl = strsplit(all_exp_names{i},'-');
-        if length(n_spl{3})>8 %If time is included
+        if length(n_spl{3})>8 %If time is included with the date
             n_spl{3} = n_spl{3}(1:8);
+        end
+        if ~isnan(str2double(n_spl{4})) %If time is seperate
+            n_spl(4) = [];
         end
         all_exp_names(i) = join(n_spl(3:find(contains(n_spl,{'RotaryChair','eeVOR','aHIT','Manual'}))+1),'-');
     end

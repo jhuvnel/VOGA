@@ -47,8 +47,14 @@ else
     visit = 'NA';
 end
 % Date
-date = datetime(fparts{cellfun(@str2double,fparts)>20160000},'InputFormat','yyyyMMdd');
-fparts(cellfun(@str2double,fparts)>20160000) = [];
+date_ind = find(cellfun(@str2double,fparts)>20160000);
+if ~isnan(str2double(fparts{date_ind+1})) %Time
+    date = datetime([fparts{date_ind},fparts{date_ind+1}],'InputFormat','yyyyMMddhhmmss');
+    fparts(date_ind:date_ind+1) = [];
+else %no time
+    date = datetime(fparts{date_ind},'InputFormat','yyyyMMdd');
+    fparts(date_ind) = [];
+end
 % Experiment
 known_exps = {'RotaryChair','aHIT','eeVOR','Manual'};
 if contains(fname,known_exps)

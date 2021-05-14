@@ -8,8 +8,8 @@
 % loop.
 %
 % Written by Andrianna Ayiotis
-% Updated on 2021-03-27
-opts = {'Initialize','Make Folders','Segment','Cycle Average',...
+% Updated on 2021-05-12
+opts = {'Initialize','Segment','Combine Segments','Cycle Average',...
     'Summary Table','Generate Figures','Set Version'};
 ind = 1; %Run the start procedure first
 tf1 = 1;
@@ -17,31 +17,23 @@ while tf1
     if strcmp(opts{ind},'Initialize')        
         code_Path = [userpath,filesep,'VOGA'];
         addpath(genpath(code_Path));
-    elseif strcmp(opts{ind},'Make Folders') 
-        VOGA__makeFolders;
+        if VOGA__checkFolders
+            disp('VOGA instance ended.')
+            return;
+        end
     elseif strcmp(opts{ind},'Segment') 
-        flag = VOGA__checkFolders;
-        if ~flag
-            VOGA__Segment;
-        end
+        VOGA__Segment;
+    elseif strcmp(opts{ind},'Combine Segments')
+        VOGA__combineSegments;
     elseif strcmp(opts{ind},'Cycle Average')
-        flag = VOGA__checkFolders;
-        if ~flag
-            VOGA__CycAvg;
-        end
+        VOGA__CycAvg;
     elseif strcmp(opts{ind},'Summary Table')
-        flag = VOGA__checkFolders;
-        if ~flag
-            Path = cd;
-            Cyc_Path = [Path,filesep,'Cycle Averages'];
-            rerun = ~strcmp(questdlg('If a parameter table already exists, use that one or rerun?','','Use existing table','Rerun','Rerun'),'Use existing table');
-            MakeCycleSummaryTable(Path,Cyc_Path,rerun);
-        end
-    elseif strcmp(opts{ind},'Generate Figures')
-        flag = VOGA__checkFolders;
-        if ~flag  
-            VOGA__makePlots;
-        end
+        Path = cd;
+        Cyc_Path = [Path,filesep,'Cycle Averages'];
+        rerun = ~strcmp(questdlg('If a parameter table already exists, use that one or rerun?','','Use existing table','Rerun','Rerun'),'Use existing table');
+        MakeCycleSummaryTable(Path,Cyc_Path,rerun);
+    elseif strcmp(opts{ind},'Generate Figures')  
+        VOGA__makePlots;
     elseif strcmp(opts{ind},'Set Version')
         VOGA__setVersion;
     end
