@@ -13,7 +13,7 @@ function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
 % Subject, Visit, Date, 
 % Experiment (RotaryChair/eeVOR/aHIT/Manual), 
 % Type(Sine/Exponential/Impulse/PulseTrain),
-% Condition (MotionMod/ConstantRate/NoStim/NoStimLight/eeVOR),
+% Condition (MotionMod/ConstantRate/NoStim/NoStimLight/eeVOR/Autoscan),
 % axis_name (X/Y/LHRH/LARP/RALP/''),
 % stim_vect ([L,R,Z] coordinates)
 % If applicable:
@@ -49,7 +49,7 @@ end
 % Date
 date_ind = find(cellfun(@str2double,fparts)>20160000);
 if ~isnan(str2double(fparts{date_ind+1})) %Time
-    date = datetime([fparts{date_ind},fparts{date_ind+1}],'InputFormat','yyyyMMddhhmmss');
+    date = datetime([fparts{date_ind},'-',fparts{date_ind+1}],'InputFormat','yyyyMMdd-HHmmss');
     fparts(date_ind:date_ind+1) = [];
 else %no time
     date = datetime(fparts{date_ind},'InputFormat','yyyyMMdd');

@@ -13,7 +13,7 @@ function VOGA__makePlots
     params.version = data{1,2}{:};
     params.Experimenter = data{2,2}{:};    
     %% Run until cancel 
-    opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized'};    
+    opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized','Sphere Plot'};    
     [ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
                        'SelectionMode','single',...
                        'ListSize',[150 125],...
@@ -59,18 +59,18 @@ function VOGA__makePlots
                 plotGroupCycAvg(params);
             end          
         elseif strcmp(opts{ind},'Parameterized')  
-            types = {'SineAmpVelLRZ','SineAmpVelXYZ','Autoscan','SpherePlot','SineFreqGainPhase'}; %Update as more things get added
-            [indx,tf2] = nmlistdlg('PromptString','Select files to plot:','ListSize',[300 300],'ListString',types,'SelectionMode','multiple');
-            if tf2
-                in_args = inputdlg({'Descriptive annotation on figure (0/1): ','Y-axis maximum (dps). Leave empty for default:'},'Plot settings',[1 50],{'1',''});
-                if ~isempty(in_args)
-                    params.annot = str2double(in_args{1});
-                    params.YMax = str2double(in_args{2});
-                    for i = 1:length(indx)
-                        plotParamResults(types{indx(i)},params);
-                    end
-                end
-            end 
+            in_args = inputdlg({'Descriptive annotation on figure (0/1): ','Y-axis maximum (dps). Leave empty for default:'},'Plot settings',[1 50],{'1',''});
+            if ~isempty(in_args)
+                params.annot = str2double(in_args{1});
+                params.YMax = str2double(in_args{2});
+                plotParamResults(params);
+            end    
+        elseif strcmp(opts{ind},'Sphere Plot')  
+            in_args = inputdlg({'Descriptive annotation on figure (0/1): '},'Plot settings',[1 50],{'1'});
+            if ~isempty(in_args)
+                params.annot = str2double(in_args{1});
+                plotSpherePlot(params);
+            end    
         end
         [ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
                    'SelectionMode','single',...

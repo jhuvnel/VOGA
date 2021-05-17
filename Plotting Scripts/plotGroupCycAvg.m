@@ -1,10 +1,8 @@
 %% Plot Group Cyc Avg.m
 %This function makes figures with multiple cycle averages of similar
 %experiments across one degree of freedom like:
-% Sine w/ different frequency (SineFreq)
-% Sine w/ different amplitude (SineAmp)
-% Sine combinatations of freq and amp (SineManual)
-% Autoscan Current Levels (Autoscan)
+% Sine w/ different frequencies and/or amplitudes
+% Autoscan Current Levels 
 
 function plotGroupCycAvg(params)
     Path = params.Path;
@@ -26,11 +24,6 @@ function plotGroupCycAvg(params)
     close all;    
     load('VNELcolors.mat','colors')
     code_name = ['Plotting Scripts',filesep,'plotGroupCycAvg.m'];
-    warning('off')
-    sub_info = readtable('SubjectInfo.xlsx');
-    warning('on')
-    Subs = sub_info{:,1};
-    Ears = sub_info{:,2};
     % Load table in question
     res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
     if isempty(res_file)
@@ -42,14 +35,16 @@ function plotGroupCycAvg(params)
     load(res_file{end},'all_results')
     if any(contains(all_results.Type,'Sine'))
         %% Sinusoids
+        all_results = all_results(contains(all_results.Type,'Sine'),:);
+        fn = size(all_results,1);
         % Plot Group Cycle Average Results
-        cyc_files = all_results.File(contains(all_results.Type,{'Sine','Sinusoid'}));
+        cyc_files = all_results.File;
         freqs = unique(all_results.('Frequency(Hz)'));
         fnum = length(freqs);
         amps = unique(all_results.('Amplitude(dps)'));
         anum = length(amps);
         exps = zeros(fnum,anum);
-        for i = 1:length(cyc_files)
+        for i = 1:fn
             exps(ismember(freqs,all_results.('Frequency(Hz)')(i)),ismember(amps,all_results.('Amplitude(dps)')(i))) = 1;
         end
         file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Condition,all_results.AxisName,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('Frequency(Hz)'))),' ',''),'Hz'),strcat(strrep(cellstr(num2str(all_results.('Amplitude(dps)'))),' ',''),'dps')];
@@ -80,6 +75,7 @@ function plotGroupCycAvg(params)
         end
         enum = size(conds,1);
         for j = 1:enum
+            disp(['Making plot ',num2str(j),'/',num2str(enum)])
             %Set up labels
             if contains(conds(j),'Hz') %Amp Sweep
                 labs = strcat(strrep(cellstr(num2str(amps)),' ',''),'dps');                    
@@ -197,11 +193,7 @@ function plotGroupCycAvg(params)
                 close;
             end
         end
-        % Parameterized Graphs
-        
-        
-        
-    elseif any(contains(all_results.Condition,'Autoscan'))
+    elseif any(contains(all_results.Condition,'Autoscan')) %%FIX THIS SECTION
         %% Autoscan
             fnames = unique(extractfield([dir([Cyc_Path,filesep,'*CurrentFitting*.mat']);...
             dir([Cyc_Path,filesep,'*Autoscan*.mat'])],'name'));
