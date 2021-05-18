@@ -1,10 +1,5 @@
 %% Plot Param Results.m
 % This function makes figures from the Results.mat tables.
-% Defined Types:
-%   SineAmpVelLRZ
-%   SineAmpVelXYZ
-%   Autoscan
-%   SineFreqGainPhase
 
 function plotParamResults(params)
 Path = params.Path;
@@ -43,340 +38,251 @@ end
 load(res_file{end},'all_results')
 if any(contains(all_results.Type,'Sine'))
     %% Sinusoids
-    all_results = all_results(contains(all_results.Type,'Sine')&contains(all_results.AxisName,{'X','Y','LHRH','LARP','RALP'}),:);
+    all_canals = {'LARP','RALP','LHRH','Y','X'}; %Preferred order
+    all_results = all_results(contains(all_results.Type,'Sine')&contains(all_results.AxisName,all_canals),:);
+    %ear = Ears{ismember(Subs,all_results.Subject{end})}; %only one subject expected
+%     if any(contains(all_results.Experiment,'RotaryChair'))
+%         load('RotaryChairNormativeData.mat','norm_dat');
+%         freq = norm_dat.freq;
+%         norm_gain_m = norm_dat.gain;
+%         norm_gain_std = norm_dat.gain_std;
+%         norm_phase_m = norm_dat.phase;
+%         norm_phase_std = norm_dat.phase_std;
+%     end
     fn = size(all_results,1);
     % Plot Group Cycle Average Results
-    canals = unique(all_results.AxisName);
+    canals = all_canals(ismember(unique(all_results.AxisName),all_canals));
     cnum = length(canals);
+    canal_let = lower(strrep(strrep(strrep(canals,'LARP','L'),'RALP','R'),'LHRH','Z'));
     freqs = unique(all_results.('Frequency(Hz)'));
     fnum = length(freqs);
     amps = unique(all_results.('Amplitude(dps)'));
     anum = length(amps);
     exps = zeros(fnum,anum);
+    maxvel_poscyc = NaN(1,fn);
+    maxvel_poscyc_sd = NaN(1,fn);
+    maxvel_negcyc = NaN(1,fn);
+    maxvel_negcyc_sd = NaN(1,fn);
+    phase = NaN(1,fn);
+    phase_sd = NaN(1,fn);
     for i = 1:fn
         exps(ismember(freqs,all_results.('Frequency(Hz)')(i)),ismember(amps,all_results.('Amplitude(dps)')(i))) = 1;
-    end
-    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Condition,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('Frequency(Hz)'))),' ',''),'Hz'),strcat(strrep(cellstr(num2str(all_results.('Amplitude(dps)'))),' ',''),'dps')];
-    conds1 = unique(join(file_parts(:,1:5)));
-    if any(sum(exps,2)>1)
-        rel_freqs = freqs(sum(exps,2)>1);
-        conds_f = repmat(conds1,1,length(rel_freqs));
-        for i = 1:length(rel_freqs)
-            conds_f(:,i) = strcat(conds1,{[' ',num2str(rel_freqs(i)),'Hz']});
+        rel_col = strrep(strrep(strrep(all_results.AxisName{i},'LARP','L'),'RALP','R'),'LHRH','Z');
+        [~,eye] = max(abs([all_results.(['MaxVel_L',rel_col,'_HIGH'])(i),all_results.(['MaxVel_R',rel_col,'_HIGH'])(i),all_results.(['MaxVel_L',rel_col,'_LOW'])(i),all_results.(['MaxVel_R',rel_col,'_LOW'])(i)]));
+        if mod(eye,2)==1 %Left
+            eye_s = 'L';
+        else %Right
+            eye_s = 'R';
         end
-        conds_f = reshape(conds_f,[],1);
-    else
-        conds_f = {};
+        maxvel_poscyc(i) = all_results.(['MaxVel_',eye_s,rel_col,'_HIGH'])(i);
+        maxvel_poscyc_sd(i) = all_results.(['MaxVel_',eye_s,rel_col,'_HIGH_sd'])(i);
+        maxvel_negcyc(i) =  all_results.(['MaxVel_',eye_s,rel_col,'_LOW'])(i);
+        maxvel_negcyc_sd(i) = all_results.(['MaxVel_',eye_s,rel_col,'_LOW_sd'])(i);
+        phase(i) = all_results.(['Phase_',eye_s])(i);
+        phase_sd(i) = all_results.(['Phase_',eye_s,'_sd'])(i);
     end
-    if any(sum(exps,1)>1)
+    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),...
+        all_results.Condition,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('Frequency(Hz)'))),' ',''),'Hz'),...
+        strcat(strrep(cellstr(num2str(all_results.('Amplitude(dps)'))),' ',''),'dps')];
+    rel_file_parts = file_parts(:,1:5); %everything but freq/amp
+    common_cond = cell(1,5);
+    for i = 1:5
+        if length(unique(file_parts(:,i)))==1
+            common_cond(i) = unique(file_parts(:,i));
+        end
+    end
+    rel_file_parts(:,~cellfun(@isempty,common_cond)) = [];
+    common_cond(cellfun(@isempty,common_cond)) = [];
+    common_cond = strjoin(common_cond); 
+    if isempty(rel_file_parts) %only one condition
+        conds = all_results.Condition(1);
+        IC = ones(fn,1);
+    elseif size(rel_file_parts,2)==1
+        [conds,~,IC] = unique(rel_file_parts,'stable');
+    else
+        [conds,~,IC] = unique(join(rel_file_parts),'stable');
+    end
+    enum = length(conds);
+    %Position information for the graph types
+    max_y = 0.80;
+    min_y = 0.15;
+    %spac_y = 0.01;
+    min_x = 0.08;
+    max_x = 0.90;
+    spac_x = 0.01;
+    wid_x = (max_x-min_x-2*spac_x)/3;
+    x_pos = min_x:(wid_x+spac_x):max_x-wid_x; 
+    wid_y = max_y-min_y;
+    y_pos = min_y;    
+    if isempty(YMax)
+        YMax = 5*ceil(max([maxvel_poscyc+maxvel_poscyc_sd,maxvel_negcyc+maxvel_negcyc_sd])/5);
+    end
+    all_markers = 'o*.sd^v><ph_|';
+    if any(sum(exps,1)>1) %Frequency Sweep
         rel_amps = amps(sum(exps,1)>1);
-        conds_a = repmat(conds1,1,length(rel_amps));
-        for i = 1:length(rel_amps)
-            conds_a(:,i) = strcat(conds1,{[' ',num2str(rel_amps(i)),'dps']});
-        end
-        conds_a = reshape(conds_a,[],1);
-    else
-        conds_a = {};
-    end            
-    conds = [conds_f;conds_a];
-    if isempty(conds) %No common freq or amp
-        conds = conds1;
-    end
-    enum = size(conds,1);    
-    %% FIX THIS        
-    all_results2 = all_results;
-    ear = Ears{ismember(Subs,all_results2.Subject{end})}; %only one subject expected
-    canals = {'X','Y','LHRH'};
-    amps = {'20dps','50dps','100dps','200dps','300dps','400dps'};
-    freq = '2Hz';
-    exp_ind = zeros(length(amps),length(canals));
-    for i = 1:length(amps)
-        for j = 1:length(canals)
-            temp = find(contains(all_results2.File,amps{i})&contains(all_results2.File,canals{j})&contains(all_results2.File,['-',freq]));
-            if length(temp)==1
-                exp_ind(i,j) = temp;
-            elseif length(temp)>1
-                exp_ind(i,j) = NaN;
-            end
-        end
-    end
-    i1 = exp_ind(find(exp_ind,1,'first'));
-    exp_parts = split(all_results2.Condition{i1},' ');
-    exp_parts(contains(exp_parts,{'dps','X','Y','LHRH'})) = [];
-    exp_parts = strjoin(exp_parts,' ');
-    exp_name = [all_results2.Subject{i1},' ',all_results2.Visit{i1},' ',datestr(all_results2.Date(i1),'yyyymmdd'),' ',all_results2.Experiment{i1},' ',exp_parts,' ',all_results2.Goggle{i1}];
-    %Look at the stimulation half-cycle
-    if strcmp(ear,'L')
-        L_XYZ = [all_results2.MaxVel_LX_LOW,all_results2.MaxVel_LY_HIGH,all_results2.MaxVel_LZ_LOW];
-        L_XYZ_sd = [all_results2.MaxVel_LX_LOW_sd,all_results2.MaxVel_LY_HIGH_sd,all_results2.MaxVel_LZ_LOW_sd];
-        R_XYZ = [all_results2.MaxVel_RX_LOW,all_results2.MaxVel_RY_HIGH,all_results2.MaxVel_RZ_LOW];
-        R_XYZ_sd = [all_results2.MaxVel_RX_LOW_sd,all_results2.MaxVel_RY_HIGH_sd,all_results2.MaxVel_RZ_LOW_sd];
-    elseif strcmp(ear,'R')
-        L_XYZ = [all_results2.MaxVel_LX_HIGH,all_results2.MaxVel_LY_LOW,all_results2.MaxVel_LZ_HIGH];
-        L_XYZ_sd = [all_results2.MaxVel_LX_HIGH_sd,all_results2.MaxVel_LY_LOW_sd,all_results2.MaxVel_LZ_HIGH_sd];
-        R_XYZ = [all_results2.MaxVel_RX_HIGH,all_results2.MaxVel_RY_LOW,all_results2.MaxVel_RZ_HIGH];
-        R_XYZ_sd = [all_results2.MaxVel_RX_HIGH_sd,all_results2.MaxVel_RY_LOW_sd,all_results2.MaxVel_RZ_HIGH_sd];
-    else
-        error('Subject implant ear was set to neither left nor right.')
-    end
-    %Make the figure
-    ha = gobjects(1,6);
-    linethick=3;
-    linethin=1;
-    errorbarcapsize=1;
-    figsizeinches=[7,6];
-    XLim = [0 110];
-    YLim = [0,YMax];
-    pdom = [5,10,25,50,75,100];
-    XTick = [5,25,50,75,100];
-    %figsizeinchesBoxplot=[2.3,4];
-    figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
-    if annot
-        annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
-            code_name,newline,...
+        for a = 1:length(rel_amps)            
+            fig_name = [common_cond,' ',num2str(rel_amps(a)),'dps Sine Frequency Sweep'];
+            figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
+            annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
+            'plotParamResults.m',newline,...
             'VOGA',version,newline,Experimenter],'FontSize',5,...
-            'EdgeColor','none','interpreter','none');
-    end
-    annotation('textbox',[0 .9 1 .1],'String',exp_name,'FontSize',14,...
-        'HorizontalAlignment','center','EdgeColor','none');
-    ha(1) = subplot(2,3,1);
-    ha(2) = subplot(2,3,2);
-    ha(3) = subplot(2,3,3);
-    ha(4) = subplot(2,3,4);
-    ha(5) = subplot(2,3,5);
-    ha(6) = subplot(2,3,6);
-    x_min = 0.12;
-    x_max = 0.99;
-    x_space = 0.01;
-    y_min = 0.09;
-    y_max = 0.90;
-    y_space = 0.03;
-    x_wid = (x_max-x_min-x_space*2)/3;
-    y_wid = (y_max-y_min-y_space*1)/2;
-    x_pos = x_min:(x_wid+x_space):x_max;
-    y_pos = y_min:(y_wid+y_space):y_max;
-    ha(1).Position = [x_pos(1),y_pos(2),x_wid,y_wid];
-    ha(2).Position = [x_pos(2),y_pos(2),x_wid,y_wid];
-    ha(3).Position = [x_pos(3),y_pos(2),x_wid,y_wid];
-    ha(4).Position = [x_pos(1),y_pos(1),x_wid,y_wid];
-    ha(5).Position = [x_pos(2),y_pos(1),x_wid,y_wid];
-    ha(6).Position = [x_pos(3),y_pos(1),x_wid,y_wid];
-    set(ha,'YLim',YLim,'XLim',XLim,'FontSize',12)
-    set(ha,'XTick',XTick,'YTick',20:20:YLim(2))
-    set(ha(1:3),'XTickLabel',[])
-    set(ha([2,3,5,6]),'YTickLabel',[],'YColor','none')
-    title(ha(1),'X','FontSize',16,'Color',colors.l_x)
-    title(ha(2),'Y','FontSize',16,'Color',colors.l_y)
-    title(ha(3),'Z','FontSize',16,'Color',colors.l_z)
-    xlabel(ha(5),'% Modulation Depth','FontSize',14)
-    ylabel(ha(1),'Left Eye','FontSize',14)
-    ylabel(ha(4),'Right Eye','FontSize',14)
-    text(ha(4),-40,YMax/2,'VOR Component Magnitude (\circ/s)','Rotation',90,'FontSize',16,'FontWeight','bold')
-    colorsL = [colors.l_x;colors.l_y;colors.l_z];
-    colorsR = [colors.r_x;colors.r_y;colors.r_z];
-    hL = gobjects(1,3);
-    hR = gobjects(1,3);
-    for i = 1:3 %tested canal
-        %Left Eye
-        axes(ha(i))
-        hold on
-        for j = 1:3
-            errorbar(pdom,L_XYZ(exp_ind(:,i),j),L_XYZ_sd(exp_ind(:,i),j),'Color',colorsL(j,:),'LineStyle','none','LineWidth',1,'CapSize',errorbarcapsize)
-            plot(pdom,L_XYZ(exp_ind(:,i),j),'Color',colorsL(j,:),'LineWidth',linethin)
-        end
-        hL(i) = plot(pdom,L_XYZ(exp_ind(:,i),i),'Color',colorsL(i,:),'LineWidth',linethick);
-        hold off
-        %Right Eye
-        axes(ha(i+3))
-        hold on
-        for j = 1:3
-            errorbar(pdom,R_XYZ(exp_ind(:,i),j),R_XYZ_sd(exp_ind(:,i),j),'Color',colorsR(j,:),'LineStyle','none','LineWidth',1,'CapSize',errorbarcapsize)
-            plot(pdom,R_XYZ(exp_ind(:,i),j),'Color',colorsR(j,:),'LineWidth',linethin)
-        end
-        hR(i) = plot(pdom,R_XYZ(exp_ind(:,i),i),'Color',colorsR(i,:),'LineWidth',linethick);
-        hold off
-    end
-    leg1 = legend(ha(1),hL,canals,'box','off','FontSize',12,'Location','northeast');
-    title(leg1,'Left Eye Components','FontWeight','normal')
-    leg1.ItemTokenSize(1) = 15;
-    leg1.Position = [0.0644   0.7611    0.2470    0.1551];
-    leg1.Title.NodeChildren.Position = [0.7500    0.8619         0];
-    leg2 = legend(ha(4),hR,canals,'box','off','FontSize',12,'Location','northeast');
-    title(leg2,'Right Eye Components','FontWeight','normal');
-    leg2.ItemTokenSize(1) = 15;
-    leg2.Position = [0.0544    0.3410    0.2629    0.1551];
-    leg2.Title.NodeChildren.Position = [0.7700    0.8619         0];
-    fig_name = {['SineAmpXYZ-',strrep(exp_name,' ','-'),'.fig']};
-    %fig_name = inputdlg('Name this figure','',1,fig_name);
-    if ~isempty(fig_name)
-        savefig([Path,filesep,fig_name{:}])
-    end
-    close;
-    %% Rotary Chair and eeVOR Freq Sweep along one axis gain and phase
-    all_results(~contains(all_results.Condition,'Sine'),:) = [];
-    ear = Ears{ismember(Subs,all_results.Subject{end})}; %only one subject expected
-    if any(contains(all_results.Experiment,'RotaryChair'))
-        load('RotaryChairNormativeData.mat','norm_dat');
-        freq = norm_dat.freq;
-        norm_gain_m = norm_dat.gain;
-        norm_gain_std = norm_dat.gain_std;
-        norm_phase_m = norm_dat.phase;
-        norm_phase_std = norm_dat.phase_std;
-    end
-    %Figure out which frequenicies are needed
-    [freq_ax,indf] = sort(cellfun(@str2double,strrep(unique(all_results.Frequency)','Hz','')));
-    freqs = unique(all_results.Frequency);
-    freqs = freqs(indf);
-    fnum = length(freqs);
-    %Figure out how many canals were tested (one graph per canal
-    %needed)
-    all_canals = {'LHRH','LARP','RALP','X','Y'};
-    canals = all_canals([any(contains(all_results.Condition,'LHRH')),...
-        any(contains(all_results.Condition,'LARP')),...
-        any(contains(all_results.Condition,'RALP')),...
-        any(contains(all_results.Condition,{'X'})),...
-        any(contains(all_results.Condition,{'Y'}))]);
-    if isempty(canals)
-        error('Could not detect any valid canal names in the file names')
-    end
-    for c = 1:length(canals)
-        canal = canals{c};
-        sub_results = all_results(contains(all_results.Condition,canal),:);
-        %Figure out which experiments to plot
-        conds = [sub_results.Goggle,cellstr(datestr(sub_results.Date)),split(sub_results.Condition,' ')];
-        amp_num = mode(str2double(strrep(conds(contains(conds,'dps')),'dps','')));
-        amp = [num2str(amp_num),'dps'];
-        conds(:,any(contains(conds,{'Hz','dps','Sine',canal}))) = [];
-        conds = join(conds,{' '});
-        exp_name = unique(conds,'stable')';
-        enum = length(exp_name);
-        %Create arrays for graphing
-        excludedatawithgainbelow=0.015;
-        %Make the items to plot
-        gain = NaN(enum,fnum);
-        gain_sd = NaN(enum,fnum);
-        phase = NaN(enum,fnum);
-        phase_sd = NaN(enum,fnum);
-        fig_title = [sub_results.Subject{1},' ',sub_results.Visit{1},' ',datestr(sub_results.Date(1),'yyyymmdd'),' ',sub_results.Experiment{1},' Sine ',canal,' ',amp,' ',sub_results.Goggle{1},' FrequencySweep'];
-        for i = 1:enum
-            eparts = split(exp_name(i),' ');
-            if length(eparts)==2 %no MotionMod vs Constant Rate
-                inds = find(contains(sub_results.Goggle,eparts{1})&...
-                    sub_results.Date==datetime(eparts{2})&...
-                    contains(sub_results.Condition,amp));
-            else
-                inds = find(contains(sub_results.Goggle,eparts{1})&...
-                    sub_results.Date==datetime(eparts{2})&...
-                    contains(sub_results.Condition,eparts{3})&...
-                    contains(sub_results.Condition,amp));
+            'EdgeColor','none','interpreter','none','Color',[0.5,0.5,0.5]);
+            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
+                    'HorizontalAlignment','center','EdgeColor','none');
+            ha = gobjects(1,3);
+            h1 = gobjects(1,cnum);
+            h2 = gobjects(1,enum);
+            ha(1) = subplot(1,3,1);
+            ha(1).Position = [x_pos(1),y_pos,wid_x,wid_y];
+            ha(2) = subplot(1,3,2);
+            ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
+            ha(3) = subplot(1,3,3);
+            ha(3).Position = [x_pos(3),y_pos,wid_x,wid_y];
+            c_bool = false(1,cnum);
+            e_bool = false(1,enum);
+            for c = 1:cnum
+                for i = 1:enum
+                    rel_i = find(all_results.('Amplitude(dps)')==rel_amps(a)&contains(all_results.AxisName,canals{c})&IC==i);
+                    if length(rel_i)>1
+                        [f_ax,f_i] = sort(all_results.('Frequency(Hz)')(rel_i)); 
+                        rel_i = rel_i(f_i);
+                        axes(ha(1))
+                        hold on
+                        errorbar(f_ax,maxvel_poscyc(rel_i),maxvel_poscyc_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
+                        hold off
+                        axes(ha(2))
+                        hold on
+                        errorbar(f_ax,maxvel_negcyc(rel_i),maxvel_negcyc_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
+                        h1(c) = plot(NaN,NaN,'LineWidth',2,'Color',colors.(['l_',canal_let{c}]));
+                        hold off
+                        axes(ha(3))
+                        hold on
+                        errorbar(f_ax,phase(rel_i),phase_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
+                        h2(i) = plot(NaN,NaN,['k',all_markers(i)]);
+                        hold off
+                        c_bool(c) = true;
+                        e_bool(i) = true;
+                    end
+                end
+            end            
+            linkaxes(ha,'x')
+            linkaxes(ha(1:2),'y')
+            set(ha,'xscale','log','XTick',freqs,'XTickLabelRotation',0,'XMinorTick','off','XLim',[min(freqs)*0.8 max(freqs)*1.2])
+            set(ha(1:2),'YLim',[0 YMax])
+            set(ha(2),'YTickLabel',[])
+            set(ha(3),'YAxisLocation','right','YLim',[-180 360])
+            title(ha(1),'Positive Half-Cycle')
+            title(ha(2),'Negative Half-Cycle')
+            title(ha(3),'Phase Lead')
+            ylabel(ha(1),'Maxmimum Eye Velocity (dps)')
+            ylabel(ha(3),'Phase (deg)')
+            xlabel(ha(2),'Frequency (Hz)')
+            %Make legends
+            axes(ha(2))
+            hold on
+            for c = 1:cnum
+                h1(c) = plot(NaN,NaN,'LineWidth',2,'Color',colors.(['l_',canal_let{c}]));
             end
-            [~,f_ind] = ismember(sub_results.Frequency(inds),freqs);
-            switch canal %Column name in table
-                case 'LHRH'
-                    ax = 'Z';
-                case 'LARP'
-                    ax = 'L';
-                case 'RALP'
-                    ax = 'R';
-                case 'X'
-                    ax = 'X';
-                case 'Y'
-                    ax = 'Y';
+            hold off
+            leg1 = legend(h1(c_bool),upper(canal_let(c_bool)),'NumColumns',sum(c_bool),'Location','northwest');
+            leg1.ItemTokenSize(1) = 5;
+            title(leg1,'Axis')
+            axes(ha(3))
+            hold on
+            for i = 1:enum
+                h2(i) = plot(NaN,NaN,['k',all_markers(i)]);
             end
-            switch ear
-                case 'L'
-                    side = '_HIGH';
-                case 'R'
-                    side = '_LOW';
-            end
-            col = [ax,side];
-            [sub_gain,eye] = max([sub_results.(['Gain_L',col])(inds)';sub_results.(['Gain_R',col])(inds)']);
-            sub_gain_sd = sub_results.(['Gain_L',col,'_sd'])(inds)';
-            sub_gain_sd(eye==2) = sub_results.(['Gain_R',col,'_sd'])(inds(eye==2));
-            sub_phase = sub_results.Phase_L(inds);
-            sub_phase(eye==2) = sub_results.Phase_R(inds(eye==2));
-            sub_phase_sd = sub_results.Phase_L_sd(inds);
-            sub_phase_sd(eye==2) = sub_results.Phase_R_sd(inds(eye==2));
-            sub_phase(sub_gain < excludedatawithgainbelow) = NaN;
-            sub_phase_sd(sub_gain < excludedatawithgainbelow) = NaN;
-            %remove SD for n=1
-            n = sub_results.Cycles(inds);
-            sub_gain_sd(n==1) = NaN;
-            sub_phase_sd(n==1) = NaN;
-            %Put into mats
-            gain(i,f_ind) = sub_gain;
-            gain_sd(i,f_ind) = sub_gain_sd;
-            phase(i,f_ind) = sub_phase;
-            phase_sd(i,f_ind) = sub_phase_sd;
+            hold off
+            leg2 = legend(h2(e_bool),conds(e_bool),'NumColumns',1,'Location','northwest');
+            leg2.ItemTokenSize(1) = 5;
+            title(leg2,'Conditions')
+            savefig([Path,filesep,strrep(fig_name,' ','-'),'.fig'])
+            close;
         end
-        % Plot
-        
-        ha = gobjects(1,2);
-        logxshift=1.03; %how much to multiply the x value to offset its marker rightward (divide to move left)
-        %markerbig=5;
-        %markersmall=4;
-        linethick=2;
-        linethin=1;
-        errorbarcapsize=1;
-        graydark=0.85;
-        graylight=0.95;
-        figsizeinches=[7,6];
-        %figsizeinchesBoxplot=[2.3,4];
-        plot_offset = [logxshift^-1, logxshift^-2, 1, logxshift, logxshift^2];
-        figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
-        annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
-            'plotRotaryChairVisitSummary.m',newline,...
+    end  
+    if any(sum(exps,2)>1) %Amplitude Sweep
+        rel_freqs = freqs(sum(exps,2)>1);      
+        for f = 1:length(rel_freqs)
+            fig_name = [common_cond,' ',num2str(rel_freqs(f)),'Hz Sine Amplitude Sweep'];
+                        figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
+            annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
+            'plotParamResults.m',newline,...
             'VOGA',version,newline,Experimenter],'FontSize',5,...
-            'EdgeColor','none','interpreter','none');
-        ha(1) = subplot(2,1,1);
-        ha(1).Position = [0.1,0.55,0.85,0.4];
-        ha(2) = subplot(2,1,2);
-        ha(2).Position = [0.1,0.10,0.85,0.4];
-        axes(ha(1))
-        hold on
-        if any(contains(all_results.Experiment,'RotaryChair')) %Normative horizontal rotary chair
-            h=gobjects(1,enum+3);
-            h(enum+3) = fill([freq,fliplr(freq)],[norm_gain_m+2*norm_gain_std,fliplr(norm_gain_m-2*norm_gain_std)],graylight*[1 1 1],'LineStyle','none');
-            h(enum+2) = fill([freq,fliplr(freq)],[norm_gain_m+1*norm_gain_std,fliplr(norm_gain_m-1*norm_gain_std)],graydark*[1 1 1],'LineStyle','none');
-            h(enum+1) = plot(freq,norm_gain_m,'k--','LineWidth',linethick);
-        else
-            h=gobjects(1,enum);
+            'EdgeColor','none','interpreter','none','Color',[0.5,0.5,0.5]);
+            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
+                    'HorizontalAlignment','center','EdgeColor','none');
+            ha = gobjects(1,3);
+            h1 = gobjects(1,cnum);
+            h2 = gobjects(1,enum);
+            ha(1) = subplot(1,3,1);
+            ha(1).Position = [x_pos(1),y_pos,wid_x,wid_y];
+            ha(2) = subplot(1,3,2);
+            ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
+            ha(3) = subplot(1,3,3);
+            ha(3).Position = [x_pos(3),y_pos,wid_x,wid_y];
+            c_bool = false(1,cnum);
+            e_bool = false(1,enum);
+            for c = 1:cnum
+                for i = 1:enum
+                    rel_i = find(all_results.('Frequency(Hz)')==rel_freqs(f)&contains(all_results.AxisName,canals{c})&IC==i);
+                    if length(rel_i)>1
+                        [a_ax,a_i] = sort(all_results.('Amplitude(dps)')(rel_i));
+                        rel_i = rel_i(a_i);
+                        axes(ha(1))
+                        hold on
+                        errorbar(a_ax,maxvel_poscyc(rel_i),maxvel_poscyc_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
+                        hold off
+                        axes(ha(2))
+                        hold on
+                        errorbar(a_ax,maxvel_negcyc(rel_i),maxvel_negcyc_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
+                        hold off
+                        axes(ha(3))
+                        hold on
+                        errorbar(a_ax,phase(rel_i),phase_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
+                        hold off
+                        c_bool(c) = true;
+                        e_bool(i) = true;
+                    end
+                end
+            end            
+            linkaxes(ha,'x')
+            linkaxes(ha(1:2),'y')
+            set(ha,'XTick',amps,'XTickLabelRotation',0,'XMinorTick','off','XLim',[0 max(amps)*1.05])
+            set(ha(1:2),'YLim',[0 YMax])
+            set(ha(2),'YTickLabel',[])
+            set(ha(3),'YAxisLocation','right','YLim',[-180 360])
+            title(ha(1),'Positive Half-Cycle')
+            title(ha(2),'Negative Half-Cycle')
+            title(ha(3),'Phase Lead')
+            ylabel(ha(1),'Maxmimum Eye Velocity (dps)')
+            ylabel(ha(3),'Phase (deg)')
+            xlabel(ha(2),'Head Velocity (dps)')
+            XTickLab = get(ha(1),'XTickLabel');
+            XTickLab(amps<100) = {''};
+            set(ha,'XTickLabel',XTickLab)
+            %Make legends
+            axes(ha(2))
+            hold on
+            for c = 1:cnum
+                h1(c) = plot(NaN,NaN,'LineWidth',2,'Color',colors.(['l_',canal_let{c}]));
+            end
+            hold off
+            leg1 = legend(h1(c_bool),upper(canal_let(c_bool)),'NumColumns',sum(c_bool),'Location','northwest');
+            leg1.ItemTokenSize(1) = 5;
+            title(leg1,'Axis')
+            axes(ha(3))
+            hold on
+            for i = 1:enum
+                h2(i) = plot(NaN,NaN,['k',all_markers(i)]);
+            end
+            hold off
+            leg2 = legend(h2(e_bool),conds(e_bool),'NumColumns',1,'Location','northwest');
+            leg2.ItemTokenSize(1) = 5;
+            title(leg2,'Conditions')
+            savefig([Path,filesep,strrep(fig_name,' ','-'),'.fig'])
+            close;
         end
-        for i = 1:enum
-            h(i) = plot(plot_offset(i)*freq_ax,gain(i,:),'LineWidth',linethick);
-            errorbar(plot_offset(i)*freq_ax,gain(i,:),gain_sd(i,:),'Color',h(i).Color,'LineStyle','none','LineWidth',linethin,'CapSize',errorbarcapsize)
-        end
-        hold off
-        if any(contains(all_results.Experiment,'RotaryChair'))
-            legend(h,[exp_name,{'Normal mean','Normal±1SD','Normal±2SD'}],'Location','NorthWest','NumColumns',2)
-        else
-            legend(h,exp_name,'Location','NorthWest','NumColumns',2)
-        end
-        title(fig_title)
-        ylabel([canal,' VOR Gain'])
-        set(ha(1),'XTick',freq_ax,'XTickLabel',[])
-        axes(ha(2))
-        hold on
-        if any(contains(all_results.Experiment,'RotaryChair'))
-            fill([freq,fliplr(freq)],[norm_phase_m+2*norm_phase_std,fliplr(norm_phase_m-2*norm_phase_std)],graylight*[1 1 1],'LineStyle','none')
-            fill([freq,fliplr(freq)],[norm_phase_m+1*norm_phase_std,fliplr(norm_phase_m-1*norm_phase_std)],graydark*[1 1 1],'LineStyle','none')
-            plot(freq,norm_phase_m,'k--','LineWidth',linethick)
-        end
-        for i = 1:enum
-            plot(plot_offset(i)*freq_ax,phase(i,:),'Color',h(i).Color,'LineWidth',linethick);
-            errorbar(plot_offset(i)*freq_ax,phase(i,:),phase_sd(i,:),'Color',h(i).Color,'LineStyle','none','LineWidth',linethin,'CapSize',errorbarcapsize)
-        end
-        hold off
-        ylabel('Phase Lead (deg)')
-        set(ha(2),'XTick',freq_ax,'XTickLabel',freq_ax)
-        xlabel('Frequency [Hz]')
-        set(ha,'XLim',[0.9*freq_ax(1),1.1*freq_ax(end)],'YTickLabelMode','auto','XScale','log')
-        set(ha(1),'YLim',[0 YMax/amp_num],'YTick',0.1:0.1:0.8)
-        set(ha(2),'YLim',[-30,100],'YTick',-20:20:100)
-        savefig([Path,filesep,strrep(fig_title,' ','-'),'.fig'])
-        close;
-    end
-    
+    end                
 elseif(any(contains(all_results.Condition,'Autoscan')))
     %% Make Figure like Boutros 2019 Figure 4 but Magnitude and Misalignment
     %Now figure out which files to plot

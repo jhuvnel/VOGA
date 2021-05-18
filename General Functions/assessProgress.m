@@ -1,11 +1,4 @@
 function tab = assessProgress(Path)
-    folder_contents = extractfield(dir(Path),'name');
-    %Make sure the needed folders are in the directory
-    if ~any(ismember(folder_contents,'Segmented Files'))
-        error('No "Segmented Files" folder in this directory')
-    elseif ~any(ismember(folder_contents,'Cycle Averages'))
-        error('No "Cycle Averages" folder in this directory')    
-    end
     seg_files = extractfield(dir([Path,filesep,'Segmented Files',filesep,'*-*.mat']),'name');
     if isempty(seg_files)
         error('No segments present.')
