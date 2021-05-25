@@ -206,11 +206,18 @@ setdefaultbutton(fig, ok_btn);
 % make sure we are on screen
 movegui(fig)
 set(fig, 'Visible','on'); drawnow;
-
 try
     % Give default focus to the listbox *after* the figure is made visible
     uicontrol(listbox);
-    c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely(true);
+    %In May 2021 AIA noticed the line below was no longer working on her mac 
+    %(the box would disappear and cancel before user selection but it still
+    %worked on her lab PC). May need to change from ispc in the future based
+    %on other computers
+    if ispc
+        c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely();
+    else
+        c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely(true);
+    end
     uiwait(fig);
     delete(c);
 catch
