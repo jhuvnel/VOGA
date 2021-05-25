@@ -51,7 +51,7 @@ if any(contains(all_results.Type,'Sine'))
 %     end
     fn = size(all_results,1);
     % Plot Group Cycle Average Results
-    canals = all_canals(ismember(unique(all_results.AxisName),all_canals));
+    canals = all_canals(ismember(all_canals,unique(all_results.AxisName)));
     cnum = length(canals);
     canal_let = lower(strrep(strrep(strrep(canals,'LARP','L'),'RALP','R'),'LHRH','Z'));
     freqs = unique(all_results.('Frequency(Hz)'));
