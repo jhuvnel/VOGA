@@ -99,7 +99,7 @@ if contains(info.goggle_ver,'GNO') %No raw position, just velocity
     if contains(info.dataType,{'LH','RH'})
         stim1 = Data.HeadVel_Z;
     elseif contains(info.dataType,{'LA','RP'})
-        stim1 = Data.HeadVel_L;
+        stim1 = -Data.HeadVel_L;
     elseif contains(info.dataType,{'RA','LP'})
         stim1 = Data.HeadVel_R;
     else
@@ -205,12 +205,13 @@ ind = find(contains(opts,'Start Over')); %Run the start procedure first
 while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
     if strcmp(opts{ind},'Start Over')
         traces_pos = traces_pos1;
-        traces_vel = traces_vel1;
-        YLim_Pos = YLim_Pos1;
+        traces_vel = traces_vel1;       
         if type == 3
-            YLim_Vel = [-50 250];
+            YLim_Vel = [-250 250];
+            YLim_Pos = [-100 100];
         else
             YLim_Vel = YLim_Vel1;
+            YLim_Pos = YLim_Pos1;
         end
         info.TriggerShift2 = 0;
         [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
@@ -347,8 +348,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
                        'Position',[screen_size(3)-4,screen_size(4)-3.75,3,3.75]);  
     if tf2 == 0 %Treat this like an exit
         return;
-    end
-    
+    end   
 end
 %% Save
 CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);

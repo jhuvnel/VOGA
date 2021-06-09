@@ -1,6 +1,11 @@
 function moveGNOfiles(Path)
     names = extractfield(dir(Path),'name')';
     isfold = extractfield(dir(Path),'isdir')';
+    %% See if there are any relevant files/folders at all on the path
+    if ~any(contains(names,{'.txt','.xml','.csv','.avi','video'}))
+        disp('No GNO file types detected.')
+        return;
+    end    
     %% Move video files
     if any(contains(names,'video')&isfold)
         dir_names = names(contains(names,'video')&isfold);
@@ -37,14 +42,13 @@ function moveGNOfiles(Path)
         end
     end
     %% Move files
-    if any(contains(names,all_ext)&contains(names,file_check))
-        mkdir('Combined Files')
-        movefile('Processed*','Combined Files')
-        movefile('Combined Files','Raw Files')
-        for j = 1:length(all_ext)
-            if any(contains(names,all_ext{j})&contains(names,file_check))
-                movefile(['*',all_ext{j}],'Raw Files')
-            end
+    mkdir('Combined Files')
+    movefile('Processed*','Combined Files')
+    movefile('Combined Files','Raw Files')
+    names = extractfield(dir(Path),'name')';
+    for j = 1:length(all_ext)
+        if any(contains(names,all_ext{j}))
+            movefile(['*',all_ext{j}],'Raw Files')
         end
-    end     
+    end    
 end

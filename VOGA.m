@@ -9,7 +9,7 @@
 %
 % Written by Andrianna Ayiotis
 % Updated on 2021-05-12
-opts = {'Initialize','Segment','Combine Segments','Cycle Average',...
+opts = {'Initialize','Process Raw Data','Segment','Combine Segments','Cycle Average',...
     'Summary Table','Generate Figures','Set Version'};
 ind = 1; %Run the start procedure first
 tf1 = 1;
@@ -21,7 +21,9 @@ while tf1
             disp('VOGA instance ended.')
             return;
         end
-    elseif strcmp(opts{ind},'Segment') 
+    elseif strcmp(opts{ind},'Process Raw Data') 
+        VOGA__ProcessRawData;    
+    elseif strcmp(opts{ind},'Segment')
         VOGA__Segment;
     elseif strcmp(opts{ind},'Combine Segments')
         VOGA__combineSegments;

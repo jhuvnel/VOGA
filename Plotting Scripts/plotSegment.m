@@ -68,10 +68,6 @@ function fig = plotSegment(Data)
         title('Angular Velocity')
         xlabel('Time(s)')
         ylabel('Velocity (dps)')
-        if contains(Data.info.dataType,{'LH','RP','RA'}) %positive head movements
-            legend('Head LARP','Head RALP','Head LHRH','Inv Eye Y','Inv Eye Z')
-        else %negative head movements
-            legend('Inv Head LARP','Inv Head RALP','Inv Head LHRH','Eye Y','Eye Z')
-        end
+        legend('Head -LARP','Head RALP','Head LHRH','Inv Eye Y','Inv Eye Z')
     end
 end

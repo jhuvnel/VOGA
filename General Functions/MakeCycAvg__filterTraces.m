@@ -22,13 +22,13 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
         %Make Data_vel struct
         Data_vel.t = ts;
         Data_vel.stim = stim;
-        Data_vel.RE_Vel_Z = Data.RE_Vel_Z;  
+        Data_vel.RE_Vel_Z = -Data.RE_Vel_Z;  
         if contains(Data.info.dataType,{'RA','LP'})
-            Data_vel.RE_Vel_RALP = Data.RE_Vel_Y;            
+            Data_vel.RE_Vel_RALP = -Data.RE_Vel_Y;            
         elseif contains(Data.info.dataType,{'LA','RP'})
             Data_vel.RE_Vel_LARP = Data.RE_Vel_Y;
         else
-            Data_vel.RE_Vel_Y = Data.RE_Vel_Y;
+            Data_vel.RE_Vel_Y = -Data.RE_Vel_Y;
         end
     else
         Data_pos = Data;

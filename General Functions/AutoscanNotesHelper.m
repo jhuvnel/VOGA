@@ -1,3 +1,5 @@
+%% AutoscanNotesHelper.m
+%This script helps create autoscan notes manually
 %% Paste current values here (as rounded whole numbers)
 currs = [552
 576

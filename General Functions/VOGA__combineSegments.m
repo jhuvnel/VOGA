@@ -2,9 +2,11 @@ function VOGA__combineSegments
 Path = cd;
 Seg_Path = [cd,filesep,'Segmented Files'];
 % File Names
+rm_header = @(str) str([strfind(str,'eeVOR'),strfind(str,'aHIT'),strfind(str,'Rotary'),strfind(str,'Manual')]:end);
 progress_tab = assessProgress(Path);
 all_exp_names = progress_tab.Segment;
-
+[~,sorti] = sort(cellfun(rm_header,all_exp_names,'UniformOutput',false));
+all_exp_names = all_exp_names(sorti);
 [indx1,tf1] = nmlistdlg('PromptString','Select segments to combine. Segment 1 (combined segment name):',...
     'SelectionMode','single','ListSize',[500 500],'ListString',all_exp_names);
 if tf1
@@ -28,6 +30,8 @@ while(tf1&&tf2)
     % File Names
     progress_tab = assessProgress(Path);
     all_exp_names = progress_tab.Segment;
+    [~,sorti] = sort(cellfun(rm_header,all_exp_names,'UniformOutput',false));
+    all_exp_names = all_exp_names(sorti);
     [indx1,tf1] = nmlistdlg('PromptString','Select segments to combine. Segment 1 (combined segment name):',...
         'SelectionMode','single','ListSize',[500 500],'ListString',all_exp_names);
     if tf1

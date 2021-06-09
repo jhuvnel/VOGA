@@ -12,10 +12,22 @@ function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim
     end  
     if contains(info.dataType,'Impulse')
         thresh = 50;
-        abov_i = find(stim>thresh);
+        if contains(info.goggle_ver,'GNO')
+            if contains(info.dataType,{'LH','LA','RA'})
+                abov_i = find(stim>thresh);
+            else
+                abov_i = find(stim<-thresh);
+            end
+        else
+            if contains(info.dataType,{'LH','RP','LP'})
+                abov_i = find(stim>thresh);
+            else
+                abov_i = find(stim<-thresh);
+            end
+        end
         p_len = 0;
         spike_i = abov_i;
-        while(p_len~=length(spike_i)) %Just to make sure it's really done running
+        while p_len~=length(spike_i) %Just to make sure it's really done running
             p_len = length(spike_i);
             for i = 1:p_len
                 snip = spike_i(i) + (-Fs:Fs); %1 second apart at least
@@ -25,7 +37,19 @@ function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim
             end
             spike_i = unique(spike_i);
         end
-        spike_i(stim(spike_i)<0)=[];
+        if contains(info.goggle_ver,'GNO')
+            if contains(info.dataType,{'LH','LA','RA'})
+                spike_i(stim(spike_i)<0)=[];
+            else
+                spike_i(stim(spike_i)>0)=[];
+            end
+        else
+            if contains(info.dataType,{'LH','RP','LP'})
+                spike_i(stim(spike_i)<0)=[];
+            else
+                spike_i(stim(spike_i)>0)=[];
+            end
+        end
         %plot(ts,stim,ts(spike_i),stim(spike_i),'g*')
         %Consisitent with GNO's PDFs, take 750 ms length trace for the 
         %cycle with 200ms before max and 550 ms after.

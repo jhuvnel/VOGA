@@ -242,10 +242,10 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             leg2 = legend(h1,[{'Stim'};reshape(traces_vel,[],1)],'NumColumns',length(traces_vel)+1);
             leg2.ItemTokenSize(1) = 7;
         case 3 %No Position Traces, Just Velocity and Cycle Averaging
-            te = CycAvg.Data_rawpos.te;
-            ts = CycAvg.Data_rawpos.ts;
+            te = CycAvg.Data_rawvel.t;
+            ts = CycAvg.Data_rawvel.t;
             t_s = CycAvg.t;
-            stim = CycAvg.Data_rawpos.stim;
+            stim = CycAvg.Data_rawvel.stim;
             stims = CycAvg.stim;
             keep_inds = CycAvg.Data_allcyc.keep_inds;
             keep_tr = CycAvg.keep_tr;
