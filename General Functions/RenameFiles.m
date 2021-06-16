@@ -7,13 +7,13 @@
 %adds the goggle (first arg) in front of that with a - in between so eeVOR
 %-> LDVOG2-eeVOR
 % Some Possible Cases 
-%RenameFiles('LDVOG2','eeVOR')
-%RenameFiles('NKI1','eeVOR')
-%RenameFiles('LDVOG2','Rotary')
-%RenameFiles('NKI1','Rotary')
-function RenameFiles(goggle,str)
+%RenameFiles('eeVOR','LDVOG2-eeVOR')
+%RenameFiles('eeVOR','NKI1-eeVOR')
+%RenameFiles('Rotary','LDVOG2-Rotary')
+%RenameFiles('Rotary','NKI1-Rotary')
+function RenameFiles(str1,str2)
 fnames = extractfield([dir('*.mat');dir('*.fig')],'name');
 for i = 1:length(fnames)
-    movefile(fnames{i},strrep(fnames{i},str,[goggle,'-',str]))   
+    movefile(fnames{i},strrep(fnames{i},str1,str2))   
 end
 end
