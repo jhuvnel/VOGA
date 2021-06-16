@@ -12,7 +12,7 @@
 %RenameFiles('Rotary','LDVOG2-Rotary')
 %RenameFiles('Rotary','NKI1-Rotary')
 function RenameFiles(str1,str2)
-fnames = extractfield([dir('*.mat');dir('*.fig')],'name');
+fnames = extractfield([dir(['*',str1,'*.mat']);dir(['*',str1,'*.fig'])],'name');
 for i = 1:length(fnames)
     movefile(fnames{i},strrep(fnames{i},str1,str2))   
 end

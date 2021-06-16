@@ -192,7 +192,7 @@ elseif type == 3
 end
 line_wid.norm = 0.5;
 line_wid.bold = 2;
-if contains(info.dataType,{'X','Y'})
+if contains(info.dataType,{'X','Y'})||(contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'LH','RH'}))
     traces_vel1 = all_traces(1:6); %LRZ vel 
 else
     traces_vel1 = all_traces(5:10); %LRZ vel 
