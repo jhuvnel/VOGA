@@ -57,7 +57,7 @@ else %no time
 end
 % Experiment
 known_exps = {'RotaryChair','aHIT','eeVOR','Manual'};
-fname = strrep(fname,'CurrentFitting','eeVOR'); %For old autoscan files
+fname = strrep(strrep(fname,'CurrentFitting','eeVOR'),'ElectricalOnly','eeVOR'); %For old autoscan files
 if contains(fname,known_exps)
     experiment = known_exps(cellfun(@(x) contains(fname,x),known_exps));
     fparts(contains(fparts,experiment)) = [];
