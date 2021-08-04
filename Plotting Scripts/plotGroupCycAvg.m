@@ -227,8 +227,8 @@ elseif any(contains(all_results.Condition,'Autoscan')) %%FIX THIS SECTION
     curr_lab{1+n_col} = [curr_lab{1+n_col},'\muA'];
     curr_lab{1+2*n_col} = [curr_lab{1+2*n_col},'\muA'];
     % Make the figure name
-    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Condition,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('PulseFreq(pps)'))),' ',''),'pps'),strcat(strrep(cellstr(num2str(all_results.('PhaseDur(us)'))),' ',''),'us')];
-    fig_title = {strjoin([unique(join(file_parts)),strjoin(electrodes(canal),' ')])};
+    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Condition,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('PulseFreq(pps)'))),' ',''),'pps'),strcat(strrep(cellstr(num2str(all_results.('PhaseDur(us)'))),' ',''),'us')];   
+    fig_title = {strjoin([join(unique(file_parts,'stable')),strjoin(electrodes(canal),' ')])};
     % Plot Current Levels
     fig = figure;
     fig.Color = [1,1,1];
