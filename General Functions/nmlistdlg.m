@@ -213,10 +213,10 @@ try
     %(the box would disappear and cancel before user selection but it still
     %worked on her lab PC). May need to change from ispc in the future based
     %on other computers
-    if ispc
-        c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely();
-    else
+    if contains(version,'2021a')
         c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely(true);
+    else
+        c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely();
     end
     uiwait(fig);
     delete(c);
