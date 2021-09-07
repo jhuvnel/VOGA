@@ -47,7 +47,7 @@ function VOGA__makePlots
                 if tf2
                    for i = 1:length(indx)
                         load([params.Cyc_Path,filesep,all_files{indx(i)}],'CycAvg')
-                        plotCycAvg(CycAvg,plot_fits,lrz_xyz) ; 
+                        plotCycAvg(CycAvg,plot_fits,lrz_xyz); 
                    end
                 end
             end

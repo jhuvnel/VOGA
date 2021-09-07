@@ -87,9 +87,9 @@ else %LDVOG and NKI
             parts = split(fname,'-');
             if isduration(VOG_data{end,end})&&~isnan(VOG_data{end,end})
                 %Use the timestamps on the file itself
-                VOG_times = datetime(strrep(parts{2},'.txt',''),'InputFormat','yyyyMMMMdd')+[VOG_data{1,end},VOG_data{end,end}];
+                VOG_times = datetime(strrep(parts{2},'.txt',''),'InputFormat','yyyyMMMdd')+[VOG_data{1,end},VOG_data{end,end}];
             else %Use file creation time
-                VOG_times = [datetime(strrep([parts{2},' ',parts{3}],'.txt',''),'InputFormat','yyyyMMMMdd HHmmss'),datetime(VOG_files_date{i})];
+                VOG_times = [datetime(strrep([parts{2},' ',parts{3}],'.txt',''),'InputFormat','yyyyMMMdd HHmmss'),datetime(VOG_files_date{i})];
             end
             VOG_times.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
             date = datestr(VOG_times(1),'yyyymmdd-HHMMss');
@@ -126,9 +126,9 @@ else %LDVOG and NKI
             Time_Eye = VOG_data.EyeTime;        
             Stim = zeros(length(Time_Eye),1); 
             Stim(VOG_data.EventCode ~= 0) = 1;
-            GyroX = data.GyroY - median(data.GyroY); 
-            GyroY = -(data.GyroX - median(data.GyroX)); 
-            GyroZ = -(data.GyroZ - median(data.GyroZ)); 
+            GyroX = VOG_data.GyroY - median(VOG_data.GyroY); 
+            GyroY = -(VOG_data.GyroX - median(VOG_data.GyroX)); 
+            GyroZ = -(VOG_data.GyroZ - median(VOG_data.GyroZ)); 
         else%Ignore unknown file type
             %ADD CODE here
         end

@@ -8,7 +8,6 @@ function plotCycAvg(CycAvg,plot_fits,lrz_xyz)
     %plot_fits 0 or no input does not try to plot fits (if they are
     %available)
     %zlr_xyz 0 or no input = Z, LARP, RALP on graph and 1 is X Y Z
-    figure;
     if nargin < 2
         plot_fits = 0;
     elseif plot_fits~=0 %Check to see if fits exist 
@@ -21,7 +20,6 @@ function plotCycAvg(CycAvg,plot_fits,lrz_xyz)
     if nargin < 3
         lrz_xyz = 'lrz';
     end
-    
     %Colors
     % Normal colors
     load('VNELcolors.mat','colors')

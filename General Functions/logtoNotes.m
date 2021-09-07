@@ -138,12 +138,17 @@ if tf1 == 1
             if contains(fname,'.txt') %LDVOG
                 VOG_data = readtable([Raw_Path,filesep,fname]);
                 %Make date and other labels
-                parts = split(fname,'-');
+                fname1 = fname;
+                if any(strfind(fname,'_'))
+                    underscore = strfind(fname,'_');
+                    fname1(underscore(1):end-4) = [];
+                end
+                parts = split(fname1,'-');                
                 if isduration(VOG_data{end,end})&&~isnan(VOG_data{end,end})
                     %Use the timestamps on the file itself
-                    VOG_times = datetime(strrep(parts{2},'.txt',''),'InputFormat','yyyyMMMMdd')+[VOG_data{1,end},VOG_data{end,end}];
+                    VOG_times = datetime(strrep(parts{2},'.txt',''),'InputFormat','yyyyMMMdd')+[VOG_data{1,end},VOG_data{end,end}];
                 else %Use file creation time
-                    VOG_times = [datetime(strrep([parts{2},' ',parts{3}],'.txt',''),'InputFormat','yyyyMMMMdd HHmmss'),datetime(VOG_files_date{i})];
+                    VOG_times = [datetime(strrep([parts{2},' ',parts{3}],'.txt',''),'InputFormat','yyyyMMMdd HHmmss'),datetime(VOG_files_date{i})];
                 end
                 VOG_times.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
                 date = datestr(VOG_times(1),'yyyymmdd-HHMMss');
@@ -315,7 +320,7 @@ if tf1 == 1
                             return;
                         end
                     elseif strcmp(opts{ind},'Fix Trigger')
-                        updateRawVOGTrigger(Raw_Path,fname);
+                        updateRawVOGTrigger(Raw_Path,[Raw_Path,filesep,fname]);
                     end
                     [ind,tf] = nmlistdlg('PromptString','Select an action:',...
                        'SelectionMode','single',...

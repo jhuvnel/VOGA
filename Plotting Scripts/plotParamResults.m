@@ -286,9 +286,14 @@ if any(contains(all_results.Type,'Sine'))
 elseif(any(contains(all_results.Condition,'Autoscan')))
     %% Make Figure like Boutros 2019 Figure 4 but Magnitude and Misalignment
     %Now figure out which files to plot
-    all_exps = all_results.Condition;
-    parts = split(all_exps{1},' ');
-    exp_name = [all_results.Subject{1},' ',all_results.Visit{1},' ',datestr(all_results.Date(1),'yyyymmdd'),' Autoscan ',parts{contains(parts,'us')},' ',parts{contains(parts,'pps')},' ',all_results.Goggle{1}];
+    if ~ismember(all_results.Properties.VariableNames,'PulseFreq(pps)') 
+        all_exps = all_results.Condition;
+        parts = split(all_exps{1},' ');
+        exp_name = [all_results.Subject{1},' ',all_results.Visit{1},' ',datestr(all_results.Date(1),'yyyymmdd'),' Autoscan ',parts{contains(parts,'us')},' ',parts{contains(parts,'pps')},' ',all_results.Goggle{1}];
+    else
+        all_exps = strcat(cellstr(datestr(all_results.Date,'yyyymmdd')),{' '},all_results.Electrode,{' '},cellstr(num2str(all_results.('PhaseDur(us)'))),{'us '},cellstr(num2str(all_results.('PulseFreq(pps)'))),{'pps '},cellstr(num2str(all_results.('CurrentAmp(uA)'))),{'uA '},all_results.Goggle);
+        exp_name = [all_results.Subject{1},' ',all_results.Visit{1},' ',datestr(all_results.Date(1),'yyyymmdd'),' Autoscan ',num2str(all_results.('PhaseDur(us)')(1)),'us ',num2str(all_results.('PulseFreq(pps)')(1)),'pps ',all_results.Goggle{1}];
+    end
     E_inds = false(length(all_exps),9);
     which_files = questdlg('Plot all the files in this directory or manually select them?','','All','Select','Select');
     for i = 1:9
@@ -322,7 +327,6 @@ elseif(any(contains(all_results.Condition,'Autoscan')))
     errorbarcapsize=1;
     figsizeinches=[7,6];
     XLim = [-5 105];
-    YLim_vel = [0,YMax];
     YLim_align = [0 80];
     %figsizeinchesBoxplot=[2.3,4];
     figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
@@ -384,8 +388,11 @@ elseif(any(contains(all_results.Condition,'Autoscan')))
             h(j) = plot(NaN,NaN,'Marker',markers{j},'Color',color(3*i-3+j,:),'LineWidth',1);
             %Make the labels
             if ~isempty(rel_tab.(['E',num2str(j)])) %Something in this one
-                exp = strsplit(rel_tab.(['E',num2str(j)]).Condition{1});
-                labs{1,j} = strrep([exp{contains(exp,'E')},', ',exp{contains(exp,'us')},'/phase'],'u','\mu');
+                %Old way
+                %exp = strsplit(rel_tab.(['E',num2str(j)]).Condition{1});
+                %labs{1,j} = strrep([exp{contains(exp,'E')},', ',exp{contains(exp,'us')},'/phase'],'u','\mu');
+                % New way w/ table
+                labs{1,j} = [rel_tab.(['E',num2str(j)]).Electrode{1},', ',num2str(rel_tab.(['E',num2str(j)]).('PhaseDur(us)')(1)),'\mus/phase'];
             else %Remove from the plotting order
                 i_ord(i_ord==j) = [];
             end
@@ -395,12 +402,17 @@ elseif(any(contains(all_results.Condition,'Autoscan')))
         hold off
         %Actually plot when values are present
         for j = 1:length(i_ord)
-            exps = rel_tab.(['E',num2str(i_ord(j))]).Condition;
-            curr = NaN(1,length(exps));
-            for q = 1:length(curr)
-                exp = strsplit(exps{q});
-                curr(q) = str2double(strrep(exp{contains(exp,'uA')},'uA',''));
-            end
+% OLD WAY            
+%             exps = rel_tab.(['E',num2str(i_ord(j))]).Condition;
+%             curr = NaN(1,length(exps));
+%             for q = 1:length(curr)
+%                 exp = strsplit(exps{q});
+%                 curr(q) = str2double(strrep(exp{contains(exp,'uA')},'uA',''));
+%             end
+            % New way with table
+            exp = rel_tab.(['E',num2str(i_ord(j))]).Electrode(1);
+            curr = rel_tab.(['E',num2str(i_ord(j))]).('CurrentAmp(uA)');
+            
             [curr_norm,curr_i] = sort(100*(curr-min(curr))/(max(curr)-min(curr)));
             %Determine canal
             if any(contains(exp,{'LP','RA'})) %RALP
@@ -446,9 +458,7 @@ elseif(any(contains(all_results.Condition,'Autoscan')))
         leg = legend(h,labs,'box','off','Location','northwest','FontSize',7);
         leg.ItemTokenSize(1) = 12;
         set(gca,'box','off')
-        set(gca,'YLim',YLim_vel)
         if i == 1
-            set(gca,'YTick',20:20:max(YLim_vel))
             ylabel({'Eye Velocity';'Magnitude (\circ/s)'})
         else
             set(gca,'YColor','none')
@@ -467,6 +477,12 @@ elseif(any(contains(all_results.Condition,'Autoscan')))
             xlabel('% of Current Range')
         end
     end
+    if isempty(YMax)
+       YMax = max(reshape(cell2mat(get(ha(1:3),'Ylim')),[],1));
+    end    
+    set(ha(1:3),'YLim',[0,YMax])
+    set(ha(1),'YTick',20:20:YMax)
+    
     fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name,' ','-'),'.fig']});
     if ~isempty(fig_name)
         savefig([Path,filesep,fig_name{:}])

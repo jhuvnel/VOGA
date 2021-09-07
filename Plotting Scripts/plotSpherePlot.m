@@ -51,11 +51,11 @@ stim_ear = Ears{ismember(Subs,subject)};
 for i = 1:size(all_results2,1)
     load([Cyc_Path,filesep,all_results2.File{i}],'CycAvg')
     %Determine canal
-    if any(contains(all_results2.Condition{i},{'LP','RA'})) %RALP
+    if any(contains(all_results2.AxisName{i},{'LP','RA','RALP'})) %RALP
         plot_colors = [colors.l_r;colors.r_r];
-    elseif any(contains(all_results2.Condition{i},{'LH','RH'})) %LHRH
+    elseif any(contains(all_results2.AxisName{i},{'LH','RH','LHRH'})) %LHRH
         plot_colors = [colors.l_z;colors.r_z];
-    elseif any(contains(all_results2.Condition{i},{'LA','RP'})) %LARP
+    elseif any(contains(all_results2.AxisName{i},{'LA','RP','LARP'})) %LARP
         plot_colors = [colors.l_l;colors.r_l];
     else
         plot_colors = [0,0,0;0.5,0.5,0.5]; %black and gray
