@@ -1,4 +1,4 @@
-function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1)
+function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,detec_head)   
     %Shift Trigger if needed
     stim = reshape(stim1,[],1);
     len = length(stim);
@@ -51,10 +51,10 @@ function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim
             end
         end
         %plot(ts,stim,ts(spike_i),stim(spike_i),'g*')
-        %Consisitent with GNO's PDFs, take 750 ms length trace for the 
-        %cycle with 200ms before max and 550 ms after.
-        starts = spike_i-round(Fs*.2); 
-        ends = spike_i+round(Fs*.55);
+        %Consisitent with GNO's csv, take a 175 sample trace with max at
+        %sample 48
+        starts = spike_i-47; 
+        ends = starts+174;
         inv_i = starts<1|ends>length(stim);
         starts(inv_i)= [];
         ends(inv_i) = [];
@@ -220,4 +220,18 @@ function [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim
     else
         error('Unknown Data Type')
     end  
+    if ~isempty(detec_head)
+        %Find the detected impulses
+        if max(mean(stims,2))>abs(min(mean(stims,2)))                
+            detec_head(:,max(detec_head)<abs(min(detec_head))) = [];
+        else
+            detec_head(:,max(detec_head)>abs(min(detec_head))) = [];
+        end
+        detec_tr = NaN(1,size(detec_head,2));
+        for j = 1:size(detec_head,2)
+            [~,detec_tr(:,j)] = min(sum(abs(stims-detec_head(:,j))));
+        end
+    else
+        detec_tr = []; %initialize, should only be for GNO traces
+    end
 end

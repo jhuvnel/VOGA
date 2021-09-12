@@ -74,6 +74,7 @@ if any(contains(all_results.Type,'Sine'))
         conds = conds1;
     end
     enum = size(conds,1);
+    fig_names = cell(enum,1);
     for j = 1:enum
         disp(['Making plot ',num2str(j),'/',num2str(enum)])
         %Set up labels
@@ -189,11 +190,16 @@ if any(contains(all_results.Type,'Sine'))
                 YLim = [-YMax YMax];
             end
             set(ha,'YLim',YLim)
-            savefig([Path,filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'])
+            fig_names{j} = [Path,filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
+            savefig(fig_names{j})
             close;
         end
     end
-elseif any(contains(all_results.Condition,'Autoscan')) %%FIX THIS SECTION
+    fig_names(cellfun(@isempty,fig_names)) = [];
+    for i = 1:length(fig_names)
+        open(fig_names{i}) 
+    end
+elseif any(contains(all_results.Condition,'Autoscan'))
     %% Autoscan
     all_results = all_results(contains(all_results.Condition,'Autoscan'),:);
     electrodes = unique(all_results.Electrode);
@@ -386,5 +392,128 @@ elseif any(contains(all_results.Condition,'Autoscan')) %%FIX THIS SECTION
         end
     end
     savefig([Path,filesep,strrep(fig_title{:},' ','-'),'.fig'])
+elseif any(contains(all_results.Type,'Impulse'))
+    %% Impulses -- IN PROGRESS
+    all_results = all_results(contains(all_results.Type,'Impulse'),:);
+    %fn = size(all_results,1);
+    % Plot Group Cycle Average Results
+    cyc_files = all_results.File;
+    canal = cell(length(cyc_files),1);
+    canal(contains(cyc_files,'LH')) = {'LH'};
+    canal(contains(cyc_files,'RH')) = {'RH'};
+    canal(contains(cyc_files,'LA')) = {'LA'};
+    canal(contains(cyc_files,'LP')) = {'LP'};
+    canal(contains(cyc_files,'RA')) = {'RA'};
+    canal(contains(cyc_files,'RP')) = {'RP'};    
+    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Experiment,all_results.Condition,all_results.Goggle,canal];
+    joined_fparts = join(file_parts(:,1:6));
+    conds = [strcat(unique(joined_fparts),{' Left Ear Impulses'});strcat(unique(joined_fparts),{' Right Ear Impulses'})];
+    enum = size(conds,1); 
+    fig_names = cell(enum,1);
+    if isempty(YMax)
+        YMax = 250;
+    end
+    for j = 1:enum
+        disp(['Making plot ',num2str(j),'/',num2str(enum)])
+        %Set up labels
+        if contains(conds(j),'Left Ear')
+            labs = {'Anterior (LA)','Posterior (LP)','Horizontal (LH)'};
+        else
+            labs = {'Posterior (RP)','Anterior (RA)','Horizontal (RH)'};
+        end
+        %Find files to plot
+        rel_files = cell(length(labs),1);
+        for i = 1:length(labs)
+            can = labs{i}(end-2:end-1);
+            files = cyc_files(contains(joined_fparts,strrep(strrep(conds(j),' Left Ear Impulses',''),' Right Ear Impulses',''))&contains(canal,can)); %FIX ME
+            if ~isempty(files)
+                rel_files(i) = files(end);
+            end
+        end
+        %Only plot if there is at least one file to plot
+        if any(~cellfun(@isempty,rel_files))
+            fig_name = conds{j};
+            leg_text = {'Stim','Left LARP','Right LARP',...
+                'Left RALP','Right RALP','Left X','Right X',...
+                    'Left Y','Right Y','Left Z','Right Z'};
+            canals = {'ll','rl','lr','rr','lx','rx','ly','ry','lz','rz'};
+            figure('Units','inches','Position',[0.2778    5.8472   17.2222    3.8333],'Color',[1,1,1])
+            %Title
+            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
+                'HorizontalAlignment','center','EdgeColor','none');
+            if annot
+                annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                    code_name,newline,...
+                    'VOGA',version,newline,Experimenter],'FontSize',5,...
+                    'EdgeColor','none','interpreter','none');
+            end
+            ha = gobjects(1,length(labs));
+            x_space = 0.02;
+            x_min = 0.04;
+            x_max = 0.98;
+            x_wid = (x_max-x_min-x_space*(length(labs)-1))/length(labs);
+            y_height = 0.75;
+            x_pos = x_min:(x_wid+x_space):x_max;
+            y_pos = 0.12;
+            for i = 1:length(rel_files)
+                ha(i) = subplot(1000,1000,1);
+                ha(i).Position = [x_pos(i) y_pos x_wid y_height];
+                if ~isempty(rel_files{i})
+                    load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
+                    fields = fieldnames(CycAvg);
+                    if ~ismember('t',fields)
+                        CycAvg.t = reshape(0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs,[],1);
+                    else
+                        CycAvg.t = reshape(CycAvg.t,1,[]);
+                    end
+                    if -min(mean(CycAvg.stim))>max(mean(CycAvg.stim))
+                        invh = -1;
+                        inve = 1;
+                    else
+                        invh = 1;
+                        inve = -1;
+                    end
+                    h = gobjects(length(canals)+1,1);
+                    h(1) = plot(NaN,NaN,'k','LineWidth',1);
+                    hold on
+                    plot(CycAvg.t,invh*CycAvg.stim,'k','LineWidth',0.5);
+                    for ii = 1:length(canals)
+                        trace = canals{ii};
+                        h(ii+1) = plot(NaN,NaN,'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
+                        if isfield(CycAvg,[trace,'_cyc'])
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_fit']),'Color',colors.([trace(1),'_',trace(2),'']),'LineWidth',0.5);
+                        end
+                    end  
+                    hold off
+                else
+                    h = gobjects(length(canals)+1,1);
+                    h(1) = plot(NaN,NaN,'k');
+                    hold on
+                    for ii = 1:length(canals)
+                        h(ii+1) = plot(NaN,NaN,'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',2);
+                    end
+                    hold off
+                end
+                title(labs{i})
+                xlabel('Time (s)')
+                if i == 1
+                    ylabel('Angular Velocity (dps)')
+                    %leg_reord = [2,4,6,1,3,5,7];
+                    leg = legend(ha(1),h,leg_text,'NumColumns',2);
+                    leg.ItemTokenSize(1) = 7;
+                end
+                set(gca,'XLim',[0,CycAvg.t(end)])
+            end
+            set(ha,'YLim',[-YMax/2 YMax])
+            fig_names{j} = [Path,filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
+            savefig(fig_names{j})
+            close;
+        end
+    end
+    fig_names(cellfun(@isempty,fig_names)) = [];
+    for i = 1:length(fig_names)
+        open(fig_names{i}) 
+    end
 end
 end

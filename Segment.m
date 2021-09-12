@@ -276,6 +276,36 @@ elseif contains(info.goggle_ver,'GNO') % GNO File
     Horizontal_RE_Velocity = data(:,5);
     Vertical_RE_Velocity = data(:,6);  
     info.TriggerShift = 0;
+    % Find the accepted traces
+    warning('off')
+    try
+        GNO_processed = readtable(strrep(In_Path,'.txt','.csv'));
+        h_ind = find(contains(GNO_processed{:,1},'Head'));
+        left_imp = find(contains(GNO_processed{:,1},'Impulse')&contains(GNO_processed{:,2},'L'));
+        left_ind = NaN(length(left_imp),1);
+        for i = 1:length(left_imp)
+            ind = find((h_ind-left_imp(i))>0,1,'first');
+            left_ind(i) = h_ind(ind);
+        end
+        right_imp = find(contains(GNO_processed{:,1},'Impulse')&contains(GNO_processed{:,2},'R'));
+        right_ind = NaN(length(right_imp),1);
+        for i = 1:length(right_imp)
+            ind = find((h_ind-right_imp(i))>0,1,'first');
+            right_ind(i) = h_ind(ind);
+        end        
+        detected_left = str2double(split(strrep(GNO_processed{left_ind,1},',Head,',''),','))';
+        detected_right = str2double(split(strrep(GNO_processed{right_ind,1},',Head,',''),','))';    
+        if contains(In_Path,'Lateral')
+            DetectedTraces_HeadVel = [detected_left,-detected_right];
+        elseif contains(In_Path,'LARP')
+            DetectedTraces_HeadVel = [-detected_left,detected_right];
+        elseif contains(In_Path,'RALP')
+            DetectedTraces_HeadVel = [-detected_left,detected_right];
+        end
+    catch
+        DetectedTraces_HeadVel=[];
+    end
+    warning('on')   
 end
 %% Figure out how many experiments there are
 if size(fileinfo,2)==2 %New way w/ 2 columns
@@ -288,7 +318,8 @@ else %old way
     end
 end
 %% Segment
-if all(contains(stim_info,{'RotaryChair','aHIT','Manual','trash'})) %Fit on motion trace
+if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fit on motion trace
+    stim_info = strrep(stim_info,'manual','Manual'); %in case I forgot to capitalize
     %Check to make sure the right canal is in the notes
     canals = {'LARP','RALP','LHRH'};
     [~,canal_i] = max(max([GyroLARP,GyroRALP,GyroZ]));
@@ -530,6 +561,7 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
     legend('Stimulus','Start','End')
     pause(1)
 else
+    disp(stim_info)
     error('Unrecognized experiment type during segmenting.')
 end
 %% Save
@@ -636,6 +668,7 @@ if ~isempty(stim_info)
                 Data.HeadVel_Z = GyroZ(i1:i2);
                 Data.HeadVel_L = GyroLARP(i1:i2);
                 Data.HeadVel_R = GyroRALP(i1:i2);
+                Data.DetectedTraces_HeadVel = DetectedTraces_HeadVel;
             else %LDVOG and NKI           
                 Data.Trigger = Stim(i1:i2); % computer trigger
                 Data.LE_Position_X = Torsion_LE_Position(i1:i2);

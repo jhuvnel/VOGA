@@ -187,8 +187,9 @@ if tf1 == 1
             rel_dat = data(rel_inds,~all(cellfun(@isempty,data(rel_inds,:))));
             %% Check in case it's in another log file from another computer
             if ~isempty(rel_dat)
-            %Find the number of experiments done and add them to the experiment
-            %cell block by block. Experiment types can differ.
+                rel_dat(cellfun(@isempty,rel_dat(:,3)),:) = [];
+                %Find the number of experiments done and add them to the experiment
+                %cell block by block. Experiment types can differ.
                 if any(contains(rel_dat(:,2),'Electrode characterization.')) %Autoscan
                     e_i = find(contains(rel_dat(:,2),'Electrode characterization.'));
                     rel_exp = rel_dat(e_i,2);

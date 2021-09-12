@@ -8,7 +8,7 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             stim = CycAvg.Data_rawpos.stim;
             stims = CycAvg.stim;
             keep_inds = CycAvg.Data_allcyc.keep_inds;
-            keep_tr = CycAvg.keep_tr;
+            keep_tr = CycAvg.keep_tr;                       
             if isempty(ha) %first time running
                 ha = gobjects(5,1);
                 XLim_Long = [te(1) te(end)];
@@ -249,6 +249,7 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             stims = CycAvg.stim;
             keep_inds = CycAvg.Data_allcyc.keep_inds;
             keep_tr = CycAvg.keep_tr;
+            detec_tr = CycAvg.detec_tr;
             if isempty(ha) %first time running
                 ha = gobjects(3,1);
                 XLim_Long = [te(1) te(end)];
@@ -280,7 +281,7 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                 %ha2
                 set(ha(2),'XLim',XLim_Short,'YLim',YLim_Vel)
                 ylabel(ha(2),'Velocity (dps)')
-                title(ha(2),'All Filtered Cycles')
+                title(ha(2),'All Cycles')
                 xlabel(ha(2),'Time (s)')
                 %ha3
                 set(ha(3),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
@@ -299,7 +300,10 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                     fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep,'Tag',['Cycle_',num2str(j)]);
                 else
                     fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm,'Tag',['Cycle_',num2str(j)]);
-                end
+                end 
+            end     
+            if ~isempty(detec_tr)
+                xline(te([keep_inds(1,detec_tr),keep_inds(end,detec_tr)]),'-b','LineWidth',2)     
             end
             h = gobjects(1,length(traces_vel)+1);
             h(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
@@ -326,8 +330,11 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             plot(t_s,stims,'k','LineWidth',line_wid.norm)
             %All Filtered Velocity Data
             for i = 1:length(traces_vel)
-                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
-                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
+                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end),'_QPR'])
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end),'_QPR']),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
+                elseif isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)   
                 end
             end
             hold off
@@ -337,8 +344,11 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             plot(t_s,stims,'k','LineWidth',line_wid.norm)
             %Only Selected Filtered Velocity Data
             for i = 1:length(traces_vel)
-                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
-                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])(:,keep_tr),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
+                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end),'_QPR'])
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])(:,keep_tr),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end),'_QPR'])(:,keep_tr),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
+                elseif isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])(:,keep_tr),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)   
                 end
             end
             hold off
@@ -363,6 +373,9 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             %Only Selected Filtered Velocity Data
             for i = 1:length(traces_vel)
                 trace = lower(traces_vel{i}(1:2));
+                if isfield(CycAvg,[trace,'_cyc_QPR'])
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cyc_QPR'])(:,s),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
+                end
                 if isfield(CycAvg,[trace,'_cycavg'])&&isfield(CycAvg,[trace,'_cycstd'])
                     fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[(CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s)),fliplr((CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s)))],colors.([trace(1),'_',trace(2),'_s']))
                     plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color',colors.([trace(1),'_',trace(2)]))

@@ -37,7 +37,7 @@ function VOGA__makePlots
                end
             end
         elseif strcmp(opts{ind},'Cycle Average')
-            in_args = inputdlg({'Plot fits (0/1): ','Plot head movement in XYZ or LRZ (xyz/lrz):'},'Plot settings',[1 50],{'0','lrz'});
+            in_args = inputdlg({'Plot fits (0/1): ','Plot head movement in XYZ or LRZ (xyz/lrz):'},'Plot settings',[1 50],{'0',''});
             if ~isempty(in_args)
                 plot_fits = str2double(in_args{1});
                 lrz_xyz = in_args{2};

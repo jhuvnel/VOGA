@@ -152,17 +152,20 @@ else
         end    
     end
 end
-% Assign Type
+% Assign Type and set detected traces
 if contains(info.goggle_ver,'GNO') %No raw pos traces 
     type = 3;
+    detec_head = Data.DetectedTraces_HeadVel;
 elseif contains(info.dataType,{'Activation','Step'}) %No cycle averaging
     type = 2;
+    detec_head = [];
 else
     type = 1;
+    detec_head = [];
 end
 %% Set some Defaults
 % Cycle Align
-[~,t_snip] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
+[~,t_snip] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,[]);
 %Filter Traces with intial guesses
 filt1.pos = array2table(NaN(11,4));
 filt1.pos.Properties.VariableNames = {'median','spline','sgolay1','sgolay2'}; %add more as needed
@@ -188,7 +191,9 @@ elseif type == 2 %velstep and activation
     filt1.vel.irlssmooth(end) = 20;
 elseif type == 3 
     %Coded for GNO right now
-    filt1.vel.irlssmooth(end) = 2;
+    filt1.vel.irlssmooth(end) = 5; %Removed saccades 
+    filt1.vel.median(end) = 5;
+    filt1.vel.spline(end) = 0.9999995;
 end
 line_wid.norm = 0.5;
 line_wid.bold = 2;
@@ -214,10 +219,10 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
             YLim_Pos = YLim_Pos1;
         end
         info.TriggerShift2 = 0;
-        [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
+        [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,detec_head);
         keep_tr = true(1,size(keep_inds,2)); 
         [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt1,keep_inds,te,ts,t_snip,stim,stims,Data);
-        CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+        CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
         ha = MakeCycAvg__plotFullCycAvg([],type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg);
     elseif strcmp(opts{ind},'Not Analyzeable')
         save([Cyc_Path,filesep,'NotAnalyzeable_',In_FileName],'Data')
@@ -236,7 +241,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ','Shift',[1 15],{num2str(info.TriggerShift2)},'on',1,[screen_size(3)-4 screen_size(4)-1.25 1.75 1.25]));
         if ~isempty(new_TrigShift)
             info.TriggerShift2 = round(new_TrigShift);
-            [stim,t_snip,stims,keep_inds] = MakeCycAvg__alignCycles(info,Fs,ts,stim1);
+            [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,detec_head);
             if size(keep_inds,2) > length(keep_tr)
                 old_keep_tr = keep_tr;
                 keep_tr = [old_keep_tr;true(1,size(keep_inds,2)-length(keep_tr))];
@@ -244,7 +249,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
                 keep_tr = keep_tr(1:size(keep_inds,2));
             end
             [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data);
-            CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+            CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg);
         end
     elseif strcmp(opts{ind},'Filter Position')
@@ -259,7 +264,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         if ~isempty(temp_filt_params_p) %Didn't hit cancel
             filt.pos{:,:} = reshape(temp_filt_params_p,11,[]);
             [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data);
-            CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+            CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg);
         end
     elseif strcmp(opts{ind},'Filter Velocity')
@@ -273,13 +278,13 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         if ~isempty(temp_filt_params_v) %Didn't hit cancel
             filt.vel{:,:} = reshape(temp_filt_params_v,11,[]);
             [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data);
-            CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+            CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg);
         end
     elseif strcmp(opts{ind},'Select Cycles')
         [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,Data_cyc,screen_size);   
         while tf
-            CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+            CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg);
             [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,Data_cyc,screen_size);   
         end
@@ -351,7 +356,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
     end   
 end
 %% Save
-CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
 savefig([Cyc_Path,filesep,'CycAvg_',In_FileName(1:end-4),'.fig'])
 close;
 %Save if you reached this point

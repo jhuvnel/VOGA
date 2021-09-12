@@ -3,9 +3,9 @@
 %and parameterizes accordingly. It adds the results table and any
 %appropriate fits to the CycAvg struct.
 %Type tells you what kind of output to expect:
-%1. Sine Fit (Half-Cycle Magnitude, Phase, Misalignment)
+%1. Sine Fit (Half-Cycle Magnitude, Gain, Phase, Misalignment)
 %2. Exponential Fit (Tau, Magnititude, Misalignment)
-%3. Linear Fit (Magnitude, Latency, Saccade Analysis)
+%3. Impulse (Magnitude, Gain, Latency)
 %4. Magnitude (Max Magnitude, Misalignment)
 
 function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
@@ -197,7 +197,7 @@ else
         goggle = CycAvg.info.goggle_ver;
     end
 end
-if ~isfield(CycAvg,'lx_cyc')
+if ~isfield(CycAvg,'lx_cyc')&&isfield(CycAvg,'CycAvg.ll_cyc')
     CycAvg.lx_cyc = (CycAvg.ll_cyc+CycAvg.lr_cyc)/sqrt(2);
     CycAvg.lx_cycavg = (CycAvg.ll_cycavg+CycAvg.lr_cycavg)/sqrt(2);
     CycAvg.rx_cyc = (CycAvg.rl_cyc+CycAvg.rr_cyc)/sqrt(2);
@@ -405,8 +405,113 @@ switch type
             CycAvg.([traces{i},'_cyc_fit']) = all_fits(i,:);
         end
     case 3 
-        %% Linear -- IN PROGRESS
-
+        %% Impulse
+        %saccade_thresh = 3000; %deg/s^2
+        % Process Inputs
+        %Make sure stim trace is time points long (1 x nt)
+        [nc,nt] = size(CycAvg.rz_cyc);
+        [ab,ac] = size(CycAvg.stim);
+        if ab == nt && ac == nc 
+            CycAvg.stim = CycAvg.stim';
+            [ab,ac] = size(CycAvg.stim);
+        end
+        if ab == nc && ac == nt %already in the right format
+            Stim_All = CycAvg.stim;
+        else
+            error('Stim trace not in a recognized format.')
+        end
+        t = CycAvg.t;
+        t_upsamp = t(1):0.0001:t(end);
+        max_vel = NaN(nc,length(traces));
+        gain = NaN(nc,length(traces));
+        lat = NaN(nc,length(traces)); 
+        for tr = 1:length(traces)
+            if isfield(CycAvg,[traces{tr},'_cyc_QPR'])
+                %For each trace
+%                 %Desaccading protocol: find accel threshold and then do a linear
+%                 %interpolation
+%                 cycle_acc = [zeros(size(eye_cyc,1),1),(eye_cyc(:,2:end)-eye_cyc(:,1:end-1))/median(diff(t))];
+%                 eye_cyc_nosac = eye_cyc;
+%                 eye_cyc_nosac(abs(cycle_acc)>saccade_thresh&t>t(h_end_avg-5)) = NaN; %remove high accel
+%                 %Remove the small chunks in between
+%                 for i = 1:nc
+%                     nan_inds = find(isnan(eye_cyc_nosac(i,:)));
+%                     if ~isempty(nan_inds)
+%                         starts = nan_inds([1,find(abs(diff(nan_inds))>1)+1]);
+%                         ends = nan_inds([find(abs(diff(nan_inds))>1),end]);
+%                         for j = 1:length(starts)
+%                             if cycle_acc(i,starts(j)) > 0
+%                                 pos = find(cycle_acc(i,:) < 0.1*saccade_thresh);
+%                                 eye_cyc_nosac(i,pos(find(pos<starts(j),1,'last')):starts(j)) = NaN;
+%                             else
+%                                 neg = find(cycle_acc(i,:) > -0.1*saccade_thresh);
+%                                 eye_cyc_nosac(i,neg(find(neg<starts(j),1,'last')):starts(j)) = NaN;
+%                             end
+%                             if cycle_acc(i,ends(j)) > 0
+%                                 pos = find(cycle_acc(i,:) < 0.1*saccade_thresh);
+%                                 eye_cyc_nosac(i,ends(j):pos(find(pos>ends(j),1,'first'))) = NaN;
+%                             else
+%                                 neg = find(cycle_acc(i,:) > -0.1*saccade_thresh);
+%                                 eye_cyc_nosac(i,ends(j):neg(find(neg>ends(j),1,'first'))) = NaN;
+%                             end
+%                         end   
+%                     end
+%                     dat_inds = find(~isnan(eye_cyc_nosac(i,:)));
+%                     starts = dat_inds([1,find(abs(diff(dat_inds))>1)+1]);
+%                     ends = dat_inds([find(abs(diff(dat_inds))>1),end]);
+%                     for j = 1:length(starts)
+%                         if ends(j)-starts(j) < 0.05/median(diff(t)) %less than 50ms of good data
+%                             eye_cyc_nosac(i,starts(j):ends(j)) = NaN;
+%                         end
+%                     end
+%                     if isnan(eye_cyc_nosac(i,end))
+%                         last_nan = find(isnan(eye_cyc_nosac(i,:)),1,'last');
+%                         eye_cyc_nosac(i,last_nan:end) = 0;
+%                     end
+%                     dat_inds = find(~isnan(eye_cyc_nosac(i,:)));
+%                     eye_cyc_nosac(i,:) = interp1(t(dat_inds),eye_cyc_nosac(i,dat_inds),t);
+%                 end
+%                 CycAvg.([traces{tr},'_cycavg_fit']) = mean(eye_cyc_nosac);
+%                 CycAvg.([traces{tr},'_cyc_fit']) = eye_cyc_nosac;
+%                 plot(t,Stim_All,'k',t,eye_cyc,'r',t,eye_cyc_nosac,'g')
+%                 pause;
+                %Now find maxvel, gain and latency
+                eye_cyc = CycAvg.([traces{tr},'_cyc_QPR']);
+                CycAvg.([traces{tr},'_cycavg_fit']) = mean(eye_cyc);
+                CycAvg.([traces{tr},'_cyc_fit']) = eye_cyc;
+                for i = 1:nc
+                    %define start and end as 10dps
+                    warning('off')
+                    head = spline(t,Stim_All(i,:),t_upsamp);
+                    eye = -spline(t,eye_cyc(i,:),t_upsamp);
+                    warning('on')
+                    if -min(head)>max(head)
+                        head = -head;
+                        eye = -eye;
+                    end
+                    %head max velocity, head start time, head end time, head impulse width
+                    [~,head_max] = max(head);
+                    max_vel(i,tr) = max(eye);
+                    h_start = find(head<10&t_upsamp<t_upsamp(head_max),1,'last');
+                    %Incase 0 crossing is weird, make the end the same size
+                    %as start to max
+                    h_end = min([find(head<10&t_upsamp>t_upsamp(head_max),1,'first'),(head_max-h_start)*2+h_start]);
+                    h_AUC = trapz(head(h_start:h_end))*median(diff(t_upsamp));
+                    %eye start time, eye latency, AUC eye
+                    e_start = find(eye>10&t_upsamp>=t_upsamp(h_start),1,'first');
+                    if isempty(e_start)
+                        lat(i,tr) = NaN;
+                    else
+                        lat(i,tr) = 1000*(t_upsamp(e_start)-t_upsamp(h_start)); %in ms
+                    end
+                    e_AUC = trapz(eye(h_start:h_end))*median(diff(t_upsamp)); 
+                    gain(i,tr) = e_AUC/h_AUC;
+                end
+            end
+        end        
+        MaxVel = reshape([mean(max_vel);std(max_vel);mean(max_vel);std(max_vel)],1,[]);
+        Gain = reshape([mean(gain);std(gain);mean(gain);std(gain)],1,[]);
+        Latency = reshape([mean(lat,'omitnan');std(lat,'omitnan')],1,[]);        
     case 4 
         %% Pulse Train
         % Process Inputs

@@ -55,16 +55,27 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
     Data_vel_filt.t = ts;
     Data_vel_filt.stim = stim;
     Data_cyc.t = t_snip;
-    Data_cyc.stim = stims;
+    Data_cyc.stim = stims;   
     for i = 1:length(traces)            
         canal = traces{i}(2:end); 
         var_n = [traces{i}(1),'E_Vel_',canal];
         if isfield(Data_vel,var_n)
-            Data_vel_filt.(var_n) = spline_filt(ts,irls_filt(med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),filt.vel.irlssmooth(traces{i})),ts,filt.vel.spline(traces{i}));
-            Data_cyc.(var_n) = Data_vel_filt.(var_n)(keep_inds);
+            if contains(Data.info.goggle_ver,'GNO') %Save a desaccaded version
+                Data_vel_filt.(var_n) = spline_filt(ts,med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),ts,filt.vel.spline(traces{i}));
+                if filt.vel.irlssmooth(traces{i})==1
+                    Data_vel_filt.([var_n,'_QPR']) = spline_filt(ts,med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),ts,filt.vel.spline(traces{i}));
+                else    
+                    Data_vel_filt.([var_n,'_QPR']) = irls_filt(Data_vel.(var_n),filt.vel.irlssmooth(traces{i}));  
+                end
+                Data_cyc.(var_n) = Data_vel_filt.(var_n)(keep_inds);
+                Data_cyc.([var_n,'_QPR']) = Data_vel_filt.([var_n,'_QPR'])(keep_inds);
+            else
+                Data_vel_filt.(var_n) = spline_filt(ts,irls_filt(med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),filt.vel.irlssmooth(traces{i})),ts,filt.vel.spline(traces{i}));
+                Data_cyc.(var_n) = Data_vel_filt.(var_n)(keep_inds);
+            end
         end
     end  
-    Data_cyc.keep_inds = keep_inds;
+    Data_cyc.keep_inds = keep_inds;        
     %Clear the 'ALL' value on the filter
     filt.pos{end,:} = NaN; 
     filt.vel{end,:} = NaN;    

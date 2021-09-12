@@ -22,11 +22,11 @@ end
 close all;
 load('VNELcolors.mat','colors')
 code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
-warning('off')
-sub_info = readtable('SubjectInfo.xlsx');
-warning('on')
-Subs = sub_info{:,1};
-Ears = sub_info{:,2};
+% warning('off')
+% sub_info = readtable('SubjectInfo.xlsx');
+% warning('on')
+% Subs = sub_info{:,1};
+% Ears = sub_info{:,2};
 % Load table in question
 res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 if isempty(res_file)
@@ -488,5 +488,131 @@ elseif(any(contains(all_results.Condition,'Autoscan')))
         savefig([Path,filesep,fig_name{:}])
     end
     close;
+elseif(any(contains(all_results.Type,'Impulse')))
+    %% Impulse
+    all_canals = {'LA','LP','LH','RP','RA','RH'}; %Preferred order
+    all_results = all_results(contains(all_results.Type,'Impulse'),:);
+    fn = size(all_results,1);
+    gain = NaN(1,fn);
+    gain_sd = NaN(1,fn);
+    lat = NaN(1,fn);
+    lat_sd = NaN(1,fn);
+    canal = cell(1,fn);
+    for i = 1:fn
+        switch all_results.AxisName{i}
+            case 'LHRH'
+                rel_col = 'Z';
+            case 'LARP'
+                rel_col = 'L';
+            case 'RALP'
+                rel_col = 'R';
+        end
+        if all(all_results.StimAxis{i}==[0,0,1])
+            canal{i} = 'LH';
+        elseif all(all_results.StimAxis{i}==[0,0,-1])
+            canal{i} = 'RH';
+        elseif all(all_results.StimAxis{i}==[1,0,0])
+            canal{i} = 'RP';
+        elseif all(all_results.StimAxis{i}==[-1,0,0])
+            canal{i} = 'LA';
+        elseif all(all_results.StimAxis{i}==[0,-1,0])
+            canal{i} = 'LP';
+        elseif all(all_results.StimAxis{i}==[0,1,0])
+            canal{i} = 'RA';
+        end
+        [~,eye] = max(abs([all_results.(['Gain_L',rel_col,'_HIGH'])(i),all_results.(['Gain_R',rel_col,'_HIGH'])(i)]));
+        if mod(eye,2)==1 %Left
+            eye_s = 'L';
+        else %Right
+            eye_s = 'R';
+        end
+        gain(i) = all_results.(['Gain_',eye_s,rel_col,'_HIGH'])(i);
+        gain_sd(i) = all_results.(['Gain_',eye_s,rel_col,'_HIGH_sd'])(i);
+        lat(i) = all_results.(['Latency_',eye_s,rel_col,])(i);
+        lat_sd(i) = all_results.(['Latency_',eye_s,rel_col,'_sd'])(i);
+    end    
+    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),...
+        all_results.Experiment,all_results.Condition,all_results.Goggle];
+    rel_file_parts = file_parts; %everything but freq/amp
+    common_cond = cell(1,size(file_parts,2));
+    for i = 1:size(file_parts,2)
+        if length(unique(file_parts(:,i)))==1
+            common_cond(i) = unique(file_parts(:,i));
+        end
+    end
+    rel_file_parts(:,~cellfun(@isempty,common_cond)) = [];
+    common_cond(cellfun(@isempty,common_cond)) = [];
+    common_cond = strjoin(common_cond); 
+    if isempty(rel_file_parts) %only one condition
+        conds = all_results.Condition(1);
+        IC = ones(fn,1);
+    elseif size(rel_file_parts,2)==1
+        [conds,~,IC] = unique(rel_file_parts,'stable');
+    else
+        [conds,~,IC] = unique(join(rel_file_parts),'stable');
+    end
+    enum = length(conds);
+    %Position information for the graph types
+    max_y = 0.80;
+    min_y = 0.15;
+    %spac_y = 0.01;
+    min_x = 0.08;
+    max_x = 0.90;
+    spac_x = 0.01;
+    wid_x = (max_x-min_x-spac_x)/2;
+    x_pos = min_x:(wid_x+spac_x):max_x-wid_x; 
+    wid_y = max_y-min_y;
+    y_pos = min_y;    
+    all_markers = 'o*.sd^v><ph_|';
+    fig_name = [common_cond,' Head Impulse Test'];
+    figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
+    annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
+    'plotParamResults.m',newline,...
+    'VOGA',version,newline,Experimenter],'FontSize',5,...
+    'EdgeColor','none','interpreter','none','Color',[0.5,0.5,0.5]);
+    annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
+            'HorizontalAlignment','center','EdgeColor','none');
+    ha = gobjects(1,2);
+    h1 = gobjects(1,enum);
+    ha(1) = subplot(1,2,1);
+    ha(1).Position = [x_pos(1),y_pos,wid_x,wid_y];
+    ha(2) = subplot(1,2,2);
+    ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
+    for i = 1:enum
+        rel_i = find(IC==i);
+        [~,a_i] = ismember(all_canals,canal(rel_i));
+        axes(ha(1))
+        hold on
+        errorbar(1:6,gain(rel_i(a_i)),gain_sd(rel_i(a_i)),[all_markers(i),'-'],'Color','k');
+        hold off
+        axes(ha(2))
+        hold on
+        errorbar(1:6,lat(rel_i(a_i)),lat_sd(rel_i(a_i)),[all_markers(i),'-'],'Color','k');
+        hold off
+    end           
+    linkaxes(ha,'x')
+    set(ha(2),'YAxisLocation','right')
+    title(ha(1),'Gain')
+    title(ha(2),'Latency (ms)')
+    ylabel(ha(1),'Eye Position/Head Position')
+    ylabel(ha(2),'Time Between Head and Eye Motion')
+    xlabel(ha(1),'Canal')
+    xlabel(ha(2),'Canal')
+    set(ha,'XTick',1:6,'XTickLabel',all_canals,'XTickLabelRotation',0,'XMinorTick','off')
+    set(ha,'XLim',[0.5 6.5])
+    set(ha(1),'YLim',[0 1.1])
+    set(ha(2),'YLim',[-7 200])
+    %Make legends
+    axes(ha(2))
+    hold on
+    for i = 1:enum
+        h1(i) = plot(NaN,NaN,['k',all_markers(i)]);
+    end
+    hold off
+    leg = legend(h1,conds,'NumColumns',1,'Location','northwest');
+    leg.ItemTokenSize(1) = 5;
+    title(leg,'Conditions')
+    savefig([Path,filesep,strrep(fig_name,' ','-'),'.fig'])
+    close;    
 end
 end
