@@ -15,8 +15,7 @@ ind = 1; %Run the start procedure first
 tf1 = 1;
 while tf1
     if strcmp(opts{ind},'Initialize')        
-        code_Path = [userpath,filesep,'VOGA'];
-        addpath(genpath(code_Path));
+        code_Path = addVOGA;
         if VOGA__checkFolders
             disp('VOGA instance ended.')
             return;

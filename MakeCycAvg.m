@@ -3,7 +3,7 @@
 % LDVOG data sets as much as possible.
 % Cycle average before filtering
 
-function done = MakeCycAvg(Path,code_Path,exp_types)
+function done = MakeCycAvg(Path,exp_types)
 clc;  
 %% Filter defaults
 %Order: lx,rx,ly,ry,lz,rz,ll,rl,lr,rr,All
@@ -27,10 +27,10 @@ colors.cyc_rm = [1 1 1];
 Seg_Path = [Path,filesep,'Segmented Files'];
 Cyc_Path = [Path,filesep,'Cycle Averages'];
 % Set Experimentor/version
-if ~any(contains(extractfield(dir(code_Path),'name'),'VerInfo.txt'))
-    writeInfoFile(code_Path);
+if ~any(contains(extractfield(dir(userpath),'name'),'VOGA_VerInfo.txt'))
+    VOGA__setVersion;
 end
-data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
+data = readtable('VOGA_VerInfo.txt','ReadVariableNames',false);
 version = data{1,2}{:};
 Experimenter = data{2,2}{:};
 %% Load in data

@@ -30,6 +30,6 @@ function VOGA__CycAvg
         exp_types = exp_names(indx);
     end
     while(~done) %run until the user hits cancel on analyzing a file
-        done = MakeCycAvg(Path,code_Path,exp_types);
+        done = MakeCycAvg(Path,exp_types);
     end
 end
