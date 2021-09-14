@@ -127,18 +127,17 @@ function plotCycAvg(CycAvg,plot_fits,lrz_xyz)
             h(1) = plot(NaN,NaN,'k','LineWidth',1);
             hold on
             plot(CycAvg.t,invh*CycAvg.stim,'k','LineWidth',0.5);
-            for i = 1:length(traces)
+            for i = 1:length(traces)                
                 trace = traces{i};
                 h(i+1) = plot(NaN,NaN,'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
-                if isfield(CycAvg,[trace,'_cyc'])
-                    plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
-                end
-            end
-            if plot_fits
-                for i = 1:length(traces)
-                    trace = traces{i};
+                if plot_fits
                     if isfield(CycAvg,[trace,'_cyc_fit'])
+                        plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
                         plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_fit']),'-','Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1)
+                    end
+                else
+                    if isfield(CycAvg,[trace,'_cyc'])
+                        plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',0.5);
                     end
                 end
             end   

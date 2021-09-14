@@ -16,10 +16,12 @@ function CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_
         var_n = [traces{i}(1),'E_Vel_',traces{i}(2:end)];
         if contains(Data.info.goggle_ver,'GNO')
             if isfield(Data_cyc,[var_n,'_QPR'])
-                CycAvg.([trac,'_cycavg']) = mean(Data_cyc.([var_n,'_QPR'])(:,keep_tr),2)';
-                CycAvg.([trac,'_cycstd']) = std(Data_cyc.([var_n,'_QPR'])(:,keep_tr),0,2)';
-                CycAvg.([trac,'_cyc']) = Data_cyc.([var_n,'_QPR'])(:,keep_tr)';
-                CycAvg.([trac,'_cyc_QPR']) = Data_cyc.(var_n)(:,keep_tr)';
+                CycAvg.([trac,'_cycavg']) = mean(Data_cyc.(var_n)(:,keep_tr),2)';
+                CycAvg.([trac,'_cycstd']) = std(Data_cyc.(var_n)(:,keep_tr),0,2)';
+                CycAvg.([trac,'_cyc']) = Data_cyc.(var_n)(:,keep_tr)';
+                CycAvg.([trac,'_cyc_fit']) = Data_cyc.([var_n,'_QPR'])(:,keep_tr)';
+                CycAvg.([trac,'_cycavg_fit']) = mean(Data_cyc.([var_n,'_QPR'])(:,keep_tr),2)';
+                CycAvg.([trac,'_cycstd_fit']) = std(Data_cyc.([var_n,'_QPR'])(:,keep_tr),0,2)';
             elseif isfield(Data_cyc,var_n)
                 CycAvg.([trac,'_cycavg']) = mean(Data_cyc.(var_n)(:,keep_tr),2)';
                 CycAvg.([trac,'_cycstd']) = std(Data_cyc.(var_n)(:,keep_tr),0,2)';

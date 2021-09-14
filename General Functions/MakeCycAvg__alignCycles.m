@@ -13,7 +13,7 @@ function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,F
     if contains(info.dataType,'Impulse')
         thresh = 50;
         if contains(info.goggle_ver,'GNO')
-            if contains(info.dataType,{'LH','LA','RA'})
+            if contains(info.dataType,{'LH','RP','RA'})
                 abov_i = find(stim>thresh);
             else
                 abov_i = find(stim<-thresh);
@@ -30,7 +30,7 @@ function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,F
         while p_len~=length(spike_i) %Just to make sure it's really done running
             p_len = length(spike_i);
             for i = 1:p_len
-                snip = spike_i(i) + (-Fs:Fs); %1 second apart at least
+                snip = spike_i(i) + (-floor(0.5*Fs):floor(0.5*Fs)); %1 second apart at least
                 snip(snip < 1|snip > length(stim)) = [];
                 [~,max_i] = max(abs(stim(snip)));
                 spike_i(i) = snip(1)-1+max_i;
@@ -38,7 +38,7 @@ function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,F
             spike_i = unique(spike_i);
         end
         if contains(info.goggle_ver,'GNO')
-            if contains(info.dataType,{'LH','LA','RA'})
+            if contains(info.dataType,{'LH','RP','RA'})
                 spike_i(stim(spike_i)<0)=[];
             else
                 spike_i(stim(spike_i)>0)=[];
@@ -50,7 +50,7 @@ function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,F
                 spike_i(stim(spike_i)>0)=[];
             end
         end
-        %plot(ts,stim,ts(spike_i),stim(spike_i),'g*')
+        plot(ts,stim,ts(spike_i),stim(spike_i),'g*')
         %Consisitent with GNO's csv, take a 175 sample trace with max at
         %sample 48
         starts = spike_i-47; 

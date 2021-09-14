@@ -220,7 +220,14 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         end
         info.TriggerShift2 = 0;
         [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,detec_head);
-        keep_tr = true(1,size(keep_inds,2)); 
+        if contains(info.dataType,'Impulse')&&~isempty(detec_tr) %remove erroneous head traces using auto-detected traces as a template
+            head_templ = mean(stims(:,detec_tr),2);
+            head_templ_sd = std(stims(:,detec_tr),[],2);            
+            out_of_bounds = stims > head_templ+3*head_templ_sd | stims < head_templ-3*head_templ_sd;
+            keep_tr = ~any(out_of_bounds(t_snip<0.23&t_snip>0.1,:));
+        else
+            keep_tr = true(1,size(keep_inds,2)); 
+        end        
         [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt1,keep_inds,te,ts,t_snip,stim,stims,Data);
         CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
         ha = MakeCycAvg__plotFullCycAvg([],type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg);
@@ -282,11 +289,11 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg);
         end
     elseif strcmp(opts{ind},'Select Cycles')
-        [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,Data_cyc,screen_size);   
+        [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,screen_size);   
         while tf
             CycAvg = MakeCycAvg__makeStruct(In_FileName,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
             ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg);
-            [keep_tr,tf] = MakeCycAvg__selectCycles(type,keep_tr,Data_cyc,screen_size);   
+            [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,screen_size);   
         end
     elseif strcmp(opts{ind},'Set Y-axis Lim')
         %Get new parameter values

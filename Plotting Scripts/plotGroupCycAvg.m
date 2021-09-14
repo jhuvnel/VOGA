@@ -480,9 +480,11 @@ elseif any(contains(all_results.Type,'Impulse'))
                     for ii = 1:length(canals)
                         trace = canals{ii};
                         h(ii+1) = plot(NaN,NaN,'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
-                        if isfield(CycAvg,[trace,'_cyc'])
+                        if isfield(CycAvg,[trace,'_cyc_fit'])
                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
-                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_fit']),'Color',colors.([trace(1),'_',trace(2),'']),'LineWidth',0.5);
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_fit']),'Color',colors.([trace(1),'_',trace(2),'']),'LineWidth',1);                  
+                        elseif isfield(CycAvg,[trace,'_cyc'])
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
                         end
                     end  
                     hold off
@@ -491,7 +493,7 @@ elseif any(contains(all_results.Type,'Impulse'))
                     h(1) = plot(NaN,NaN,'k');
                     hold on
                     for ii = 1:length(canals)
-                        h(ii+1) = plot(NaN,NaN,'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',2);
+                        h(ii+1) = plot(NaN,NaN,'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',1);
                     end
                     hold off
                 end

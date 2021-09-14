@@ -77,7 +77,7 @@ function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
        CycAvg = a.(b{1});
        slash = strfind(files{i},filesep); 
        fname = files{i}(slash(end)+1:end);
-       if ~isfield(CycAvg,'name')||~strcmp(CycAvg.name,fname)||~isfield(CycAvg,'lx_cyc_fit')||rerun
+       if ~isfield(CycAvg,'name')||~strcmp(CycAvg.name,fname)||~isfield(CycAvg,'parameterized')||rerun
            CycAvg.name = fname;
            CycAvg = ParameterizeCycAvg(CycAvg);
            save(files{i},'CycAvg')
@@ -86,6 +86,6 @@ function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
     end  
     all_results = vertcat(tabs{:});
     %% Save
-    exp_type = all_results.Experiment{1};
-    save([out_path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_',exp_type,'Results.mat'],'all_results')
+    exp_types = join(unique(all_results.Experiment),'');
+    save([out_path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_',exp_types{:},'Results.mat'],'all_results')
 end

@@ -53,9 +53,9 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             cla;
             for j = 1:size(keep_inds,2)
                 if keep_tr(j)
-                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep,'Tag',['Cycle_',num2str(j)]);
+                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep);
                 else
-                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm,'Tag',['Cycle_',num2str(j)]);
+                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm);
                 end
             end
             %Make cycle labels
@@ -297,9 +297,9 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             cla;
             for j = 1:size(keep_inds,2)
                 if keep_tr(j)
-                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep,'Tag',['Cycle_',num2str(j)]);
+                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep);
                 else
-                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm,'Tag',['Cycle_',num2str(j)]);
+                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm);
                 end 
             end     
             if ~isempty(detec_tr)
@@ -373,10 +373,13 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             %Only Selected Filtered Velocity Data
             for i = 1:length(traces_vel)
                 trace = lower(traces_vel{i}(1:2));
-                if isfield(CycAvg,[trace,'_cyc_QPR'])
-                    plot(CycAvg.t(s),CycAvg.([trace,'_cyc_QPR'])(:,s),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
-                end
-                if isfield(CycAvg,[trace,'_cycavg'])&&isfield(CycAvg,[trace,'_cycstd'])
+                if isfield(CycAvg,[trace,'_cyc_fit'])
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cyc'])(:,s),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
+                    fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[(CycAvg.([trace,'_cycavg_fit'])(s) - CycAvg.([trace,'_cycstd_fit'])(s)),fliplr((CycAvg.([trace,'_cycavg_fit'])(s) + CycAvg.([trace,'_cycstd_fit'])(s)))],colors.([trace(1),'_',trace(2),'_s']))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg_fit'])(s) + CycAvg.([trace,'_cycstd_fit'])(s),'Color',colors.([trace(1),'_',trace(2)]))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg_fit'])(s) - CycAvg.([trace,'_cycstd_fit'])(s),'Color',colors.([trace(1),'_',trace(2)]))
+                    plot(CycAvg.t(s),CycAvg.([trace,'_cycavg_fit'])(s),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',line_wid.bold);
+                elseif isfield(CycAvg,[trace,'_cyc'])
                     fill([CycAvg.t(s),fliplr(CycAvg.t(s))],[(CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s)),fliplr((CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s)))],colors.([trace(1),'_',trace(2),'_s']))
                     plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color',colors.([trace(1),'_',trace(2)]))
                     plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color',colors.([trace(1),'_',trace(2)]))
