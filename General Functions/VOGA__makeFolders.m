@@ -16,5 +16,8 @@ function VOGA__makeFolders
     if ~any(contains(path_folders,'Segmented Files'))
         mkdir('Segmented Files')
     end
+    if ~any(contains(path_folders,'Figures'))
+        mkdir('Figures')
+    end
 end
 

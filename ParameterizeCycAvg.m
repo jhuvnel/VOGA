@@ -24,7 +24,7 @@ function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
 % PhaseDur (us)
 % CurrAmp (uA)
 fname = strrep(strrep(CycAvg.name,'CycAvg_',''),'.mat','');
-if contains(fname,'_')
+if contains(fname,'_Updated')
     und = strfind(fname,'_');
     fname = fname(1:und(1)-1);
 end
@@ -81,11 +81,11 @@ elseif contains(fname,{'RALP','RA'})
 elseif contains(fname,'LP')
     stim_vect = [0 -1 0];
     axis_name = 'RALP';
-elseif contains(fname,{'LHRH','LH','RotaryChair'})
-    stim_vect = [0 0 1];
-    axis_name = 'LHRH';
 elseif contains(fname,'RH')
     stim_vect = [0 0 -1];
+    axis_name = 'LHRH';
+elseif contains(fname,{'LHRH','LH','RotaryChair'})
+    stim_vect = [0 0 1];
     axis_name = 'LHRH';
 elseif contains(fname,'X')
     stim_vect = [0.707 0.707 0];
@@ -197,7 +197,7 @@ elseif contains(fname,{'Light','LIGHT'})
 elseif contains(fname,{'NoStim','Dark','DARK'})
     condition = 'NoStim';
 else
-    condition = strjoin(fparts,' ');
+    condition = strrep(strjoin(fparts,' '),'_','');
     if isempty(condition) %Likely a normal subject
         condition = 'NoStim';
     end

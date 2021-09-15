@@ -196,7 +196,7 @@ if any(contains(all_results.Type,'Sine'))
             leg2 = legend(h2(e_bool),conds(e_bool),'NumColumns',1,'Location','northwest');
             leg2.ItemTokenSize(1) = 5;
             title(leg2,'Conditions')
-            savefig([Path,filesep,strrep(fig_name,' ','-'),'.fig'])
+            savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])
             close;
         end
     end  
@@ -279,7 +279,7 @@ if any(contains(all_results.Type,'Sine'))
             leg2 = legend(h2(e_bool),conds(e_bool),'NumColumns',1,'Location','northwest');
             leg2.ItemTokenSize(1) = 5;
             title(leg2,'Conditions')
-            savefig([Path,filesep,strrep(fig_name,' ','-'),'.fig'])
+            savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])
             close;
         end
     end                
@@ -481,11 +481,10 @@ elseif(any(contains(all_results.Condition,'Autoscan')))
        YMax = max(reshape(cell2mat(get(ha(1:3),'Ylim')),[],1));
     end    
     set(ha(1:3),'YLim',[0,YMax])
-    set(ha(1),'YTick',20:20:YMax)
-    
+    set(ha(1),'YTick',20:20:YMax)    
     fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name,' ','-'),'.fig']});
     if ~isempty(fig_name)
-        savefig([Path,filesep,fig_name{:}])
+        savefig([Path,filesep,'Figures',filesep,fig_name{:}])
     end
     close;
 elseif(any(contains(all_results.Type,'Impulse')))
@@ -581,13 +580,16 @@ elseif(any(contains(all_results.Type,'Impulse')))
     for i = 1:enum
         rel_i = find(IC==i);
         [~,a_i] = ismember(all_canals,canal(rel_i));
+        x_ax = 1:6;
+        x_ax = x_ax(a_i~=0);
+        a_i(a_i==0) = [];        
         axes(ha(1))
         hold on
-        errorbar(1:6,gain(rel_i(a_i)),gain_sd(rel_i(a_i)),[all_markers(i),'-'],'Color','k');
+        errorbar(x_ax,gain(rel_i(a_i)),gain_sd(rel_i(a_i)),[all_markers(i),'-'],'Color','k');
         hold off
         axes(ha(2))
         hold on
-        errorbar(1:6,lat(rel_i(a_i)),lat_sd(rel_i(a_i)),[all_markers(i),'-'],'Color','k');
+        errorbar(x_ax,lat(rel_i(a_i)),lat_sd(rel_i(a_i)),[all_markers(i),'-'],'Color','k');
         hold off
     end           
     linkaxes(ha,'x')
@@ -600,7 +602,8 @@ elseif(any(contains(all_results.Type,'Impulse')))
     xlabel(ha(2),'Canal')
     set(ha,'XTick',1:6,'XTickLabel',all_canals,'XTickLabelRotation',0,'XMinorTick','off')
     set(ha,'XLim',[0.5 6.5])
-    set(ha(1),'YLim',[0 1.1])
+    ymax = get(ha(1),'YLim');
+    set(ha(1),'YLim',[0 max(ymax(2),1.1)])
     set(ha(2),'YLim',[-7 200])
     %Make legends
     axes(ha(2))
@@ -612,7 +615,7 @@ elseif(any(contains(all_results.Type,'Impulse')))
     leg = legend(h1,conds,'NumColumns',1,'Location','northwest');
     leg.ItemTokenSize(1) = 5;
     title(leg,'Conditions')
-    savefig([Path,filesep,strrep(fig_name,' ','-'),'.fig'])
+    savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])
     close;    
 end
 end

@@ -131,6 +131,17 @@ if any(contains(all_results.Type,'Sine'))
                 if ~isempty(rel_files{i})
                     load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
                     fields = fieldnames(CycAvg);
+                    if all(CycAvg.info.stim_axis == [0 0 1])||all(CycAvg.info.stim_axis == [0 0 -1])
+                        rel_canals = {'lz','rz'};
+                    elseif all(CycAvg.info.stim_axis == [1 0 0])||all(CycAvg.info.stim_axis == [-1 0 0])
+                        rel_canals = {'ll','rl'};
+                    elseif all(CycAvg.info.stim_axis == [0 1 0])||all(CycAvg.info.stim_axis == [0 -1 0])
+                        rel_canals = {'lr','rr'};    
+                    elseif all(CycAvg.info.stim_axis == [0.707 0.707 0])||all(CycAvg.info.stim_axis == [-0.707 -0.707 0])
+                        rel_canals = {'lx','rx'}; 
+                    elseif all(CycAvg.info.stim_axis == [0.707 -0.707 0])||all(CycAvg.info.stim_axis == [-0.707 0.707 0])
+                        rel_canals = {'ly','ry'}; 
+                    end
                     if ~ismember('t',fields)
                         CycAvg.t = reshape((0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs),[],1);
                     else
@@ -158,6 +169,11 @@ if any(contains(all_results.Type,'Sine'))
                         plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s) + CycAvg.([canals{ii},'_cycstd'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]))
                         plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s) - CycAvg.([canals{ii},'_cycstd'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]))
                         h(ii+1) = plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',2);
+                    end
+                    for ii = 1:length(rel_canals)
+                        fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.([rel_canals{ii},'_cycavg'])(s)-CycAvg.([rel_canals{ii},'_cycstd'])(s),fliplr((CycAvg.([rel_canals{ii},'_cycavg'])(s)+CycAvg.([rel_canals{ii},'_cycstd'])(s)))],colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2),'_s']))
+                        plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg'])(s) + CycAvg.([rel_canals{ii},'_cycstd'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]))
+                        plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg'])(s) - CycAvg.([rel_canals{ii},'_cycstd'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]))
                     end
                     hold off
                 else
@@ -190,7 +206,7 @@ if any(contains(all_results.Type,'Sine'))
                 YLim = [-YMax YMax];
             end
             set(ha,'YLim',YLim)
-            fig_names{j} = [Path,filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
+            fig_names{j} = [Path,filesep,'Figures',filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
             savefig(fig_names{j})
             close;
         end
@@ -391,11 +407,12 @@ elseif any(contains(all_results.Condition,'Autoscan'))
             text(0.5,YLim(1),num2str(length(CycAvg.cyclist)),'Color','k','HorizontalAlignment','right','VerticalAlignment','bottom')
         end
     end
-    savefig([Path,filesep,strrep(fig_title{:},' ','-'),'.fig'])
+    savefig([Path,filesep,'Figures',filesep,strrep(fig_title{:},' ','-'),'.fig'])
 elseif any(contains(all_results.Type,'Impulse'))
     %% Impulses -- IN PROGRESS
+    all_canals = {'LH','RH','LA','RP','RA','LP'};
     all_results = all_results(contains(all_results.Type,'Impulse'),:);
-    %fn = size(all_results,1);
+    fn = size(all_results,1);
     % Plot Group Cycle Average Results
     cyc_files = all_results.File;
     canal = cell(length(cyc_files),1);
@@ -405,10 +422,28 @@ elseif any(contains(all_results.Type,'Impulse'))
     canal(contains(cyc_files,'LP')) = {'LP'};
     canal(contains(cyc_files,'RA')) = {'RA'};
     canal(contains(cyc_files,'RP')) = {'RP'};    
-    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Experiment,all_results.Condition,all_results.Goggle,canal];
-    joined_fparts = join(file_parts(:,1:6));
+    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Experiment,all_results.Condition,all_results.Goggle];
+    joined_fparts = join(file_parts);
     conds1 = [strcat(unique(joined_fparts),{' Left Ear Impulses'});strcat(unique(joined_fparts),{' Right Ear Impulses'})];
     enum = size(conds1,1); 
+    rel_file_parts = file_parts;
+    common_cond = cell(1,size(file_parts,2));
+    for i = 1:size(file_parts,2)
+        if length(unique(file_parts(:,i)))==1
+            common_cond(i) = unique(file_parts(:,i));
+        end
+    end
+    rel_file_parts(:,~cellfun(@isempty,common_cond)) = [];
+    common_cond(cellfun(@isempty,common_cond)) = [];
+    common_cond = strjoin(common_cond); 
+    if isempty(rel_file_parts) %only one condition
+        conds2 = all_results.Condition(1);
+        IC = ones(fn,1);
+    elseif size(rel_file_parts,2)==1
+        [conds2,~,IC] = unique(rel_file_parts,'stable');
+    else
+        [conds2,~,IC] = unique(join(rel_file_parts),'stable');
+    end
     fig_names = cell(enum+6,1);
     if isempty(YMax)
         YMax = 250;
@@ -474,6 +509,17 @@ elseif any(contains(all_results.Type,'Impulse'))
                         invh = 1;
                         inve = -1;
                     end
+                    if all(CycAvg.info.stim_axis == [0 0 1])||all(CycAvg.info.stim_axis == [0 0 -1])
+                        rel_canals = {'lz','rz'};
+                    elseif all(CycAvg.info.stim_axis == [1 0 0])||all(CycAvg.info.stim_axis == [-1 0 0])
+                        rel_canals = {'ll','rl'};
+                    elseif all(CycAvg.info.stim_axis == [0 1 0])||all(CycAvg.info.stim_axis == [0 -1 0])
+                        rel_canals = {'lr','rr'};    
+                    elseif all(CycAvg.info.stim_axis == [0.707 0.707 0])||all(CycAvg.info.stim_axis == [-0.707 -0.707 0])
+                        rel_canals = {'lx','rx'}; 
+                    elseif all(CycAvg.info.stim_axis == [0.707 -0.707 0])||all(CycAvg.info.stim_axis == [-0.707 0.707 0])
+                        rel_canals = {'ly','ry'}; 
+                    end
                     h = gobjects(length(canals)+1,1);
                     h(1) = plot(NaN,NaN,'k','LineWidth',1);
                     hold on
@@ -487,7 +533,16 @@ elseif any(contains(all_results.Type,'Impulse'))
                         elseif isfield(CycAvg,[trace,'_cyc'])
                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
                         end
-                    end  
+                    end 
+                    for ii = 1:length(rel_canals)
+                        trace = rel_canals{ii};
+                        if isfield(CycAvg,[trace,'_cyc_fit'])
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_fit']),'Color',colors.([trace(1),'_',trace(2),'']),'LineWidth',1);                  
+                        elseif isfield(CycAvg,[trace,'_cyc'])
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
+                        end
+                    end 
                     hold off
                     set(gca,'XLim',[0,CycAvg.t(end)])
                 else
@@ -509,14 +564,129 @@ elseif any(contains(all_results.Type,'Impulse'))
                 end                
             end
             set(ha,'YLim',[-YMax/2 YMax])
-            fig_names{j} = [Path,filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
+            fig_names{j} = [Path,filesep,'Figures',filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
             savefig(fig_names{j})
             close;
         end
     end
     % Plot each condition for all canals
     % ADD CODE HERE
-    
+    for j = enum+1:enum+6 %Each canal
+        fig_name = [common_cond,' ',all_canals{j-enum}];
+        disp(['Making plot ',num2str(j),'/',num2str(enum+6),': ',fig_name])
+        %Set up labels
+        labs = conds2;
+        %Find files to plot
+        rel_files = cell(length(labs),1);
+        for i = 1:length(labs)
+            files = cyc_files(IC==i&contains(canal,all_canals{j-enum})); 
+            if ~isempty(files)
+                rel_files(i) = files(end);
+            end
+        end
+        % Plot all canals in one ear for each condition
+        %Only plot if there is at least one one file to plot
+        if sum(~cellfun(@isempty,rel_files))>0            
+            leg_text = {'Stim','Left LARP','Right LARP',...
+                'Left RALP','Right RALP','Left X','Right X',...
+                    'Left Y','Right Y','Left Z','Right Z'};
+            canals = {'ll','rl','lr','rr','lx','rx','ly','ry','lz','rz'};
+            figure('Units','inches','Position',[0.2778    5.8472   17.2222    3.8333],'Color',[1,1,1])
+            %Title
+            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
+                'HorizontalAlignment','center','EdgeColor','none');
+            if annot
+                annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_Path,filesep,...
+                    code_name,newline,...
+                    'VOGA',version,newline,Experimenter],'FontSize',5,...
+                    'EdgeColor','none','interpreter','none');
+            end
+            ha = gobjects(1,length(labs));
+            x_space = 0.02;
+            x_min = 0.04;
+            x_max = 0.98;
+            x_wid = (x_max-x_min-x_space*(length(labs)-1))/length(labs);
+            y_height = 0.75;
+            x_pos = x_min:(x_wid+x_space):x_max;
+            y_pos = 0.12;
+            for i = 1:length(rel_files)
+                ha(i) = subplot(1000,1000,1);
+                ha(i).Position = [x_pos(i) y_pos x_wid y_height];
+                if ~isempty(rel_files{i})
+                    load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
+                    fields = fieldnames(CycAvg);
+                    if ~ismember('t',fields)
+                        CycAvg.t = reshape(0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs,[],1);
+                    else
+                        CycAvg.t = reshape(CycAvg.t,1,[]);
+                    end
+                    if -min(mean(CycAvg.stim))>max(mean(CycAvg.stim))
+                        invh = -1;
+                        inve = 1;
+                    else
+                        invh = 1;
+                        inve = -1;
+                    end
+                    if all(CycAvg.info.stim_axis == [0 0 1])||all(CycAvg.info.stim_axis == [0 0 -1])
+                        rel_canals = {'lz','rz'};
+                    elseif all(CycAvg.info.stim_axis == [1 0 0])||all(CycAvg.info.stim_axis == [-1 0 0])
+                        rel_canals = {'ll','rl'};
+                    elseif all(CycAvg.info.stim_axis == [0 1 0])||all(CycAvg.info.stim_axis == [0 -1 0])
+                        rel_canals = {'lr','rr'};    
+                    elseif all(CycAvg.info.stim_axis == [0.707 0.707 0])||all(CycAvg.info.stim_axis == [-0.707 -0.707 0])
+                        rel_canals = {'lx','rx'}; 
+                    elseif all(CycAvg.info.stim_axis == [0.707 -0.707 0])||all(CycAvg.info.stim_axis == [-0.707 0.707 0])
+                        rel_canals = {'ly','ry'}; 
+                    end
+                    h = gobjects(length(canals)+1,1);
+                    h(1) = plot(NaN,NaN,'k','LineWidth',1);
+                    hold on
+                    plot(CycAvg.t,invh*CycAvg.stim,'k','LineWidth',0.5);
+                    for ii = 1:length(canals)
+                        trace = canals{ii};
+                        h(ii+1) = plot(NaN,NaN,'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
+                        if isfield(CycAvg,[trace,'_cyc_fit'])
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_fit']),'Color',colors.([trace(1),'_',trace(2),'']),'LineWidth',1);                  
+                        elseif isfield(CycAvg,[trace,'_cyc'])
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
+                        end
+                    end  
+                    %Plot the most salient canal again
+                    for ii = 1:length(rel_canals)
+                        trace = rel_canals{ii};
+                        if isfield(CycAvg,[trace,'_cyc_fit'])
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_fit']),'Color',colors.([trace(1),'_',trace(2),'']),'LineWidth',1);                  
+                        elseif isfield(CycAvg,[trace,'_cyc'])
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
+                        end
+                    end
+                    hold off
+                    set(gca,'XLim',[0,CycAvg.t(end)])
+                else
+                    h = gobjects(length(canals)+1,1);
+                    h(1) = plot(NaN,NaN,'k');
+                    hold on
+                    for ii = 1:length(canals)
+                        h(ii+1) = plot(NaN,NaN,'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',1);
+                    end
+                    hold off
+                end
+                title(labs{i})
+                xlabel('Time (s)')
+                if i == 1
+                    ylabel('Angular Velocity (dps)')
+                    leg = legend(ha(1),h,leg_text,'NumColumns',2);
+                    leg.ItemTokenSize(1) = 7;
+                end                
+            end
+            set(ha,'YLim',[-YMax/2 YMax])
+            fig_names{j} = [Path,filesep,'Figures',filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
+            savefig(fig_names{j})
+            close;
+        end
+    end
     fig_names(cellfun(@isempty,fig_names)) = [];
     for i = 1:length(fig_names)
         open(fig_names{i}) 
