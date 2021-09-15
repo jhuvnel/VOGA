@@ -28,7 +28,8 @@ if contains(fname,'_')
     und = strfind(fname,'_');
     fname = fname(1:und(1)-1);
 end
-fparts = split(fname,'-');
+fparts = split(strrep(fname,'NA',''),'-');
+fparts(cellfun(@isempty,fparts)) = [];
 % Subject
 if contains(fname,'MVI')
     subject = fparts{contains(fparts,'MVI')};
@@ -37,7 +38,8 @@ elseif any(~isnan(str2double(strrep(fparts,'R','')))&contains(fparts,'R')) %in f
     subject = fparts{~isnan(str2double(strrep(fparts,'R','')))&contains(fparts,'R')};
     fparts(~isnan(str2double(strrep(fparts,'R','')))&contains(fparts,'R')) = [];
 else
-    subject = '';
+    subject = fparts{1};
+    fparts(1)= [];
 end
 % Visit
 if any(contains(fparts,'Visit'))
@@ -169,6 +171,18 @@ else
     disp(fname)
     return;
 end
+if ~isfield(CycAvg,'info')
+   goggle = 'LDVOG';
+elseif ~isfield(CycAvg.info,'goggle_ver')
+   goggle = 'LDVOG';
+else
+    if isnumeric(CycAvg.info.goggle_ver)
+        goggle = ['LDVOG',num2str(CycAvg.info.goggle_ver)];
+    else
+        goggle = CycAvg.info.goggle_ver;
+    end
+end
+fparts(contains(fparts,goggle)) = [];
 Type = Types{type};
 nf = length(freqs);
 %Condition
@@ -184,17 +198,8 @@ elseif contains(fname,{'NoStim','Dark','DARK'})
     condition = 'NoStim';
 else
     condition = strjoin(fparts,' ');
-end
-
-if ~isfield(CycAvg,'info')
-   goggle = 'LDVOG';
-elseif ~isfield(CycAvg.info,'goggle_ver')
-   goggle = 'LDVOG';
-else
-    if isnumeric(CycAvg.info.goggle_ver)
-        goggle = ['LDVOG',num2str(CycAvg.info.goggle_ver)];
-    else
-        goggle = CycAvg.info.goggle_ver;
+    if isempty(condition) %Likely a normal subject
+        condition = 'NoStim';
     end
 end
 if ~isfield(CycAvg,'lx_cyc')&&isfield(CycAvg,'CycAvg.ll_cyc')

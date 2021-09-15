@@ -407,16 +407,17 @@ elseif any(contains(all_results.Type,'Impulse'))
     canal(contains(cyc_files,'RP')) = {'RP'};    
     file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Experiment,all_results.Condition,all_results.Goggle,canal];
     joined_fparts = join(file_parts(:,1:6));
-    conds = [strcat(unique(joined_fparts),{' Left Ear Impulses'});strcat(unique(joined_fparts),{' Right Ear Impulses'})];
-    enum = size(conds,1); 
-    fig_names = cell(enum,1);
+    conds1 = [strcat(unique(joined_fparts),{' Left Ear Impulses'});strcat(unique(joined_fparts),{' Right Ear Impulses'})];
+    enum = size(conds1,1); 
+    fig_names = cell(enum+6,1);
     if isempty(YMax)
         YMax = 250;
     end
     for j = 1:enum
-        disp(['Making plot ',num2str(j),'/',num2str(enum)])
+        fig_name = conds1{j};
+        disp(['Making plot ',num2str(j),'/',num2str(enum+6),': ',fig_name])
         %Set up labels
-        if contains(conds(j),'Left Ear')
+        if contains(conds1(j),'Left Ear')
             labs = {'Anterior (LA)','Posterior (LP)','Horizontal (LH)'};
         else
             labs = {'Posterior (RP)','Anterior (RA)','Horizontal (RH)'};
@@ -425,14 +426,14 @@ elseif any(contains(all_results.Type,'Impulse'))
         rel_files = cell(length(labs),1);
         for i = 1:length(labs)
             can = labs{i}(end-2:end-1);
-            files = cyc_files(contains(joined_fparts,strrep(strrep(conds(j),' Left Ear Impulses',''),' Right Ear Impulses',''))&contains(canal,can)); %FIX ME
+            files = cyc_files(contains(joined_fparts,strrep(strrep(conds1(j),' Left Ear Impulses',''),' Right Ear Impulses',''))&contains(canal,can)); %FIX ME
             if ~isempty(files)
                 rel_files(i) = files(end);
             end
         end
-        %Only plot if there is at least one file to plot
-        if any(~cellfun(@isempty,rel_files))
-            fig_name = conds{j};
+        % Plot all canals in one ear for each condition
+        %Only plot if there is more than one file to plot
+        if sum(~cellfun(@isempty,rel_files))>1            
             leg_text = {'Stim','Left LARP','Right LARP',...
                 'Left RALP','Right RALP','Left X','Right X',...
                     'Left Y','Right Y','Left Z','Right Z'};
@@ -488,6 +489,7 @@ elseif any(contains(all_results.Type,'Impulse'))
                         end
                     end  
                     hold off
+                    set(gca,'XLim',[0,CycAvg.t(end)])
                 else
                     h = gobjects(length(canals)+1,1);
                     h(1) = plot(NaN,NaN,'k');
@@ -504,8 +506,7 @@ elseif any(contains(all_results.Type,'Impulse'))
                     %leg_reord = [2,4,6,1,3,5,7];
                     leg = legend(ha(1),h,leg_text,'NumColumns',2);
                     leg.ItemTokenSize(1) = 7;
-                end
-                set(gca,'XLim',[0,CycAvg.t(end)])
+                end                
             end
             set(ha,'YLim',[-YMax/2 YMax])
             fig_names{j} = [Path,filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
@@ -513,6 +514,9 @@ elseif any(contains(all_results.Type,'Impulse'))
             close;
         end
     end
+    % Plot each condition for all canals
+    % ADD CODE HERE
+    
     fig_names(cellfun(@isempty,fig_names)) = [];
     for i = 1:length(fig_names)
         open(fig_names{i}) 

@@ -6,10 +6,10 @@ function VOGA__makePlots
     params.Cyc_Path = [cd,filesep,'Cycle Averages'];
     params.code_Path = code_Path;
     % Get version and experimenter info from the file
-    if ~any(contains(extractfield(dir(code_Path),'name'),'VerInfo.txt'))
-        writeInfoFile(code_Path);
+    if ~any(contains(extractfield(dir(userpath),'name'),'VOGA_VerInfo.txt'))
+        VOGA__setVersion;
     end
-    data = readtable([code_Path,filesep,'VerInfo.txt'],'ReadVariableNames',false);
+    data = readtable('VOGA_VerInfo.txt','ReadVariableNames',false);
     params.version = data{1,2}{:};
     params.Experimenter = data{2,2}{:};    
     %% Run until cancel 

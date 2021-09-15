@@ -86,6 +86,6 @@ function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
     end  
     all_results = vertcat(tabs{:});
     %% Save
-    exp_types = join(unique(all_results.Experiment),'');
+    exp_types = join(unique(all_results.Experiment),'-');
     save([out_path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_',exp_types{:},'Results.mat'],'all_results')
 end
