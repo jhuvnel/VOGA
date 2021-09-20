@@ -22,6 +22,7 @@ if tf == 1
     sel_files = VOG_files(indx);
     for i = 1:length(sel_files)
         In_Path = [Raw_Path,filesep,sel_files{i}];
+        disp([num2str(i),'/',num2str(length(sel_files)),': ',sel_files{i}])
         Segment(In_Path,Seg_Path)
     end
 end

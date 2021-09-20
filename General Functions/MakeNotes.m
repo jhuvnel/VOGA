@@ -59,7 +59,7 @@ if any(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'})) %GNO
         date(dashes(5)) = '-';
         date = strrep(date(dashes(2)+1:dashes(8)-1),'_','');
         w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];'Experiment '};
-        notes_check = inputdlg([fname,newline,newline,'Check Notes: ',newline,'Ex: aHIT-Impulse-LHRH-150dps-pseudorandom'],'Set VOG File Parameters',[length(w_notes),70],{strjoin(w_notes,'\n')});
+        notes_check = inputdlg([fname,newline,newline,'Check Notes: ',newline,'Ex: aHIT-Impulse-NoStim-LHRH-150dps-pseudorandom'],'Set VOG File Parameters',[length(w_notes),70],{strjoin(w_notes,'\n')});
         if ~isempty(notes_check)
             w_notes = cellstr(notes_check{1,1});
             filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');

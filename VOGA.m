@@ -10,7 +10,7 @@
 % Written by Andrianna Ayiotis
 % Updated on 2021-05-12
 opts = {'Initialize','Process Raw Data','Segment','Combine Segments','Cycle Average',...
-    'Make New Summary Table','Add to Summary Table','Generate Figures','Set Version'};
+    'Make New Summary Table','Add to Summary Table','Generate Figures','Edit Default Filtering','Set Version'};
 ind = 1; %Run the start procedure first
 tf1 = 1;
 while tf1
@@ -40,6 +40,8 @@ while tf1
         VOGA__makePlots;
     elseif strcmp(opts{ind},'Set Version')
         VOGA__setVersion;
+    elseif strcmp(opts{ind},'Edit Default Filtering')
+        VOGA__editDefaultParams;
     end
     %% Poll for new reponse
     [ind,tf1] = nmlistdlg('PromptString','Select an action:',...

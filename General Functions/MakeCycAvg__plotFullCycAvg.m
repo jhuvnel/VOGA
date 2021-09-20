@@ -328,12 +328,10 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             hold on
             cla;
             plot(t_s,stims,'k','LineWidth',line_wid.norm)
-            %All Filtered Velocity Data
+            %Cycle Averaged Velocity Data
             for i = 1:length(traces_vel)
-                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end),'_QPR'])
-                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
-                    plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end),'_QPR']),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
-                elseif isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
+                    plot(t_s,CycAvg.Data_rawvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])(CycAvg.Data_allcyc.keep_inds),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)   
                     plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)   
                 end
             end

@@ -4,7 +4,7 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
     %Position
     filt.pos.median = MakeCycAvg__filterParameterCheck(filt.pos.median,'med');
     filt.pos.spline = MakeCycAvg__filterParameterCheck(filt.pos.spline,'spline');
-    sgolay_f = MakeCycAvg__filterParameterCheck([filt.pos.sgolay1,filt.pos.sgolay2],'spline');
+    sgolay_f = MakeCycAvg__filterParameterCheck([filt.pos.sgolay1,filt.pos.sgolay2],'sgolay');
     filt.pos.sgolay1 = sgolay_f(:,1);
     filt.pos.sgolay2 = sgolay_f(:,2);
     %Set the all value
@@ -13,6 +13,9 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
     filt.vel.median = MakeCycAvg__filterParameterCheck(filt.vel.median,'med');
     filt.vel.spline = MakeCycAvg__filterParameterCheck(filt.vel.spline,'spline');
     filt.vel.irlssmooth = MakeCycAvg__filterParameterCheck(filt.vel.irlssmooth,'smooth');
+    sgolay_f = MakeCycAvg__filterParameterCheck([filt.vel.sgolay1,filt.vel.sgolay2],'sgolay');
+    filt.vel.sgolay1 = sgolay_f(:,1);
+    filt.vel.sgolay2 = sgolay_f(:,2);
     %Set the all value
     filt.vel(:,~isnan(filt.vel{'ALL',:})) = repmat(filt.vel(end,~isnan(filt.vel{'ALL',:})),11,1);       
     %% Filter Position
@@ -61,16 +64,16 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
         var_n = [traces{i}(1),'E_Vel_',canal];
         if isfield(Data_vel,var_n)
             if contains(Data.info.goggle_ver,'GNO') %Save a desaccaded version
-                Data_vel_filt.(var_n) = spline_filt(ts,med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),ts,filt.vel.spline(traces{i}));
+                Data_vel_filt.(var_n) = spline_filt(ts,sgolay_filt(med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),[filt.vel.sgolay1(traces{i}),filt.vel.sgolay2(traces{i})]),ts,filt.vel.spline(traces{i}));
                 if filt.vel.irlssmooth(traces{i})==1
-                    Data_vel_filt.([var_n,'_QPR']) = spline_filt(ts,med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),ts,filt.vel.spline(traces{i}));
+                    Data_vel_filt.([var_n,'_QPR']) = Data_vel_filt.(var_n);
                 else    
                     Data_vel_filt.([var_n,'_QPR']) = irls_filt(Data_vel.(var_n),filt.vel.irlssmooth(traces{i}));  
                 end
                 Data_cyc.(var_n) = Data_vel_filt.(var_n)(keep_inds);
                 Data_cyc.([var_n,'_QPR']) = Data_vel_filt.([var_n,'_QPR'])(keep_inds);
             else
-                Data_vel_filt.(var_n) = spline_filt(ts,irls_filt(med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),filt.vel.irlssmooth(traces{i})),ts,filt.vel.spline(traces{i}));
+                Data_vel_filt.(var_n) = spline_filt(ts,sgolay_filt(med_filt(Data_vel.(var_n),filt.vel.median(traces{i})),[filt.vel.sgolay1(traces{i}),filt.vel.sgolay2(traces{i})]),ts,filt.vel.spline(traces{i}));
                 Data_cyc.(var_n) = Data_vel_filt.(var_n)(keep_inds);
             end
         end
