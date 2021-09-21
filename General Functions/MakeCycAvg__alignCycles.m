@@ -55,10 +55,11 @@ function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,F
         %sample 48
         starts = spike_i-47; 
         ends = starts+174;
+        %plot(ts,stim,ts(starts),stim(starts),'g*',ts(ends),stim(ends),'b*')
         inv_i = starts<1|ends>length(stim);
         starts(inv_i)= [];
         ends(inv_i) = [];
-        t_snip = reshape(ts(1:ends(1)-starts(1)+1)-ts(1),1,[]);
+        t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);
         keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
         for i = 1:length(starts)
             keep_inds(:,i) = starts(i):ends(i);

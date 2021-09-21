@@ -139,7 +139,6 @@ end
 %% Set some defaults
 % Cycle Align
 [~,t_snip] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,[]);
-
 if type == 1
     filt1.vel.irlssmooth(end) = round(length(t_snip)*0.16); %heuristic
 elseif type == 2 %velstep and activation
@@ -180,7 +179,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
                 out_of_bounds = stims > head_templ+3*head_templ_sd | stims < head_templ-3*head_templ_sd;
                 keep_tr = ~any(out_of_bounds(t_snip<0.23&t_snip>0.1,:));
             else
-                keep_tr = true(1,size(keep_inds,2)); 
+                keep_tr = true(1,size(keep_inds,2));
             end        
         end
         [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt1,keep_inds,te,ts,t_snip,stim,stims,Data);

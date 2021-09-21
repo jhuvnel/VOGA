@@ -242,12 +242,13 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             leg2 = legend(h1,[{'Stim'};reshape(traces_vel,[],1)],'NumColumns',length(traces_vel)+1);
             leg2.ItemTokenSize(1) = 7;
         case 3 %No Position Traces, Just Velocity and Cycle Averaging
-            te = CycAvg.Data_rawvel.t;
-            ts = CycAvg.Data_rawvel.t;
+            te = CycAvg.Data_rawvel.t_cond;
+            ts = CycAvg.Data_rawvel.t_cond;
             t_s = CycAvg.t;
-            stim = CycAvg.Data_rawvel.stim;
+            stim = CycAvg.Data_rawvel.stim_cond;
             stims = CycAvg.stim;
             keep_inds = CycAvg.Data_allcyc.keep_inds;
+            keep_inds_cond = reshape(1:size(keep_inds,1)*size(keep_inds,2),size(keep_inds,1),[]);
             keep_tr = CycAvg.keep_tr;
             detec_tr = CycAvg.detec_tr;
             if isempty(ha) %first time running
@@ -273,7 +274,7 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                 linkaxes(ha([2,3,4]),'xy')
                 %Make cycle labels
                 cyc_num_labs = 1:length(keep_tr);
-                x_tick = te(round(floor(mean(keep_inds)),0));
+                x_tick = te(round(floor(mean(keep_inds_cond)),0));
                 %Set Labels
                 %ha1
                 set(ha(1),'XLim',XLim_Long,'YLim',YLim_Vel,'XTick',x_tick,'XTickLabel',cyc_num_labs,'Xaxislocation','top')
@@ -296,21 +297,23 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             hold on
             cla;
             for j = 1:size(keep_inds,2)
-                if keep_tr(j)
-                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_keep);
+                if keep_tr(j)                    
+                    fill(te(keep_inds_cond([1,end,end,1],j)),[500,500,-500,-500]',colors.cyc_keep);
                 else
-                    fill([te(keep_inds(1,j)),te(keep_inds(end,j)),te(keep_inds(end,j)),te(keep_inds(1,j))]',[500,500,-500,-500]',colors.cyc_rm);
+                    fill(te(keep_inds_cond([1,end,end,1],j)),[500,500,-500,-500]',colors.cyc_rm);
                 end 
             end     
             if ~isempty(detec_tr)
-                xline(te([keep_inds(1,detec_tr),keep_inds(end,detec_tr)]),'-b','LineWidth',2)     
+                for i = 1:length(detec_tr)
+                    plot(te(keep_inds_cond([1,end],detec_tr(i))),[YLim_Vel(2),YLim_Vel(2)],'-b','LineWidth',2)
+                end
             end
             h = gobjects(1,length(traces_vel)+1);
             h(1) = plot(ts,stim,'k','LineWidth',line_wid.norm);
             % Raw Traces
             for i = 1:length(traces_vel)
                 if isfield(CycAvg.Data_rawvel,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
-                    plot(ts,CycAvg.Data_rawvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
+                    plot(ts,CycAvg.Data_rawvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end),'_cond']),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
                 end
             end
             % Filtered Traces
