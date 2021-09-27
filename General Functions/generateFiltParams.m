@@ -2,7 +2,7 @@
 %Default table, no presets
 trace_names = {'LX','RX','LY','RY','LZ','RZ','LLARP','RLARP','LRALP','RRALP','ALL'};
 pos_filts = {'median','spline','sgolay1','sgolay2'}; %add more as needed
-vel_filts = {'median','spline','sgolay1','sgolay2','irlssmooth'}; %add more as needed
+vel_filts = {'accel','median','spline','sgolay1','sgolay2','irlssmooth'}; %add more as needed
 filt1.pos = array2table(NaN(length(trace_names),length(pos_filts)));
 filt1.pos.Properties.VariableNames = pos_filts;
 filt1.pos.Properties.RowNames = trace_names;
@@ -21,17 +21,17 @@ NKI_filt1.pos.spline = [1;1;0.999995;0.999995;0.9999995;0.9999995;NaN;NaN;NaN;Na
 GNO_filt1 = filt1;
 GNO_filt1.vel.sgolay1(end) = 2;
 GNO_filt1.vel.sgolay2(end) = 7;
-GNO_filt1.vel.irlssmooth(end) = 5;
+GNO_filt1.vel.accel(end) = 4000;
 %Make filt_params struct
 filt_params.default.filt1 = filt1;
 filt_params.default.YLim.Pos = [];
 filt_params.default.YLim.Vel = [];
-filt_params.LDVOG.filt1 = LDVOG_filt1;
-filt_params.LDVOG.YLim.Pos = [-30 30];
-filt_params.LDVOG.YLim.Vel = [-50 50];
-filt_params.NKI.filt1 = NKI_filt1;
-filt_params.NKI.YLim.Pos = [-30 30];
-filt_params.NKI.YLim.Vel = [-50 50];
+filt_params.LDVOG2.filt1 = LDVOG_filt1;
+filt_params.LDVOG2.YLim.Pos = [-30 30];
+filt_params.LDVOG2.YLim.Vel = [-50 50];
+filt_params.NKI1.filt1 = NKI_filt1;
+filt_params.NKI1.YLim.Pos = [-30 30];
+filt_params.NKI1.YLim.Vel = [-50 50];
 filt_params.GNO.filt1 = GNO_filt1;
 filt_params.GNO.YLim.Pos = [-30 30];
 filt_params.GNO.YLim.Vel = [-250 250];

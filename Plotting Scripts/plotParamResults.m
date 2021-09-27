@@ -492,44 +492,6 @@ elseif(any(contains(all_results.Type,'Impulse')))
     all_canals = {'LA','LP','LH','RP','RA','RH'}; %Preferred order
     all_results = all_results(contains(all_results.Type,'Impulse'),:);
     fn = size(all_results,1);
-    gain = NaN(1,fn);
-    gain_sd = NaN(1,fn);
-    lat = NaN(1,fn);
-    lat_sd = NaN(1,fn);
-    canal = cell(1,fn);
-    for i = 1:fn
-        switch all_results.AxisName{i}
-            case 'LHRH'
-                rel_col = 'Z';
-            case 'LARP'
-                rel_col = 'L';
-            case 'RALP'
-                rel_col = 'R';
-        end
-        if all(all_results.StimAxis{i}==[0,0,1])
-            canal{i} = 'LH';
-        elseif all(all_results.StimAxis{i}==[0,0,-1])
-            canal{i} = 'RH';
-        elseif all(all_results.StimAxis{i}==[1,0,0])
-            canal{i} = 'RP';
-        elseif all(all_results.StimAxis{i}==[-1,0,0])
-            canal{i} = 'LA';
-        elseif all(all_results.StimAxis{i}==[0,-1,0])
-            canal{i} = 'LP';
-        elseif all(all_results.StimAxis{i}==[0,1,0])
-            canal{i} = 'RA';
-        end
-        [~,eye] = max(abs([all_results.(['Gain_L',rel_col,'_HIGH'])(i),all_results.(['Gain_R',rel_col,'_HIGH'])(i)]));
-        if mod(eye,2)==1 %Left
-            eye_s = 'L';
-        else %Right
-            eye_s = 'R';
-        end
-        gain(i) = all_results.(['Gain_',eye_s,rel_col,'_HIGH'])(i);
-        gain_sd(i) = all_results.(['Gain_',eye_s,rel_col,'_HIGH_sd'])(i);
-        lat(i) = all_results.(['Latency_',eye_s,rel_col,])(i);
-        lat_sd(i) = all_results.(['Latency_',eye_s,rel_col,'_sd'])(i);
-    end    
     file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),...
         all_results.Experiment,all_results.Condition,all_results.Goggle];
     rel_file_parts = file_parts; %everything but freq/amp
@@ -551,6 +513,42 @@ elseif(any(contains(all_results.Type,'Impulse')))
         [conds,~,IC] = unique(join(rel_file_parts),'stable');
     end
     enum = length(conds);
+    %Organize the gains and latencies
+    gain = NaN(enum,length(all_canals));
+    gain_sd = NaN(enum,length(all_canals));
+    lat = NaN(enum,length(all_canals));
+    lat_sd = NaN(enum,length(all_canals));
+    for i = 1:fn
+        if all(all_results.StimAxis{i}==[0,0,1])
+             rel_col = 'Z';
+             c = 3;
+        elseif all(all_results.StimAxis{i}==[0,0,-1])
+             rel_col = 'Z';
+             c = 6;
+        elseif all(all_results.StimAxis{i}==[1,0,0])
+             rel_col = 'L';
+             c = 4;
+        elseif all(all_results.StimAxis{i}==[-1,0,0])
+             rel_col = 'L';
+             c = 1;
+        elseif all(all_results.StimAxis{i}==[0,-1,0])
+             rel_col = 'R';
+             c = 2;
+        elseif all(all_results.StimAxis{i}==[0,1,0])
+             rel_col = 'R';
+             c = 5;
+        end
+        [~,eye] = max(abs([all_results.(['Gain_L',rel_col,'_HIGH'])(i),all_results.(['Gain_R',rel_col,'_HIGH'])(i)]));
+        if mod(eye,2)==1 %Left
+            eye_s = 'L';
+        else %Right
+            eye_s = 'R';
+        end
+        gain(IC(i),c) = all_results.(['Gain_',eye_s,rel_col,'_HIGH'])(i);
+        gain_sd(IC(i),c) = all_results.(['Gain_',eye_s,rel_col,'_HIGH_sd'])(i);
+        lat(IC(i),c) = all_results.(['Latency_',eye_s,rel_col,])(i);
+        lat_sd(IC(i),c) = all_results.(['Latency_',eye_s,rel_col,'_sd'])(i);
+    end            
     %Position information for the graph types
     max_y = 0.80;
     min_y = 0.15;
@@ -578,18 +576,16 @@ elseif(any(contains(all_results.Type,'Impulse')))
     ha(2) = subplot(1,2,2);
     ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
     for i = 1:enum
-        rel_i = find(IC==i);
-        [~,a_i] = ismember(all_canals,canal(rel_i));
+        val = ~isnan(gain(i,:));
         x_ax = 1:6;
-        x_ax = x_ax(a_i~=0);
-        a_i(a_i==0) = [];        
+        x_ax(~val) = []; 
         axes(ha(1))
         hold on
-        errorbar(x_ax,gain(rel_i(a_i)),gain_sd(rel_i(a_i)),[all_markers(i),'-'],'Color','k');
+        errorbar(x_ax,gain(i,val),gain_sd(i,val),[all_markers(i),'-'],'Color','k');
         hold off
         axes(ha(2))
         hold on
-        errorbar(x_ax,lat(rel_i(a_i)),lat_sd(rel_i(a_i)),[all_markers(i),'-'],'Color','k');
+        errorbar(x_ax,lat(i,val),lat_sd(i,val),[all_markers(i),'-'],'Color','k');
         hold off
     end           
     linkaxes(ha,'x')

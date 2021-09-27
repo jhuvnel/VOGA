@@ -2,7 +2,6 @@ function VOGA__CycAvg
     Path = cd;
     Seg_Path = [Path,filesep,'Segmented Files'];
     Cyc_Path = [Path,filesep,'Cycle Averages'];
-    %code_Path = [userpath,filesep,'VOGA'];
     done = false;
     % Experiment types
     progress_tab = assessProgress(Path);
@@ -31,7 +30,8 @@ function VOGA__CycAvg
     else
         exp_types = exp_names(indx);
     end
-    while(~done) %run until the user hits cancel on analyzing a file
+    %% run until the user hits cancel on analyzing a file
+    while(~done)
         %% Select file
         progress_tab = assessProgress(Path);
         if ~isempty(exp_types)
@@ -60,7 +60,7 @@ function VOGA__CycAvg
         if tf
             fname = progress_tab{progress_i(indx),1}{:};
             load([Seg_Path,filesep,fname],'Data');
-            [CycAvg,analyzed] = MakeCycAvg(Data);
+            [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path);
             if ~isempty(CycAvg)
                 MakeCycAvg__saveCycAvg(Cyc_Path,fname,CycAvg,analyzed);
             end

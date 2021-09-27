@@ -1,4 +1,4 @@
-function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,screen_size)    
+function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,screen_size,traces_vel)    
     if type == 2
         disp('No cycle selection for this data type')
         return;
@@ -14,13 +14,22 @@ function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,scr
     if ind == 1        
         %Extract eye and stim data
         fields = fieldnames(Data_cyc);
-        eye_fields = fields(contains(fields,'Vel'));
+        traces_vel1 = traces_vel;
+        for i = 1:length(traces_vel)
+            if traces_vel1{i}(1) == 'L'
+                traces_vel1{i} = ['LE_Vel_',traces_vel{i}(2:end)];
+            else
+                traces_vel1{i} = ['RE_Vel_',traces_vel{i}(2:end)];
+            end
+        end
+        eye_fields = fields(contains(fields,traces_vel1));
         all_trac = NaN(length(Data_cyc.t),length(keep_tr),length(eye_fields)+1);
         for i = 1:length(eye_fields)
             all_trac(:,:,i) = Data_cyc.(eye_fields{i}); 
         end
-        all_trac(:,:,end) = Data_cyc.stim;
-        
+        if size(Data_cyc.stim,2) > 1
+            all_trac(:,:,end) = Data_cyc.stim;
+        end
         [x,y] = ginput(1); %Assume this is on a cycle graph
         t_ind = find(Data_cyc.t>x,1,'first');
         traces = reshape(all_trac(t_ind,:,:),length(keep_tr),[])';

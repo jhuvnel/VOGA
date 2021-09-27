@@ -56,13 +56,13 @@ function moveGNOfiles(Path)
             disp(['No ',ext,' files found'])
         end
     end
-    %% Move files
-    mkdir('Combined Files')
+    %% Move files    
     names = extractfield(dir(Path),'name')';
     if any(contains(names,'Processed'))
+        mkdir('Combined Files')
         movefile('Processed*','Combined Files')
-    end
-    movefile('Combined Files','Raw Files')   
+        movefile('Combined Files','Raw Files') 
+    end      
     if deidentify
         deidentify_filenames(Path,rm_string)
     end

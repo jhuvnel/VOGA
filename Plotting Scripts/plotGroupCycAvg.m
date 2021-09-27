@@ -614,12 +614,7 @@ elseif any(contains(all_results.Type,'Impulse'))
                 ha(i).Position = [x_pos(i) y_pos x_wid y_height];
                 if ~isempty(rel_files{i})
                     load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
-                    fields = fieldnames(CycAvg);
-                    if ~ismember('t',fields)
-                        CycAvg.t = reshape(0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs,[],1);
-                    else
-                        CycAvg.t = reshape(CycAvg.t,1,[]);
-                    end
+                    CycAvg.t = reshape(0:1/CycAvg.Fs:(length(CycAvg.rz_cycavg)-1)/CycAvg.Fs,1,[]);
                     if -min(mean(CycAvg.stim))>max(mean(CycAvg.stim))
                         invh = -1;
                         inve = 1;

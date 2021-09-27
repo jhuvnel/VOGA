@@ -64,21 +64,22 @@ while tf1
              ['Sav-Gol 2',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:','L L:','R L:','L R:','R R:','ALL'};
                 dlgtitle = 'Filter position';
                 definput = strrep(cellfun(@(x) num2str(x,10),table2cell(filt_params.default.filt1.pos),'UniformOutput',false),'NaN','');
-                temp_filt_params_p = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],definput,'on',4,[0.5 0.5 3.5 7]));
+                temp_filt_params_p = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],definput,'on',length(prompt)/11,[0.5 0.5 3.5 7]));
                 if ~isempty(temp_filt_params_p) %Didn't hit cancel
                     filt_params.(gog).filt1.pos{:,:} = reshape(temp_filt_params_p,11,[]);
                 else
                     filt_params.(gog).filt1.pos = file_params.deafult.filt1.pos;
                 end
                 %Velocity Filter
-                prompt = {['Median',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:','L L:','R L:','L R:','R R:','ALL',...
+                prompt = {['Accel(QPR)',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:','L L:','R L:','L R:','R R:','ALL',...
+                    ['Median',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:','L L:','R L:','L R:','R R:','ALL',...
             ['Spline',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:','L L:','R L:','L R:','R R:','ALL',...
             ['Sav-Gol 1',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:','L L:','R L:','L R:','R R:','ALL',...
              ['Sav-Gol 2',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:','L L:','R L:','L R:','R R:','ALL',...
             ['Irlssmooth',newline,'L X:'],'R X:','L Y:','R Y:','L Z:','R Z:','L L:','R L:','L R:','R R:','ALL'};
                 dlgtitle = 'Filter velocity';
                 definput = strrep(cellfun(@(x) num2str(x,10),table2cell(filt_params.default.filt1.vel),'UniformOutput',false),'NaN','');
-                temp_filt_params_v = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],definput,'on',5,[0.5 0.5 4.25 7]));
+                temp_filt_params_v = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],definput,'on',length(prompt)/11,[0.5 0.5 4.75 7]));
                 if ~isempty(temp_filt_params_v) %Didn't hit cancel
                     filt_params.(gog).filt1.vel{:,:} = reshape(temp_filt_params_v,11,[]);
                 else

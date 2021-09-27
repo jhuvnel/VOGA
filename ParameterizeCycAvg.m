@@ -190,6 +190,8 @@ if contains(fname,'eeVOR')&&type==1
     condition = 'eeVOR';
 elseif contains(fname,{'Baseline','Constant'})
     condition = 'ConstantRate';
+elseif contains(fname,'Accel')
+    condition = 'MotionModAccel';
 elseif contains(fname,{'Motion','Mod'})
     condition = 'MotionMod';
 elseif contains(fname,{'Light','LIGHT'})
