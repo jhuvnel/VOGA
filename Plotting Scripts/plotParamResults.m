@@ -22,11 +22,11 @@ end
 close all;
 load('VNELcolors.mat','colors')
 code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
-% warning('off')
-% sub_info = readtable('SubjectInfo.xlsx');
-% warning('on')
-% Subs = sub_info{:,1};
-% Ears = sub_info{:,2};
+warning('off')
+sub_info = readtable('SubjectInfo.xlsx');
+warning('on')
+Subs = sub_info{:,1};
+Ears = sub_info{:,2};
 % Load table in question
 res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 if isempty(res_file)
@@ -39,8 +39,8 @@ load(res_file{end},'all_results')
 if any(contains(all_results.Type,'Sine'))
     %% Sinusoids
     all_canals = {'LARP','RALP','LHRH','Y','X'}; %Preferred order
+    ear_canals = {'LARP','RALP','LHRH'};
     all_results = all_results(contains(all_results.Type,'Sine')&contains(all_results.AxisName,all_canals),:);
-    %ear = Ears{ismember(Subs,all_results.Subject{end})}; %only one subject expected
 %     if any(contains(all_results.Experiment,'RotaryChair'))
 %         load('RotaryChairNormativeData.mat','norm_dat');
 %         freq = norm_dat.freq;
@@ -65,6 +65,10 @@ if any(contains(all_results.Type,'Sine'))
     maxvel_negcyc_sd = NaN(1,fn);
     phase = NaN(1,fn);
     phase_sd = NaN(1,fn);
+    align_poscyc = NaN(1,fn);
+    align_poscyc_sd = NaN(1,fn);
+    align_negcyc = NaN(1,fn);
+    align_negcyc_sd = NaN(1,fn);
     for i = 1:fn
         exps(ismember(freqs,all_results.('Frequency(Hz)')(i)),ismember(amps,all_results.('Amplitude(dps)')(i))) = 1;
         rel_col = strrep(strrep(strrep(all_results.AxisName{i},'LARP','L'),'RALP','R'),'LHRH','Z');
@@ -80,6 +84,10 @@ if any(contains(all_results.Type,'Sine'))
         maxvel_negcyc_sd(i) = all_results.(['MaxVel_',eye_s,rel_col,'_LOW_sd'])(i);
         phase(i) = all_results.(['Phase_',eye_s])(i);
         phase_sd(i) = all_results.(['Phase_',eye_s,'_sd'])(i);
+        align_poscyc(i) = all_results.(['Align_',eye_s,'_HIGH'])(i);
+        align_poscyc_sd(i) = all_results.(['Align_',eye_s,'_HIGH_sd'])(i);
+        align_negcyc(i) =  all_results.(['Align_',eye_s,'_LOW'])(i);
+        align_negcyc_sd(i) = all_results.(['Align_',eye_s,'_LOW_sd'])(i);
     end
     file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),...
         all_results.Condition,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('Frequency(Hz)'))),' ',''),'Hz'),...
@@ -204,7 +212,7 @@ if any(contains(all_results.Type,'Sine'))
         rel_freqs = freqs(sum(exps,2)>1);      
         for f = 1:length(rel_freqs)
             fig_name = [common_cond,' ',num2str(rel_freqs(f)),'Hz Sine Amplitude Sweep'];
-                        figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
+            figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
             annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
             'plotParamResults.m',newline,...
             'VOGA',version,newline,Experimenter],'FontSize',5,...
@@ -280,6 +288,111 @@ if any(contains(all_results.Type,'Sine'))
             leg2.ItemTokenSize(1) = 5;
             title(leg2,'Conditions')
             savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])
+            close;
+            %% Just the canals
+            figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
+            annotation('textbox',[0 0 1 1],'String',[Path,newline,code_Path,filesep,...
+            'plotParamResults.m',newline,...
+            'VOGA',version,newline,Experimenter],'FontSize',5,...
+            'EdgeColor','none','interpreter','none','Color',[0.5,0.5,0.5]);
+            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
+                    'HorizontalAlignment','center','EdgeColor','none');
+            ha = gobjects(1,3);
+            h1 = gobjects(1,cnum);
+            h2 = gobjects(1,enum);
+            ha(1) = subplot(1,3,1);
+            ha(1).Position = [x_pos(1),y_pos,wid_x,wid_y];
+            ha(2) = subplot(1,3,2);
+            ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
+            ha(3) = subplot(1,3,3);
+            ha(3).Position = [x_pos(3),y_pos,wid_x,wid_y];
+            e_bool = false(1,enum);
+            for i = 1:enum
+                rel_i = find(all_results.('Frequency(Hz)')==rel_freqs(f)&contains(all_results.AxisName,{'LHRH','LARP','RALP'})&IC==i);
+                if length(rel_i)>1
+                    [a_ax,a_i] = sort(all_results.('Amplitude(dps)')(rel_i));
+                    rel_i = rel_i(a_i);
+                    ind_L = contains(all_results.AxisName(rel_i),'LARP');
+                    ind_R = contains(all_results.AxisName(rel_i),'RALP');
+                    ind_Z = contains(all_results.AxisName(rel_i),'LHRH');
+                    sub_ind = false(1,length(Subs));
+                    for s = 1:length(Subs)
+                        sub_ind(s) = contains([fig_name,' ',conds{i}],Subs{s});
+                    end
+                    ear = Ears{sub_ind};
+                    axes(ha(2))
+                    hold on
+                    errorbar(a_ax(ind_L),phase(rel_i(ind_L)),phase_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
+                    errorbar(a_ax(ind_R),phase(rel_i(ind_R)),phase_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
+                    errorbar(a_ax(ind_Z),phase(rel_i(ind_Z)),phase_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
+                    hold off
+                    if strcmp(ear,'L') % +Z, -L and -R
+                        axes(ha(1))
+                        hold on
+                        errorbar(a_ax(ind_L),maxvel_negcyc(rel_i(ind_L)),maxvel_negcyc_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
+                        errorbar(a_ax(ind_R),maxvel_negcyc(rel_i(ind_R)),maxvel_negcyc_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
+                        errorbar(a_ax(ind_Z),maxvel_poscyc(rel_i(ind_Z)),maxvel_poscyc_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
+                        hold off
+                        axes(ha(3))
+                        hold on
+                        errorbar(a_ax(ind_L),align_negcyc(rel_i(ind_L)),align_negcyc_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
+                        errorbar(a_ax(ind_R),align_negcyc(rel_i(ind_R)),align_negcyc_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
+                        errorbar(a_ax(ind_Z),align_poscyc(rel_i(ind_Z)),align_poscyc_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
+                        hold off
+                    elseif strcmp(ear,'R') % -Z, +L and +R
+                        axes(ha(1))
+                        hold on
+                        errorbar(a_ax(ind_L),maxvel_poscyc(rel_i(ind_L)),maxvel_poscyc_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
+                        errorbar(a_ax(ind_R),maxvel_poscyc(rel_i(ind_R)),maxvel_poscyc_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
+                        errorbar(a_ax(ind_Z),maxvel_negcyc(rel_i(ind_Z)),maxvel_negcyc_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
+                        hold off
+                        axes(ha(3))
+                        hold on
+                        errorbar(a_ax(ind_L),align_poscyc(rel_i(ind_L)),align_poscyc_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
+                        errorbar(a_ax(ind_R),align_poscyc(rel_i(ind_R)),align_poscyc_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
+                        errorbar(a_ax(ind_Z),align_negcyc(rel_i(ind_Z)),align_negcyc_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
+                        hold off
+                    end
+                    e_bool(i) = true;
+                end
+            end           
+            linkaxes(ha,'x')
+            linkaxes(ha(2:3),'y')
+            set(ha,'XTick',amps,'XTickLabelRotation',0,'XMinorTick','off','XLim',[0 max(amps)*1.05])
+            set(ha(1),'YLim',[0 YMax])
+            set(ha(2:3),'YLim',[-180 360])
+            set(ha(2),'YTickLabel',[])
+            set(ha(2:3),'YAxisLocation','right')
+            title(ha(1),'Maximum Eye Velocity')
+            title(ha(2),'Phase Lead')
+            title(ha(3),'Misalignment')
+            ylabel(ha(1),'Velocity (dps)')
+            ylabel(ha(3),'Degrees')
+            xlabel(ha(2),'Head Velocity (dps)')
+            XTickLab = get(ha(1),'XTickLabel');
+            XTickLab(amps<100) = {''};
+            set(ha,'XTickLabel',XTickLab)
+            %Make legends
+            h1 = [];
+            axes(ha(2))
+            hold on
+            h1(1) = plot(NaN,NaN,'LineWidth',2,'Color',colors.l_l);
+            h1(2) = plot(NaN,NaN,'LineWidth',2,'Color',colors.l_r);
+            h1(3) = plot(NaN,NaN,'LineWidth',2,'Color',colors.l_z);
+            hold off
+            leg1 = legend(h1,{'LARP','RALP','LHRH'},'NumColumns',3,'Location','northwest');
+            leg1.ItemTokenSize(1) = 5;
+            title(leg1,'Axis')
+            axes(ha(3))
+            hold on
+            for i = 1:enum
+                h2(i) = plot(NaN,NaN,['k',all_markers(i)]);
+            end
+            hold off
+            leg2 = legend(h2(e_bool),conds(e_bool),'NumColumns',1,'Location','northwest');
+            leg2.ItemTokenSize(1) = 5;
+            title(leg2,'Conditions')
+            savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'-CanalElectrodesOnly.fig'])
             close;
         end
     end                

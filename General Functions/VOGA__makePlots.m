@@ -13,7 +13,8 @@ function VOGA__makePlots
     params.version = data{1,2}{:};
     params.Experimenter = data{2,2}{:};    
     %% Run until cancel 
-    opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized','Sphere Plot'};    
+    opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg',...
+        'Parameterized','Across Subjects','Sphere Plot'};    
     [ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
                        'SelectionMode','single',...
                        'ListSize',[150 125],...
@@ -64,7 +65,9 @@ function VOGA__makePlots
                 params.annot = str2double(in_args{1});
                 params.YMax = str2double(in_args{2});
                 plotParamResults(params);
-            end    
+            end
+        elseif strcmp(opts{ind},'Across Subjects') %So far only Rotary Chair
+            plotRotaryChairDSMB;
         elseif strcmp(opts{ind},'Sphere Plot')  
             in_args = inputdlg({'Descriptive annotation on figure (0/1): '},'Plot settings',[1 50],{'1'});
             if ~isempty(in_args)

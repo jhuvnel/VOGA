@@ -174,6 +174,7 @@ if any(contains(all_results.Type,'Sine'))
                         fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.([rel_canals{ii},'_cycavg'])(s)-CycAvg.([rel_canals{ii},'_cycstd'])(s),fliplr((CycAvg.([rel_canals{ii},'_cycavg'])(s)+CycAvg.([rel_canals{ii},'_cycstd'])(s)))],colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2),'_s']))
                         plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg'])(s) + CycAvg.([rel_canals{ii},'_cycstd'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]))
                         plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg'])(s) - CycAvg.([rel_canals{ii},'_cycstd'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]))
+                        plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]),'LineWidth',2);
                     end
                     hold off
                 else

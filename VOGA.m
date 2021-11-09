@@ -8,9 +8,9 @@
 % loop.
 %
 % Written by Andrianna Ayiotis
-% Updated on 2021-05-12
+% Updated on 2021-10-05
 opts = {'Initialize','Process Raw Data','Segment','Combine Segments','Cycle Average',...
-    'Make New Summary Table','Add to Summary Table','Generate Figures','Edit Default Filtering','Set Version'};
+    'Summary Table','Generate Figures','Edit Default Filtering','Set Version'};
 ind = 1; %Run the start procedure first
 tf1 = 1;
 while tf1
@@ -28,14 +28,8 @@ while tf1
         VOGA__combineSegments;
     elseif strcmp(opts{ind},'Cycle Average')
         VOGA__CycAvg;
-    elseif strcmp(opts{ind},'Make New Summary Table')
-        Path = cd;
-        Cyc_Path = [Path,filesep,'Cycle Averages'];
-        MakeCycleSummaryTable(Path,Cyc_Path,1);    
-    elseif strcmp(opts{ind},'Add to Summary Table')
-        Path = cd;
-        Cyc_Path = [Path,filesep,'Cycle Averages'];
-        MakeCycleSummaryTable(Path,Cyc_Path,0);
+    elseif strcmp(opts{ind},'Summary Table')
+        VOGA__SummaryTable;
     elseif strcmp(opts{ind},'Generate Figures')  
         VOGA__makePlots;
     elseif strcmp(opts{ind},'Set Version')

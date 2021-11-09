@@ -7,7 +7,7 @@
 %This version takes in all CycAvg types that have been defined and saves a
 %table for each
 
-function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
+function all_results = MakeCycleSummaryTable(out_path,Cyc_Path,rerun)
     if nargin < 1
         out_path = cd;
     end
@@ -53,14 +53,14 @@ function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
             end    
         end
     else
-        fstruct = dir([cyc_path,filesep,'*.mat']);
+        fstruct = dir([Cyc_Path,filesep,'*.mat']);
         if ~isempty(fstruct)
             fnames = {fstruct.name}';
-            files = [files;strcat(cyc_path,filesep,fnames)];
+            files = [files;strcat(Cyc_Path,filesep,fnames)];
             files(contains(files,'NotAnalyzeable')) = []; %remove un-analyzeable files
             disp([num2str(length(fnames)),' files found.'])
         else
-            disp(['No Cycle Average Files found in this directory: ',cyc_path])
+            disp(['No Cycle Average Files found in this directory: ',Cyc_Path])
             all_results = [];
             return;
         end
@@ -71,7 +71,7 @@ function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
     %% Now analyze each file and get the table
     tabs = cell(length(files),1);
     for i = 1:length(files)
-       disp([cyc_path,': ',num2str(i),'/',num2str(length(files))])
+       disp([Cyc_Path,': ',num2str(i),'/',num2str(length(files))])
        a = load(files{i});
        b = fieldnames(a);
        CycAvg = a.(b{1});
@@ -87,5 +87,9 @@ function all_results = MakeCycleSummaryTable(out_path,cyc_path,rerun)
     all_results = vertcat(tabs{:});
     %% Save
     exp_types = join(unique(all_results.Experiment),'-');
+    res_files = extractfield(dir('*Results.mat'),'name');
+    for i = 1:length(res_files)
+        delete(res_files{i})
+    end
     save([out_path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_',exp_types{:},'Results.mat'],'all_results')
 end

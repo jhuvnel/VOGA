@@ -141,7 +141,13 @@ if type == 1
 end
 line_wid.norm = 0.5;
 line_wid.bold = 2;
-if contains(info.dataType,{'X','Y'})||(contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'LH','RH'}))
+if contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'LH','RH'})
+    traces_vel1 = {'RZ'};
+elseif contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'LA','RP'})
+    traces_vel1 = {'RLARP'};
+elseif contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'RA','LP'})
+    traces_vel1 = {'RRALP'};    
+elseif contains(info.dataType,{'X','Y'})
     traces_vel1 = all_traces(1:6); %LRZ vel 
 else
     traces_vel1 = all_traces(5:10); %LRZ vel 
@@ -170,7 +176,7 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
             head_templ = mean(stims(:,detec_tr),2);
             head_templ_sd = std(stims(:,detec_tr),[],2);            
             out_of_bounds = stims > head_templ+3*head_templ_sd | stims < head_templ-3*head_templ_sd;
-            keep_tr = ~any(out_of_bounds(t_snip<0.23&t_snip>0.1,:));
+            keep_tr = ~any(out_of_bounds(t_snip<0.23&t_snip>0.1,:))&any(stims(t_snip<0.2,:)<10)&any(stims(t_snip<0.4&t_snip>0.1,:)<0);
         else
             keep_tr = true(1,size(keep_inds,2));
         end        
@@ -314,5 +320,6 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
 end
 %% Create to Save
 CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+CycAvg = ParameterizeCycAvg(CycAvg);
 analyzed = 1;
 end

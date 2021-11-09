@@ -25,8 +25,9 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
     end
     for i = 1:length(indx)
         %% Make Plot
+        figure;
         file = [Raw_Path,filesep,VOG_files{indx(i)}];
-        if contains(file,'.dat') %NKI
+        if ismember(VOG_files{indx(i)},NKI_files)
             warning('off')
             data = readtable(file,'ReadVariableNames',true);
             warning('on')
@@ -43,22 +44,29 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
             GyroX = data.GyroY - median(data.GyroY);
             GyroY = -(data.GyroX- median(data.GyroX));
             GyroZ = -(data.GyroZ- median(data.GyroZ));
-        elseif contains(file,'.mat') %NKI preprocessed/uncommon
-            load(file,'Data')
-            data = Data;
-            Time_Eye = data.EyeTime;    
-            Stim = zeros(length(Time_Eye),1);
-            Stim(data.EventCode ~= 0) = 1;
-            LZ = -data.LeftHoriz;
-            LY = -data.LeftVert;
-            LX = data.LeftTorsion;
-            RZ = -data.RightHoriz;
-            RY = -data.RightVert;
-            RX = data.RightTorsion;
-            GyroX = data.GyroY - median(data.GyroY);
-            GyroY = -(data.GyroX- median(data.GyroX));
-            GyroZ = -(data.GyroZ- median(data.GyroZ));
-        else %LDVOG
+            GyroL = (GyroX - GyroY)/sqrt(2);
+            GyroR = (GyroX + GyroY)/sqrt(2);
+            if any(strcmp(lrz_xyz,{'xyz','XYZ'}))
+                plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-',Time_Eye,40*Stim-30,'b')
+                leg_text = {'GyroX','GyroY','GyroZ'};
+            else
+                leg_text = {'GyroL','GyroR','GyroZ'};
+                plot(Time_Eye,GyroL,'k:',Time_Eye,GyroR,'k--',Time_Eye,GyroZ,'k-',Time_Eye,40*Stim-30,'b')
+            end
+            if plot_eyes
+                hold on
+                plot(Time_Eye,LX,'Color',colors.l_x)
+                plot(Time_Eye,RX,'Color',colors.r_x)
+                plot(Time_Eye,LY,'Color',colors.l_y)
+                plot(Time_Eye,RY,'Color',colors.r_y)
+                plot(Time_Eye,LZ,'Color',colors.l_z)
+                plot(Time_Eye,RZ,'Color',colors.r_z)
+                hold off
+                legend([leg_text,{'Trigger','LX','RX','LY','RY','LZ','RZ'}])
+            else
+                legend([leg_text,{'Trigger'}])
+            end  
+        elseif ismember(VOG_files{indx(i)},LDVOG_files)
             data = readtable(file);
             % Generate Time_Eye vector
             Time = data{:,2};
@@ -97,30 +105,65 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
             RZ = data{:,HRightIndex};
             RY = data{:,VRightIndex};
             RX = data{:,TRightIndex}; 
-        end
-        GyroL = (GyroX - GyroY)/sqrt(2);
-        GyroR = (GyroX + GyroY)/sqrt(2);
-        figure;
-        if any(strcmp(lrz_xyz,{'xyz','XYZ'}))
-            plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-',Time_Eye,40*Stim-30,'b')
-            leg_text = {'GyroX','GyroY','GyroZ'};
-        else
+            GyroL = (GyroX - GyroY)/sqrt(2);
+            GyroR = (GyroX + GyroY)/sqrt(2);           
+            if any(strcmp(lrz_xyz,{'xyz','XYZ'}))
+                plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-',Time_Eye,40*Stim-30,'b')
+                leg_text = {'GyroX','GyroY','GyroZ'};
+            else
+                leg_text = {'GyroL','GyroR','GyroZ'};
+                plot(Time_Eye,GyroL,'k:',Time_Eye,GyroR,'k--',Time_Eye,GyroZ,'k-',Time_Eye,40*Stim-30,'b')
+            end
+            if plot_eyes
+                hold on
+                plot(Time_Eye,LX,'Color',colors.l_x)
+                plot(Time_Eye,RX,'Color',colors.r_x)
+                plot(Time_Eye,LY,'Color',colors.l_y)
+                plot(Time_Eye,RY,'Color',colors.r_y)
+                plot(Time_Eye,LZ,'Color',colors.l_z)
+                plot(Time_Eye,RZ,'Color',colors.r_z)
+                hold off
+                legend([leg_text,{'Trigger','LX','RX','LY','RY','LZ','RZ'}])
+            else
+                legend([leg_text,{'Trigger'}])
+            end  
+        elseif ismember(VOG_files{indx(i)},GNO_files)
+            data = table2array(readtable(file));
+            Time_Eye = (data(:,1) - data(1,1))/10e6;
+            GyroZ = data(:,4);
+            GyroL = data(:,3);
+            GyroR = data(:,2);
+            if contains(VOG_files{indx(i)},'LARP')
+                RZ = data(:,5);
+                RL = data(:,6); 
+                RR = NaN*data(:,6);
+                RY = NaN*data(:,6);
+            elseif contains(VOG_files{indx(i)},'RALP')
+                RZ = data(:,5);
+                RR = data(:,6); 
+                RL = NaN*data(:,6);
+                RY = NaN*data(:,6);
+            elseif contains(VOG_files{indx(i)},'Lateral')
+                RZ = data(:,5);
+                RY = data(:,6);
+                RR = NaN*data(:,6);
+                RL = NaN*data(:,6);
+            end
             leg_text = {'GyroL','GyroR','GyroZ'};
-            plot(Time_Eye,GyroL,'k:',Time_Eye,GyroR,'k--',Time_Eye,GyroZ,'k-',Time_Eye,40*Stim-30,'b')
-        end
-        if plot_eyes
-            hold on
-            plot(Time_Eye,LX,'Color',colors.l_x)
-            plot(Time_Eye,RX,'Color',colors.r_x)
-            plot(Time_Eye,LY,'Color',colors.l_y)
-            plot(Time_Eye,RY,'Color',colors.r_y)
-            plot(Time_Eye,LZ,'Color',colors.l_z)
-            plot(Time_Eye,RZ,'Color',colors.r_z)
-            hold off
-            legend([leg_text,{'Trigger','LX','RX','LY','RY','LZ','RZ'}])
-        else
-            legend([leg_text,{'Trigger'}])
-        end        
+            plot(Time_Eye,GyroL,'k:',Time_Eye,GyroR,'k--',Time_Eye,GyroZ,'k-')
+            if plot_eyes
+                hold on
+                plot(Time_Eye,RY,'Color',colors.r_y)
+                plot(Time_Eye,RL,'Color',colors.r_l)
+                plot(Time_Eye,RR,'Color',colors.r_r)
+                plot(Time_Eye,RZ,'Color',colors.r_z)
+                hold off
+                legend([leg_text,{'RY','RL','RR','RZ'}])
+            else
+                legend(leg_text)
+            end 
+            set(gca,'YLim',[-300 300])
+        end      
         xlabel('Time (s)')
         ylabel('Velocity (dps)')
         title(strrep(strrep(VOG_files{indx(i)},'_',' '),'-',' '))  

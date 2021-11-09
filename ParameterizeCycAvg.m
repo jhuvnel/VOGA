@@ -8,7 +8,7 @@
 %3. Impulse (Magnitude, Gain (Position in High, Accel in Low), Latency)
 %4. Magnitude (Max Magnitude, Misalignment)
 
-function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
+function [CycAvg,type,extraInfo] = ParameterizeCycAvg(CycAvg)
 %% Extract the relevant descriptive parameters
 % Subject, Visit, Date, 
 % Experiment (RotaryChair/eeVOR/aHIT/Manual), 
@@ -437,7 +437,6 @@ switch type
             if isfield(CycAvg,[traces{tr},'_cyc_fit'])
                 %Now find maxvel, gain and latency
                 eye_cyc = CycAvg.([traces{tr},'_cyc_fit']);
-                raw_eye = CycAvg.([traces{tr},'_cyc']);
                 for i = 1:nc
                     %define start and end as 10dps
                     warning('off')
@@ -458,9 +457,9 @@ switch type
                     e_AUC = trapz(eye(h_start:h_end))*median(diff(t_upsamp)); 
                     gain_AUC(i,tr) = e_AUC/h_AUC;
                     %Eye Latency
-                    e_start = find(eye>10&t_upsamp>=t_upsamp(h_start),1,'first');
-                    if isempty(e_start)
-                        lat(i,tr) = NaN;
+                    e_start = find(eye>10+eye(h_start)&t_upsamp>=t_upsamp(h_start),1,'first');
+                    if isempty(e_start) || e_start > h_end
+                        lat(i,tr) = 1000*(t_upsamp(h_end)-t_upsamp(h_start)); %The full trace
                         e_start = h_start;
                     else
                         lat(i,tr) = 1000*(t_upsamp(e_start)-t_upsamp(h_start)); %in ms
@@ -480,7 +479,10 @@ switch type
         end        
         MaxVel = reshape([mean(max_vel);std(max_vel);mean(max_vel);std(max_vel)],1,[]);
         Gain = reshape([mean(gain_AUC);std(gain_AUC);mean(gain_Ga);std(gain_Ga)],1,[]);
-        Latency = reshape([mean(lat,'omitnan');std(lat,'omitnan')],1,[]);        
+        Latency = reshape([mean(lat,'omitnan');std(lat,'omitnan')],1,[]);
+        extraInfo.Gain = array2table(gain_AUC,'VariableNames',traces);
+        extraInfo.Gain2 = array2table(gain_Ga,'VariableNames',traces);
+        extraInfo.Latency = array2table(lat,'VariableNames',traces);      
     case 4 
         %% Pulse Train
         % Process Inputs
