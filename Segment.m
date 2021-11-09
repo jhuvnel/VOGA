@@ -15,8 +15,10 @@ elseif length(notesfile)>1
     disp(['Too many notes files were found for this file: ',In_Path])
     return;
 end
-%fileinfo = table2cell(readtable([In_Path(1:slash),notesfile{:}],'ReadVariableNames',false,'Format','%s %s'));
-fileinfo = table2cell(readtable([In_Path(1:slash),notesfile{:}],'ReadVariableNames',false,'Delimiter',' '));
+fileinfo = table2cell(readtable([In_Path(1:slash),notesfile{:}],'ReadVariableNames',false,'Format','%s %s'));
+if isempty(fileinfo{7,2})
+    fileinfo = table2cell(readtable([In_Path(1:slash),notesfile{:}],'ReadVariableNames',false,'Delimiter',' '));
+end
 %% Parse Notes File
 %Change this to reflect new notes file types when they are created
 info.rawfile = In_Path;
