@@ -434,9 +434,9 @@ switch type
         lat = NaN(nc,length(traces)); 
         gain_Ga = NaN(nc,length(traces));
         for tr = 1:length(traces)
-            if isfield(CycAvg,[traces{tr},'_cyc_fit'])
+            if isfield(CycAvg,[traces{tr},'_cyc'])
                 %Now find maxvel, gain and latency
-                eye_cyc = CycAvg.([traces{tr},'_cyc_fit']);
+                eye_cyc = CycAvg.([traces{tr},'_cyc']);
                 for i = 1:nc
                     %define start and end as 10dps
                     warning('off')

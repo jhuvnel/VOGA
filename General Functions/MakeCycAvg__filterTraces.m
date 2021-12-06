@@ -1,14 +1,15 @@
 %% Filter position and velocity
-function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data)
+function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp)
     %% Validate Parameters
+    %Set the all values
+    filt.pos(:,~isnan(filt.pos{'ALL',:})) = repmat(filt.pos(end,~isnan(filt.pos{'ALL',:})),11,1);
+    filt.vel(:,~isnan(filt.vel{'ALL',:})) = repmat(filt.vel(end,~isnan(filt.vel{'ALL',:})),11,1);       
     %Position
     filt.pos.median = MakeCycAvg__filterParameterCheck(filt.pos.median,'med');
     filt.pos.spline = MakeCycAvg__filterParameterCheck(filt.pos.spline,'spline');
     sgolay_f = MakeCycAvg__filterParameterCheck([filt.pos.sgolay1,filt.pos.sgolay2],'sgolay');
     filt.pos.sgolay1 = sgolay_f(:,1);
     filt.pos.sgolay2 = sgolay_f(:,2);
-    %Set the all value
-    filt.pos(:,~isnan(filt.pos{'ALL',:})) = repmat(filt.pos(end,~isnan(filt.pos{'ALL',:})),11,1);
     %Velocity
     filt.vel.median = MakeCycAvg__filterParameterCheck(filt.vel.median,'med');
     filt.vel.spline = MakeCycAvg__filterParameterCheck(filt.vel.spline,'spline');
@@ -16,9 +17,7 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
     sgolay_f = MakeCycAvg__filterParameterCheck([filt.vel.sgolay1,filt.vel.sgolay2],'sgolay');
     filt.vel.sgolay1 = sgolay_f(:,1);
     filt.vel.sgolay2 = sgolay_f(:,2);
-    %Set the all value
     filt.vel.accel = MakeCycAvg__filterParameterCheck(filt.vel.accel,'accel');
-    filt.vel(:,~isnan(filt.vel{'ALL',:})) = repmat(filt.vel(end,~isnan(filt.vel{'ALL',:})),11,1);       
     %% Filter Position
     if contains(Data.info.goggle_ver,'GNO') %No position traces
         Data_pos = [];
@@ -70,18 +69,37 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
         Data_vel_filt.stim_cond = stim(reshape(keep_inds,[],1));
     end
     Data_cyc.t = t_snip;
-    Data_cyc.stim = stims;   
+    Data_cyc.stim = stims;      
     for i = 1:length(traces)            
         canal = traces{i}(2:end); 
         var_n = [traces{i}(1),'E_Vel_',canal];
         if isfield(Data_vel,var_n)
-            if contains(Data.info.goggle_ver,'GNO') %Save a desaccaded version
-                Data_vel_filt.(var_n) = sgolay_filt(med_filt(Data_vel.([var_n,'_cond']),filt.vel.median(traces{i})),[filt.vel.sgolay1(traces{i}),filt.vel.sgolay2(traces{i})]);   
-                Data_vel_filt.([var_n,'_QPR']) = irls_filt(accel_QPR(t_cond,spline_filt(t_cond,Data_vel_filt.(var_n),t_cond,filt.vel.spline(traces{i})),filt.vel.accel(traces{i})),filt.vel.irlssmooth(traces{i}));  
+            if contains(Data.info.goggle_ver,'GNO')
+                rel_t = t_cond;                
+                long_i = reshape(1:(size(keep_inds,1)*size(keep_inds,2)),size(keep_inds,1),[]);
+                rel_trace = Data_vel.([var_n,'_cond']);
+                temp1 = med_filt(rel_trace,filt.vel.median(traces{i}));
+                temp2 = sgolay_filt(temp1,[filt.vel.sgolay1(traces{i}),filt.vel.sgolay2(traces{i})]);
+                temp3 = accel_QPR(rel_t,temp2,filt.vel.accel(traces{i}));
+                temp4 = irls_filt(temp3,filt.vel.irlssmooth(traces{i}));   
+                temp5 = temp4;
+                temp5(long_i(t_interp,:)) = NaN; %Now remove trace if needed
+                temp5 = interp1(rel_t(~isnan(temp5)),temp5(~isnan(temp5)),rel_t);
+                temp6 = spline_filt(rel_t,temp5,rel_t,filt.vel.spline(traces{i}));
+                Data_vel_filt.(var_n) = temp6;
                 Data_cyc.(var_n) = reshape(Data_vel_filt.(var_n),size(keep_inds,1),[]);
-                Data_cyc.([var_n,'_QPR']) = reshape(Data_vel_filt.([var_n,'_QPR']),size(keep_inds,1),[]);
             else
-                Data_vel_filt.(var_n) = irls_filt(spline_filt(ts,sgolay_filt(med_filt(accel_QPR(ts,Data_vel.(var_n),filt.vel.accel(traces{i})),filt.vel.median(traces{i})),[filt.vel.sgolay1(traces{i}),filt.vel.sgolay2(traces{i})]),ts,filt.vel.spline(traces{i})),filt.vel.irlssmooth(traces{i}));
+                rel_t = ts;
+                rel_trace = Data_vel.(var_n);
+                temp1 = med_filt(rel_trace,filt.vel.median(traces{i}));
+                temp2 = sgolay_filt(temp1,[filt.vel.sgolay1(traces{i}),filt.vel.sgolay2(traces{i})]);
+                temp3 = accel_QPR(rel_t,temp2,filt.vel.accel(traces{i}));
+                temp4 = irls_filt(temp3,filt.vel.irlssmooth(traces{i}));
+                temp5 = temp4;
+                temp5(keep_inds(t_interp,:)) = NaN; %Now remove trace if needed
+                temp5 = interp1(rel_t(~isnan(temp5)),temp5(~isnan(temp5)),rel_t);
+                temp6 = spline_filt(rel_t,temp5,rel_t,filt.vel.spline(traces{i}));
+                Data_vel_filt.(var_n) = temp6;
                 Data_cyc.(var_n) = Data_vel_filt.(var_n)(keep_inds);
             end
         end

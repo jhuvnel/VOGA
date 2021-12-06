@@ -34,19 +34,19 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                 linkaxes(ha([2,3]),'y')
                 linkaxes(ha([3,4,5]),'xy')
                 %Set Labels
-                set(ha(1),'XLim',XLim_Long,'YLim',YLim_Pos)
+                set(ha(1:2),'XLim',XLim_Long)
+                set(ha(3:5),'XLim',XLim_Short)
+                set(ha(4:5),'YTickLabel',[])
                 ylabel(ha(1),'Angular Position (deg)','FontWeight','bold')
-                set(ha(2),'XLim',XLim_Long,'YLim',YLim_Vel)
                 ylabel(ha(2),'Angular Velocity (dps)','FontWeight','bold')
                 xlabel(ha(2),'Time (s)')
-                set(ha(3),'XLim',XLim_Short,'YLim',YLim_Vel)
                 ylabel(ha(3),'Velocity (dps)')
                 title(ha(3),'All Filtered Cycles')
-                set(ha(4),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
                 xlabel(ha(4),'Time (s)')
-                set(ha(5),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
                 title(ha(5),'Cycle Averages')
             end
+            set(ha(1),'YLim',YLim_Pos)
+            set(ha(2:5),'YLim',YLim_Vel)
             %Cycle Aligned Raw and Filtered Position
             axes(ha(1))
             hold on
@@ -184,15 +184,17 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                 %Link Axes
                 linkaxes(ha,'x')
                 %ha1
-                set(ha(1),'XLim',XLim_Long,'YLim',YLim_Pos,'XTickLabel',[])
+                set(ha(1),'XLim',XLim_Long,'XTickLabel',[])
                 title(ha(1),'Angular Position')
                 ylabel(ha(1),'Position (deg)')
                 %ha2
-                set(ha(2),'XLim',XLim_Long,'YLim',YLim_Vel)
+                set(ha(2),'XLim',XLim_Long)
                 title(ha(2),'Angular Velocity')
                 xlabel(ha(2),'Time (s)')
                 ylabel(ha(2),'Velocity (dps)')
             end
+            set(ha(1),'YLim',YLim_Pos)
+            set(ha(2),'YLim',YLim_Vel)
             %Raw and Filtered Position
             axes(ha(1))
             hold on 
@@ -277,21 +279,22 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
                 x_tick = te(round(floor(mean(keep_inds_cond)),0));
                 %Set Labels
                 %ha1
-                set(ha(1),'XLim',XLim_Long,'YLim',YLim_Vel,'XTick',x_tick,'XTickLabel',cyc_num_labs,'Xaxislocation','top')
+                set(ha(1),'XLim',XLim_Long,'XTick',x_tick,'XTickLabel',cyc_num_labs,'Xaxislocation','top')
                 ylabel(ha(1),'Angular Velocity (dps)')
                 %ha2
-                set(ha(2),'XLim',XLim_Short,'YLim',YLim_Vel)
+                set(ha(2),'XLim',XLim_Short)
                 ylabel(ha(2),'Velocity (dps)')
                 title(ha(2),'All Cycles')
                 xlabel(ha(2),'Time (s)')
                 %ha3
-                set(ha(3),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
+                set(ha(3),'XLim',XLim_Short,'YTickLabel',[])
                 xlabel(ha(3),'Time (s)')
                 %ha4
-                set(ha(4),'XLim',XLim_Short,'YLim',YLim_Vel,'YTickLabel',[])
+                set(ha(4),'XLim',XLim_Short,'YTickLabel',[])
                 xlabel(ha(4),'Time (s)')
                 title(ha(4),'Cycle Average')
             end
+            set(ha,'YLim',YLim_Vel)
             %Cycle Aligned Raw and Filtered Velocity
             axes(ha(1))
             hold on
@@ -330,7 +333,7 @@ function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_V
             axes(ha(2))
             hold on
             cla;
-            plot(t_s,stims,'k','LineWidth',line_wid.norm)
+            plot(t_s,CycAvg.Data_allcyc.stim,'k','LineWidth',line_wid.norm)
             %Cycle Averaged Velocity Data
             for i = 1:length(traces_vel)
                 if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])

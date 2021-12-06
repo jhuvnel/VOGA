@@ -53,6 +53,8 @@ else
                 CycAvg.info.name = strrep(CycAvg.info.name,str1,str2);
                 delete(fnames{i})
                 save(strrep(fnames{i},str1,str2),'CycAvg')
+            else
+                movefile(fnames{i},strrep(fnames{i},str1,str2))  
             end
         else
             movefile(fnames{i},strrep(fnames{i},str1,str2))   

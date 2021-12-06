@@ -3,15 +3,39 @@ function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,scr
         disp('No cycle selection for this data type')
         return;
     end
-    [ind,tf] = nmlistdlg('PromptString','Type of cycles:',...
+    list = {'Automatic','Click','List'};
+    [ind_l,tf] = nmlistdlg('PromptString','Type of cycles:',...
                        'SelectionMode','single',...
                        'ListSize',[100 80],...
-                       'ListString',{'Click','List'},...
+                       'ListString',list,...
                        'Position',[screen_size(3)-4,screen_size(4)-3,2,3]); 
     if ~tf
         return;
     end
-    if ind == 1        
+    if strcmp(list(ind_l),'Automatic')
+        keep_tr1 = keep_tr;
+        %Extract eye and stim data
+        fields = fieldnames(Data_cyc);
+        traces_vel1 = traces_vel;
+        for i = 1:length(traces_vel)
+            if traces_vel1{i}(1) == 'L'
+                traces_vel1{i} = ['LE_Vel_',traces_vel{i}(2:end)];
+            else
+                traces_vel1{i} = ['RE_Vel_',traces_vel{i}(2:end)];
+            end
+        end
+        eye_fields = fields(contains(fields,traces_vel1));
+        for i = 1:length(eye_fields)
+            templ = mean(Data_cyc.(eye_fields{i})(:,keep_tr),2);
+            templ_sd = std(Data_cyc.(eye_fields{i})(:,keep_tr),[],2);            
+            out_of_bounds = abs(Data_cyc.(eye_fields{i})-templ) > 2*templ_sd;
+            rel_out = ~any(out_of_bounds(Data_cyc.t<0.23&Data_cyc.t>0.1,:))&any(Data_cyc.(eye_fields{i})(Data_cyc.t<0.2,:)<10)&any(Data_cyc.(eye_fields{i})(Data_cyc.t<0.4&Data_cyc.t>0.1,:)<0);
+            keep_tr(~rel_out) = false;
+        end  
+        disp('Cycles Automatically Removed:')
+        disp(find(keep_tr1&~keep_tr))
+    elseif strcmp(list(ind_l),'Click')
+        keep_tr1 = keep_tr;
         %Extract eye and stim data
         fields = fieldnames(Data_cyc);
         traces_vel1 = traces_vel;
@@ -44,6 +68,7 @@ function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,scr
         axes(cyc_ax)
         hold on
         h = plot(Data_cyc.t,reshape(all_trac(:,trace_i(ind),:),length(Data_cyc.t),[]),'c','LineWidth',2);
+        clc;
         disp('Hit ESC to stop this process, Enter to delete a trace and use up/down arrows to navigate')
         k = waitforbuttonpress;
         value = double(get(gcf,'CurrentCharacter'));
@@ -70,7 +95,9 @@ function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,scr
         end
         delete(h)
         hold off
-    elseif ind ==2
+        disp('Cycles Manually Removed:')
+        disp(find(keep_tr1&~keep_tr))
+    elseif strcmp(list(ind_l),'List')
         cyc_num = 1:length(keep_tr);
         [ind2,tf] = nmlistdlg('PromptString','Select cycles:',...
                            'SelectionMode','multiple',...
