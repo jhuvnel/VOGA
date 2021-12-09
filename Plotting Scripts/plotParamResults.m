@@ -724,7 +724,6 @@ elseif(any(contains(all_results.Type,'Impulse')))
     leg = legend(h1,conds,'NumColumns',1,'Location','northwest');
     leg.ItemTokenSize(1) = 5;
     title(leg,'Conditions')
-    savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])
-    close;    
+    savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])   
 end
 end

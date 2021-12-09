@@ -53,19 +53,25 @@ function VOGA__makePlots
                 end
             end
         elseif strcmp(opts{ind},'Group Cycle Avg')  
-            in_args = inputdlg({'Descriptive annotation on figure (0/1): ','Y-axis maximum (dps). Leave empty for default:'},'Plot settings',[1 50],{'1',''});
-            if ~isempty(in_args)
-                params.annot = str2double(in_args{1});
-                params.YMax = str2double(in_args{2});
-                plotGroupCycAvg(params);
-            end          
+%            in_args = inputdlg({'Descriptive annotation on figure (0/1): ','Y-axis maximum (dps). Leave empty for default:'},'Plot settings',[1 50],{'1',''});
+%             if ~isempty(in_args)
+%                 params.annot = str2double(in_args{1});
+%                 params.YMax = str2double(in_args{2});
+%                 plotGroupCycAvg(params);
+%             end  
+            params.annot = 1;
+            params.YMax = NaN;
+            plotGroupCycAvg(params);            
         elseif strcmp(opts{ind},'Parameterized')  
-            in_args = inputdlg({'Descriptive annotation on figure (0/1): ','Y-axis maximum (dps). Leave empty for default:'},'Plot settings',[1 50],{'1',''});
-            if ~isempty(in_args)
-                params.annot = str2double(in_args{1});
-                params.YMax = str2double(in_args{2});
-                plotParamResults(params);
-            end
+%             in_args = inputdlg({'Descriptive annotation on figure (0/1): ','Y-axis maximum (dps). Leave empty for default:'},'Plot settings',[1 50],{'1',''});
+%             if ~isempty(in_args)
+%                 params.annot = str2double(in_args{1});
+%                 params.YMax = str2double(in_args{2});
+%                 plotParamResults(params);
+%             end
+            params.annot = 1;
+            params.YMax = NaN;
+            plotParamResults(params);
         elseif strcmp(opts{ind},'Across Subjects') %So far only Rotary Chair
             plotRotaryChairDSMB;
         elseif strcmp(opts{ind},'Sphere Plot')  

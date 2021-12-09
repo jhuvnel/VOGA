@@ -425,7 +425,8 @@ elseif any(contains(all_results.Type,'Impulse'))
     canal(contains(cyc_files,'RP')) = {'RP'};    
     file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Experiment,all_results.Condition,all_results.Goggle];
     joined_fparts = join(file_parts);
-    conds1 = [strcat(unique(joined_fparts),{' Left Ear Impulses'});strcat(unique(joined_fparts),{' Right Ear Impulses'})];
+    conds1 = strcat(unique(joined_fparts),{' Impulses'});
+    %conds1 = [strcat(unique(joined_fparts),{' Left Ear Impulses'});strcat(unique(joined_fparts),{' Right Ear Impulses'})];
     enum = size(conds1,1); 
     rel_file_parts = file_parts;
     common_cond = cell(1,size(file_parts,2));
@@ -453,28 +454,23 @@ elseif any(contains(all_results.Type,'Impulse'))
         fig_name = conds1{j};
         disp(['Making plot ',num2str(j),'/',num2str(enum+6),': ',fig_name])
         %Set up labels
-        if contains(conds1(j),'Left Ear')
-            labs = {'Anterior (LA)','Posterior (LP)','Horizontal (LH)'};
-        else
-            labs = {'Posterior (RP)','Anterior (RA)','Horizontal (RH)'};
-        end
+        labs = {'Left Anterior (LA)','Left Posterior (LP)','Left Horizontal (LH)','Right Posterior (RP)','Right Anterior (RA)','Right Horizontal (RH)'};
         %Find files to plot
         rel_files = cell(length(labs),1);
         for i = 1:length(labs)
-            can = labs{i}(end-2:end-1);
-            files = cyc_files(contains(joined_fparts,strrep(strrep(conds1(j),' Left Ear Impulses',''),' Right Ear Impulses',''))&contains(canal,can)); %FIX ME
+            files = cyc_files(contains(joined_fparts,strrep(conds1(j),' Impulses',''))&contains(canal,labs{i}(end-2:end-1))); 
             if ~isempty(files)
                 rel_files(i) = files(end);
             end
         end
-        % Plot all canals in one ear for each condition
+        % Plot all canals in both ear for each condition
         %Only plot if there is more than one file to plot
         if sum(~cellfun(@isempty,rel_files))>1            
             leg_text = {'Stim','Left LARP','Right LARP',...
                 'Left RALP','Right RALP','Left X','Right X',...
                     'Left Y','Right Y','Left Z','Right Z'};
             canals = {'ll','rl','lr','rr','lx','rx','ly','ry','lz','rz'};
-            figure('Units','inches','Position',[0.2778    5.8472   17.2222    3.8333],'Color',[1,1,1])
+            figure('Units','inches','Position',[0.2778    2.8472   17.2222    7.6666],'Color',[1,1,1])
             %Title
             annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
                 'HorizontalAlignment','center','EdgeColor','none');
@@ -485,16 +481,22 @@ elseif any(contains(all_results.Type,'Impulse'))
                     'EdgeColor','none','interpreter','none');
             end
             ha = gobjects(1,length(labs));
-            x_space = 0.02;
+            x_space = 0.01;
             x_min = 0.04;
             x_max = 0.98;
-            x_wid = (x_max-x_min-x_space*(length(labs)-1))/length(labs);
-            y_height = 0.75;
-            x_pos = x_min:(x_wid+x_space):x_max;
-            y_pos = 0.12;
+            y_min = 0.08;
+            y_max = 0.92;
+            y_space = 0.03;
+            x_wid = (x_max-x_min-2*x_space)/3;
+            y_wid = (y_max-y_min-x_space)/2;
+            x_pos = repmat(x_min:(x_wid+x_space):x_max,1,2);
+            y_pos = reshape(repmat(fliplr(y_min:(y_wid+y_space):y_max),3,1),[],1)';           
             for i = 1:length(rel_files)
-                ha(i) = subplot(1000,1000,1);
-                ha(i).Position = [x_pos(i) y_pos x_wid y_height];
+                ha(i) = subplot(2,3,i);
+            end            
+            for i = 1:length(rel_files)
+                axes(ha(i))
+                ha(i).Position = [x_pos(i) y_pos(i) x_wid y_wid];
                 if ~isempty(rel_files{i})
                     load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
                     fields = fieldnames(CycAvg);
@@ -526,13 +528,20 @@ elseif any(contains(all_results.Type,'Impulse'))
                     hold on
                     plot(CycAvg.t,invh*CycAvg.stim,'k','LineWidth',0.5);
                     for ii = 1:length(canals)
-                        trace = canals{ii};
+                        trace = canals{ii};                       
                         h(ii+1) = plot(NaN,NaN,'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
                         if isfield(CycAvg,[trace,'_cyc_fit'])
                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_fit']),'Color',colors.([trace(1),'_',trace(2),'']),'LineWidth',1);                  
                         elseif isfield(CycAvg,[trace,'_cyc'])
-                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
+                            trace2 = upper(trace);
+                            if trace2(2)=='L'
+                                trace2 = [trace2(1),'LARP'];
+                            elseif trace2(2)=='R'
+                                trace2 = [trace2(1),'RALP'];
+                            end
+                            plot(CycAvg.t,inve*CycAvg.Data_rawvel.([trace2(1),'E_Vel_',trace2(2:end)])(CycAvg.Data_allcyc.keep_inds),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
+                            plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);                        
                         end
                     end 
                     for ii = 1:length(rel_canals)
@@ -556,14 +565,19 @@ elseif any(contains(all_results.Type,'Impulse'))
                     hold off
                 end
                 title(labs{i})
-                xlabel('Time (s)')
                 if i == 1
-                    ylabel('Angular Velocity (dps)')
                     %leg_reord = [2,4,6,1,3,5,7];
                     leg = legend(ha(1),h,leg_text,'NumColumns',2);
                     leg.ItemTokenSize(1) = 7;
                 end                
             end
+            ylabel(ha(1),'Angular Velocity (dps)')
+            ylabel(ha(4),'Angular Velocity (dps)')
+            xlabel(ha(4),'Time (s)')
+            xlabel(ha(5),'Time (s)')
+            xlabel(ha(6),'Time (s)')
+            set(ha([2,3,5,6]),'YTickLabel',[])
+            set(ha([1,2,3]),'XTickLabel',[])
             set(ha,'YLim',[-YMax/2 YMax])
             fig_names{j} = [Path,filesep,'Figures',filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
             savefig(fig_names{j})
