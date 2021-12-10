@@ -729,8 +729,9 @@ elseif any(contains(all_results.Type,'Impulse'))
             ylabel(ha(1),'Angular Velocity (dps)')
             ylabel(ha(1+length(labs)),'Angular Velocity (dps)')
             ylabel(ha(1+2*length(labs)),'Angular Velocity (dps)')
-            for i = length(rel_files)-(0:1)
-                xlabel(ha(i),'Time (s)')
+            xlab_ind = (length(rel_files)-length(labs)+1):length(rel_files);
+            for i = length(xlab_ind)
+                xlabel(ha(xlab_ind(i)),'Time (s)')
             end
             leg = legend(ha(1),h(leg_ind),leg_text(leg_ind),'NumColumns',2);
             leg.ItemTokenSize(1) = 7;
