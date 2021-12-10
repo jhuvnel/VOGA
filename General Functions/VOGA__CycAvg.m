@@ -23,7 +23,7 @@ function VOGA__CycAvg
                        'ListSize',[350 300],...
                        'ListString',exp_names); 
     else
-        tf = 0;
+        tf = 1;
     end
     if tf == 0
         return;
