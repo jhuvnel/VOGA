@@ -26,7 +26,7 @@ function VOGA__CycAvg
         tf = 0;
     end
     if tf == 0
-        exp_types = {};
+        return;
     else
         exp_types = exp_names(indx);
     end
@@ -53,16 +53,27 @@ function VOGA__CycAvg
         font_col(progress_tab{progress_i,3}) = {'red'};
         list = strcat('<HTML><FONT color="',font_col,'">',table2cell(progress_tab(progress_i,1)),'</FONT></HTML>');
         [indx,tf] = nmlistdlg('PromptString','Unattempted = Black, Analyzed = Green, Not Analyzeable = Red. Select a file to analyze:',...
-                               'SelectionMode','single',...
+                               'SelectionMode','multiple',...
                                'ListSize',[500 600],...
                                'ListString',list);  
         % Run unless the user selects cancel
         if tf
-            fname = progress_tab{progress_i(indx),1}{:};
-            load([Seg_Path,filesep,fname],'Data');
-            [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path);
-            if ~isempty(CycAvg)
-                MakeCycAvg__saveCycAvg(Cyc_Path,fname,CycAvg,analyzed);
+            if length(indx)==1 %Just one file
+                fname = progress_tab{progress_i(indx),1}{:};
+                load([Seg_Path,filesep,fname],'Data');
+                [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,0);
+                if ~isempty(CycAvg)
+                    MakeCycAvg__saveCycAvg(Cyc_Path,fname,CycAvg,analyzed);
+                end
+            else %reanalyze files that already exist, rarely used case
+                for j = 1:length(indx)
+                    fname = progress_tab{progress_i(indx(j)),1}{:};
+                    load([Seg_Path,filesep,fname],'Data');
+                    [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,1);
+                    if ~isempty(CycAvg)
+                        MakeCycAvg__saveCycAvg(Cyc_Path,fname,CycAvg,analyzed);
+                    end
+                end
             end
         else 
             disp('Operation Ended.')

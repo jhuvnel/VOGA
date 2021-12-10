@@ -3,7 +3,7 @@
 % LDVOG data sets as much as possible.
 % Cycle average before filtering
 
-function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path)
+function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,from_file)
 clc; 
 % Plot defaults
 all_traces = {'LX','RX','LY','RY','LZ','RZ','LLARP','RLARP','LRALP','RRALP'};
@@ -144,6 +144,48 @@ elseif contains(info.dataType,{'X','Y'})
     traces_vel1 = all_traces(1:6); %LRZ vel 
 else
     traces_vel1 = all_traces(5:10); %LRZ vel 
+end
+%% No options, just reanalyze file with existing params
+if from_file 
+    traces_pos = traces_pos1;
+    traces_vel = traces_vel1; 
+    if isempty(YLim)
+        if type == 3 %Impulses
+            YLim.Pos = [-30 30];
+            YLim.Vel = [-250 250];
+        else 
+            YLim.Pos = [-30 30];
+            YLim.Vel = [-50 50];
+        end
+    end
+    info.TriggerShift2 = 0;
+    [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,detec_head);
+    keep_tr = true(1,size(keep_inds,2));
+    file = [Cyc_Path,filesep,'CycAvg_',fname];
+    a = load(file);
+    CycAvg2 = a.CycAvg;
+    if length(CycAvg2.keep_tr) == length(keep_tr) %Only if they are the same size
+        filt = CycAvg2.filt;
+        keep_tr = CycAvg2.keep_tr;
+        if isfield(CycAvg2,'t_interp')
+            t_interp = CycAvg2.t_interp;
+        else
+            t_interp = [];
+        end
+        [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp);
+        CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+        ha = MakeCycAvg__plotFullCycAvg([],type,colors,line_wid,YLim.Pos,YLim.Vel,traces_pos,traces_vel,CycAvg);
+    else
+        disp('Not a compatible CycAvg file.')
+    end 
+    % Create to Save
+    CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+    CycAvg = ParameterizeCycAvg(CycAvg);
+    filt_params.filt1 = filt;
+    filt_params.YLim = YLim;
+    VOGA__saveLastUsedParams(filt_params)
+    analyzed = 1;
+    return;
 end
 %% Once analyzeable, here is the while loop they stay in until saving or exiting
 %You can change the order/existance of these options without ruining

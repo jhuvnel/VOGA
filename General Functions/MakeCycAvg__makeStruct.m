@@ -18,10 +18,8 @@ function CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_i
             CycAvg.([trac,'_cycavg']) = mean(Data_cyc.(var_n)(:,keep_tr),2)';
             CycAvg.([trac,'_cycstd']) = std(Data_cyc.(var_n)(:,keep_tr),0,2)';
             CycAvg.([trac,'_cyc']) = Data_cyc.(var_n)(:,keep_tr)';
-            if contains(Data.info.goggle_ver,'GNO')&&isfield(Data_cyc,[var_n,'_QPR'])
-                CycAvg.([trac,'_cyc_fit']) = Data_cyc.([var_n,'_QPR'])(:,keep_tr)';
-                CycAvg.([trac,'_cycavg_fit']) = mean(Data_cyc.([var_n,'_QPR'])(:,keep_tr),2)';
-                CycAvg.([trac,'_cycstd_fit']) = std(Data_cyc.([var_n,'_QPR'])(:,keep_tr),0,2)';                
+            if contains(Data.info.goggle_ver,'GNO')&&isfield(Data_vel,var_n)
+                CycAvg.([trac,'_cyc_prefilt']) = Data_vel.(var_n)(Data_cyc.keep_inds(:,keep_tr));              
             end
         end
     end         
@@ -42,5 +40,6 @@ function CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_i
     CycAvg.Data_filtpos = Data_pos_filt;
     CycAvg.Data_rawvel = Data_vel;
     CycAvg.Data_filtvel = Data_vel_filt;
-    CycAvg.Data_allcyc = Data_cyc;    
+    CycAvg.Data_allcyc = Data_cyc; 
+    
 end

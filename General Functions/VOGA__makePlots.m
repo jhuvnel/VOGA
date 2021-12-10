@@ -11,7 +11,9 @@ function VOGA__makePlots
     end
     data = readtable('VOGA_VerInfo.txt','ReadVariableNames',false);
     params.version = data{1,2}{:};
-    params.Experimenter = data{2,2}{:};    
+    params.Experimenter = data{2,2}{:}; 
+    params.annot = 1;
+    params.YMax = NaN;
     %% Run until cancel 
     opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg',...
         'Parameterized','Across Subjects','Sphere Plot'};    
@@ -58,9 +60,7 @@ function VOGA__makePlots
 %                 params.annot = str2double(in_args{1});
 %                 params.YMax = str2double(in_args{2});
 %                 plotGroupCycAvg(params);
-%             end  
-            params.annot = 1;
-            params.YMax = NaN;
+%             end              
             plotGroupCycAvg(params);            
         elseif strcmp(opts{ind},'Parameterized')  
 %             in_args = inputdlg({'Descriptive annotation on figure (0/1): ','Y-axis maximum (dps). Leave empty for default:'},'Plot settings',[1 50],{'1',''});
@@ -69,8 +69,6 @@ function VOGA__makePlots
 %                 params.YMax = str2double(in_args{2});
 %                 plotParamResults(params);
 %             end
-            params.annot = 1;
-            params.YMax = NaN;
             plotParamResults(params);
         elseif strcmp(opts{ind},'Across Subjects') %So far only Rotary Chair
             plotRotaryChairDSMB;

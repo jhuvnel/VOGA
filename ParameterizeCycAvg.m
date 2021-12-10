@@ -433,6 +433,9 @@ switch type
         gain_AUC = NaN(nc,length(traces));
         lat = NaN(nc,length(traces)); 
         gain_Ga = NaN(nc,length(traces));
+        head_start = NaN(nc,1);
+        head_end = NaN(nc,1);
+        neg_flag = 1;
         for tr = 1:length(traces)
             if isfield(CycAvg,[traces{tr},'_cyc'])
                 %Now find maxvel, gain and latency
@@ -443,21 +446,24 @@ switch type
                     head = spline(t,Stim_All(i,:),t_upsamp);
                     eye = -spline(t,eye_cyc(i,:),t_upsamp);
                     warning('on')
-                    if -min(head)>max(head)
-                        head = -head;
-                        eye = -eye;
+                    if -min(head)>max(head)    
+                        neg_flag = -1;
                     end
+                    head = neg_flag*head;
+                    eye = neg_flag*eye;
                     [~,h_max] = max(head);
-                    max_vel(i,tr) = max(eye);
                     h_start = find(head<10&t_upsamp<t_upsamp(h_max),1,'last');
                     %Incase head zero crossing is weird, make the end the same size as start to max
                     h_end = min([find(head<10&t_upsamp>t_upsamp(h_max),1,'first'),(h_max-h_start)*2+h_start]);
+                    head_start(i) = t_upsamp(h_start);
+                    head_end(i) = t_upsamp(h_end);
+                    max_vel(i,tr) = max(eye(h_start:((h_max-h_start)*3+h_start)));
                     %Gain by taking the ratio of area under the curve
                     h_AUC = trapz(head(h_start:h_end))*median(diff(t_upsamp));
                     e_AUC = trapz(eye(h_start:h_end))*median(diff(t_upsamp)); 
                     gain_AUC(i,tr) = e_AUC/h_AUC;
                     %Eye Latency
-                    e_start = find(eye>10+eye(h_start)&t_upsamp>=t_upsamp(h_start),1,'first');
+                    e_start = find(eye>(10+eye(h_start))&t_upsamp>=t_upsamp(h_start),1,'first');
                     if isempty(e_start) || e_start > h_end
                         lat(i,tr) = 1000*(t_upsamp(h_end)-t_upsamp(h_start)); %The full trace
                         e_start = h_start;
@@ -476,13 +482,26 @@ switch type
                     gain_Ga(i,tr) = eye_lin_fit(2)/head_lin_fit(2);
                 end
             end
-        end        
+        end   
         MaxVel = reshape([mean(max_vel);std(max_vel);mean(max_vel);std(max_vel)],1,[]);
         Gain = reshape([mean(gain_AUC);std(gain_AUC);mean(gain_Ga);std(gain_Ga)],1,[]);
         Latency = reshape([mean(lat,'omitnan');std(lat,'omitnan')],1,[]);
         extraInfo.Gain = array2table(gain_AUC,'VariableNames',traces);
         extraInfo.Gain2 = array2table(gain_Ga,'VariableNames',traces);
-        extraInfo.Latency = array2table(lat,'VariableNames',traces);      
+        extraInfo.Latency = array2table(lat,'VariableNames',traces);   
+        %Find Latency bounds
+        CycAvg.stim_start = mean(head_start,'omitnan');        
+        CycAvg.stim_end = mean(head_end,'omitnan');
+        switch axis_name
+            case 'LHRH'
+                CycAvg.trace_start = CycAvg.stim_start+mean(reshape(lat(:,[1,2]),[],1),'omitnan')/1000;
+            case 'RALP'
+                CycAvg.trace_start = CycAvg.stim_start+mean(reshape(lat(:,[5,6]),[],1),'omitnan')/1000;
+            case 'LARP'
+                CycAvg.trace_start = CycAvg.stim_start+mean(reshape(lat(:,[3,4]),[],1),'omitnan')/1000;
+            otherwise
+                CycAvg.trace_start = CycAvg.stim_start+mean(reshape(lat,[],1),'omitnan')/1000;
+        end        
     case 4 
         %% Pulse Train
         % Process Inputs
