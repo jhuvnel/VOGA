@@ -22,8 +22,10 @@ function VOGA__CycAvg
                        'SelectionMode','multiple',...
                        'ListSize',[350 300],...
                        'ListString',exp_names); 
+                   
     else
         tf = 1;
+        indx = 1;
     end
     if tf == 0
         return;
