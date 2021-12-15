@@ -720,23 +720,21 @@ elseif any(contains(all_results.Type,'Impulse'))
                 end
             end
             set(ha,'XLim',[0,CycAvg.t(end)],'YLim',[-YMax/2 YMax])
-            temp = 1:length(rel_files);
-            temp(1:length(labs):end) = [];
-            set(ha(temp),'YTickLabel',[])            
-            temp = 1:length(rel_files);
-            temp((end-length(labs)+1):end) = [];
-            set(ha(temp),'XTickLabel',[])
-            ylabel(ha(1),'Angular Velocity (dps)')
-            ylabel(ha(1+length(labs)),'Angular Velocity (dps)')
-            ylabel(ha(1+2*length(labs)),'Angular Velocity (dps)')
-            xlab_ind = (length(rel_files)-length(labs)+1):length(rel_files);
-            for i = length(xlab_ind)
-                xlabel(ha(xlab_ind(i)),'Time (s)')
+            plot_num = reshape(1:length(rel_files),[],3)';
+            if size(plot_num,2)>1
+                set(ha(plot_num(:,2:end)),'YTickLabel',[])  
+            end
+            set(ha(plot_num(1:end-1,:)),'XTickLabel',[])
+            ylabel(ha(plot_num(1,1)),'Angular Velocity (dps)')
+            ylabel(ha(plot_num(2,1)),'Angular Velocity (dps)')
+            ylabel(ha(plot_num(3,1)),'Angular Velocity (dps)')
+            for i = 1:size(plot_num,2)
+                xlabel(ha(plot_num(end,i)),'Time (s)')
             end
             leg = legend(ha(1),h(leg_ind),leg_text(leg_ind),'NumColumns',2);
             leg.ItemTokenSize(1) = 7;
-            fig_names{j+2} = [Path,filesep,'Figures',filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
-            savefig(fig_names{j+2})
+            fig_names{j+enum} = [Path,filesep,'Figures',filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
+            savefig(fig_names{j+enum})
             close;
         end
     end

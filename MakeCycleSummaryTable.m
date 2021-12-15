@@ -70,6 +70,7 @@ function all_results = MakeCycleSummaryTable(out_path,Cyc_Path,rerun)
    end
     %% Now analyze each file and get the table
     tabs = cell(length(files),1);
+    cyc_params = cell(length(files),2);
     for i = 1:length(files)
        disp([Cyc_Path,': ',num2str(i),'/',num2str(length(files))])
        a = load(files{i});
@@ -82,14 +83,21 @@ function all_results = MakeCycleSummaryTable(out_path,Cyc_Path,rerun)
            CycAvg = ParameterizeCycAvg(CycAvg);
            save(files{i},'CycAvg')
        end
-       tabs{i} = CycAvg.parameterized;       
+       tabs{i} = CycAvg.parameterized;  
+       cyc_params(i,1) = files(i);
+       cyc_params{i,2} = CycAvg.cycle_params;
     end  
     all_results = vertcat(tabs{:});
     %% Save
     exp_types = join(unique(all_results.Experiment),'-');
-    res_files = extractfield(dir('*Results.mat'),'name');
+    res_files = extractfield(dir([out_path,filesep,'*Results.mat']),'name');
+    cycpar_files = extractfield(dir([out_path,filesep,'*CycParam.mat']),'name');
     for i = 1:length(res_files)
-        delete(res_files{i})
+        delete([out_path,filesep,res_files{i}])
+    end
+    for i = 1:length(cycpar_files)
+        delete([out_path,filesep,cycpar_files{i}])
     end
     save([out_path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_',exp_types{:},'Results.mat'],'all_results')
+    save([out_path,filesep,datestr(now,'yyyymmdd_HHMMSS'),'_',exp_types{:},'CycParam.mat'],'cyc_params')
 end

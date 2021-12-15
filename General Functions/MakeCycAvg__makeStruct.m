@@ -40,6 +40,5 @@ function CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_i
     CycAvg.Data_filtpos = Data_pos_filt;
     CycAvg.Data_rawvel = Data_vel;
     CycAvg.Data_filtvel = Data_vel_filt;
-    CycAvg.Data_allcyc = Data_cyc; 
-    
+    CycAvg.Data_allcyc = Data_cyc;     
 end
