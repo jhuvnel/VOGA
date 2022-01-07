@@ -15,5 +15,7 @@ if ~any(contains(extractfield(dir(userpath),'name'),'VOGA_LastUsedFilterParams.m
     filt_params.YLim.Pos = [-100,100];
     filt_params.YLim.Vel = [-100,100];  
 end
-save([userpath,filesep,'VOGA_LastUsedFilterParams.mat'],'filt_params') 
+if exist('filt_params','var')
+    save([userpath,filesep,'VOGA_LastUsedFilterParams.mat'],'filt_params')
+end
 end
