@@ -190,10 +190,12 @@ if contains(fname,'eeVOR')&&type==1
     condition = 'eeVOR';
 elseif contains(fname,{'Baseline','Constant'})
     condition = 'ConstantRate';
-elseif contains(fname,'Accel')
-    condition = 'MotionModAccel';
-elseif contains(fname,{'Motion','Mod'})
-    condition = 'MotionMod';
+elseif contains(fname,{'Motion','Mod'}) %may have numbers or words after this
+    if contains(fname,{'Mod-,','on-','ON-'})
+        condition = 'MotionMod';
+    else
+        condition = fparts{contains(fparts,'Mod')};        
+    end
 elseif contains(fname,{'Light','LIGHT'})
     condition = 'Light';
 elseif contains(fname,{'NoStim','Dark','DARK'})
@@ -326,6 +328,7 @@ switch type
             CycAvg.([traces{i},'_cycavg_fit']) = sine_fit(tt,freqs,makefit(spline(tt,CycAvg.([traces{i},'_cycavg']),t)));
             CycAvg.([traces{i},'_cyc_fit']) = reshape(cyc_fit(:,:,i),nc,nt);
         end
+        cycle_params = [];
     case 2 
         %% Exponential
         nc = 1;
@@ -411,12 +414,17 @@ switch type
             CycAvg.([traces{i},'_cycavg_fit']) = all_fits(i,:);
             CycAvg.([traces{i},'_cyc_fit']) = all_fits(i,:);
         end
+        cycle_params = [];
     case 3 
         %% Impulse
         %saccade_thresh = 3000; %deg/s^2
         % Process Inputs
         %Make sure stim trace is time points long (1 x nt)
-        [nc,nt] = size(CycAvg.rz_cyc);
+        if isfield(CycAvg,'rz_cyc')
+            [nc,nt] = size(CycAvg.rz_cyc);
+        else
+            [nc,nt] = size(CycAvg.lz_cyc);
+        end
         [ab,ac] = size(CycAvg.stim);
         if ab == nt && ac == nc 
             CycAvg.stim = CycAvg.stim';
@@ -613,6 +621,7 @@ switch type
             CycAvg.([traces{i},'_cycavg_fit']) = mean(max_vel(:,i))*ones(1,nt);
             CycAvg.([traces{i},'_cyc_fit']) = max_vel(:,i)*ones(1,nt);
         end
+        cycle_params = [];
 end
 %% Make the table
 labs = [{'Frequency(Hz)';'Amplitude(dps)';'PulseFreq(pps)';'PhaseDur(us)';'CurrentAmp(uA)';'Cycles'};...

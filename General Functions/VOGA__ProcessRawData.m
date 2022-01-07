@@ -6,7 +6,9 @@ function VOGA__ProcessRawData
     moveNKIfiles(Raw_Path)
     %Split and move GNO files into Raw Files
     moveGNOfiles(cd)
-    %Ppen PDF for notes, close manually later
+    %Move ESC files into Raw Files
+    moveESCfiles(cd)
+    %If GNO, open PDF for notes, close manually later
     pdf_files = extractfield(dir([cd,filesep,'*.pdf']),'name');
     for i = 1:length(pdf_files)
         open(pdf_files{i})

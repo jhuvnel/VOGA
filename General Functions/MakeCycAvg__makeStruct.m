@@ -4,8 +4,8 @@ function CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_i
     CycAvg.t = Data_cyc.t;
     if all(size(Data_cyc.stim)>1) %multiple head traces
         CycAvg.stim_cyc = Data_cyc.stim(:,keep_tr);
-        CycAvg.stim_cycavg = mean(Data_cyc.stim(:,keep_tr),2)';
-        CycAvg.stim_cycstd = std(Data_cyc.stim(:,keep_tr),0,2)';
+        CycAvg.stim_cycavg = mean(Data_cyc.stim(:,keep_tr),2,'omitnan')';
+        CycAvg.stim_cycstd = std(Data_cyc.stim(:,keep_tr),0,2,'omitnan')';
         CycAvg.stim = CycAvg.stim_cyc;
     else
         CycAvg.stim = Data_cyc.stim';
@@ -15,8 +15,8 @@ function CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_i
         trac = lower(traces{i}(1:2));
         var_n = [traces{i}(1),'E_Vel_',traces{i}(2:end)];
         if isfield(Data_cyc,var_n)
-            CycAvg.([trac,'_cycavg']) = mean(Data_cyc.(var_n)(:,keep_tr),2)';
-            CycAvg.([trac,'_cycstd']) = std(Data_cyc.(var_n)(:,keep_tr),0,2)';
+            CycAvg.([trac,'_cycavg']) = mean(Data_cyc.(var_n)(:,keep_tr),2,'omitnan')';
+            CycAvg.([trac,'_cycstd']) = std(Data_cyc.(var_n)(:,keep_tr),0,2,'omitnan')';
             CycAvg.([trac,'_cyc']) = Data_cyc.(var_n)(:,keep_tr)';
             if contains(Data.info.goggle_ver,'GNO')&&isfield(Data_vel,var_n)
                 CycAvg.([trac,'_cyc_prefilt']) = Data_vel.(var_n)(Data_cyc.keep_inds(:,keep_tr));              

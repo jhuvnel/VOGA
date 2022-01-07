@@ -10,10 +10,10 @@ function fig = plotSegment(Data)
         dType(strfind(dType,'['):strfind(dType,']')) = strrep(dType(strfind(dType,'['):strfind(dType,']')),' ','-'); %Put negative signs back in vectors
     end
     %Trigger multiplier
-    if ~contains(info.goggle_ver,'GNO')
+    if ~contains(info.goggle_ver,{'GNO','ESC'})
         if contains(info.dataType,'RotaryChair')
             if isfield(Data,'HeadVel_Z')
-                 stim = Data.HeadVel_Z;
+                stim = Data.HeadVel_Z;
             else
                 stim = Data.HeadMPUVel_Z; 
             end   
@@ -41,7 +41,33 @@ function fig = plotSegment(Data)
     annotation('textbox',[0 .9 1 .1],'String',dType,'FontSize',14,...
         'HorizontalAlignment','center','EdgeColor','none');
     subplot(1,1,1)
-    if ~contains(info.goggle_ver,'GNO')
+    if contains(info.goggle_ver,'GNO')
+        plot(ts,Data.HeadVel_L,'k:')
+        hold on
+        plot(ts,Data.HeadVel_R,'k--')
+        plot(ts,Data.HeadVel_Z,'k-')
+        plot(te,Data.RE_Vel_Y,'Color',colors.l_y)
+        plot(te,Data.RE_Vel_Z,'Color',colors.l_z)
+        hold off
+        axis([0 te(end) -300 300])
+        title('Angular Velocity')
+        xlabel('Time(s)')
+        ylabel('Velocity (dps)')
+        legend('Head -LARP','Head RALP','Head LHRH','Inv Eye Y','Inv Eye Z')
+    elseif contains(info.goggle_ver,'ESC')
+        plot(ts,Data.HeadVel_L,'k:')
+        hold on
+        plot(ts,Data.HeadVel_R,'k--')
+        plot(ts,Data.HeadVel_Z,'k-')
+        plot(te,Data.LE_Vel_Y,'Color',colors.l_y)
+        plot(te,Data.LE_Vel_Z,'Color',colors.l_z)
+        hold off
+        axis([0 te(end) -300 300])
+        title('Angular Velocity')
+        xlabel('Time(s)')
+        ylabel('Velocity (dps)')
+        legend('Head LARP','Head RALP','Head LHRH','Eye Y','Eye Z')
+    else %LDVOG and NKI
         plot(ts,sm*stim,'k')
         hold on
         plot(te,Data.LE_Position_X,'Color',colors.l_x)
@@ -56,18 +82,5 @@ function fig = plotSegment(Data)
         xlabel('Time(s)')
         ylabel('Position (deg)')
         legend('Stim','L X','L Y','L Z','R X','R Y','R Z')
-    else
-        plot(ts,Data.HeadVel_L,'k:')
-        hold on
-        plot(ts,Data.HeadVel_R,'k--')
-        plot(ts,Data.HeadVel_Z,'k-')
-        plot(te,Data.RE_Vel_Y,'Color',colors.l_y)
-        plot(te,Data.RE_Vel_Z,'Color',colors.l_z)
-        hold off
-        axis([0 te(end) -300 300])
-        title('Angular Velocity')
-        xlabel('Time(s)')
-        ylabel('Velocity (dps)')
-        legend('Head -LARP','Head RALP','Head LHRH','Inv Eye Y','Inv Eye Z')
     end
 end

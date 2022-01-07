@@ -12,12 +12,12 @@
 %RenameFiles('Rotary','LDVOG2-Rotary')
 %RenameFiles('Rotary','NKI1-Rotary')
 function RenameFiles(str1,str2,is_vis)
-if ~is_vis
+if strcmp(is_vis,'mat')
     fnames = extractfield([dir(['*',str1,'*.mat']);dir(['*',str1,'*.fig'])],'name');
     for i = 1:length(fnames)
         movefile(fnames{i},strrep(fnames{i},str1,str2))   
     end
-else
+elseif strcmp(is_vis,'vis')
     fnames = extractfield(dir(['*',str1,'*']),'name');
     for i = 1:length(fnames)
         if contains(fnames{i},'mat')
@@ -59,6 +59,11 @@ else
         else
             movefile(fnames{i},strrep(fnames{i},str1,str2))   
         end
+    end
+elseif strcmp(is_vis,'all')
+    fnames = extractfield(dir(['*',str1,'*']),'name');
+    for i = 1:length(fnames)
+        movefile(fnames{i},strrep(fnames{i},str1,str2))   
     end
 end
 end

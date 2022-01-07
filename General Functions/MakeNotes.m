@@ -7,7 +7,7 @@ function MakeNotes(Raw_Path)
 %         'Condition-Axis-Freq-Speed','Condition-Axis-Speed',...
 %         'Axis-Freq-Speed','PFM/PAM-Axis-pps-uA','DOMAxis','Canal/Electrode-pps-us-uA','Light/Dark#'};
 %% Find Files to Make Notes
-rel_dir = [dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])]; %update if more file extensions are added
+rel_dir = [dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat']);dir([Raw_Path,filesep,'*.mat'])]; %update if more file extensions are added
 if isempty(rel_dir)
     disp(['No folders or files have been detected in ',Raw_Path])
     return;
@@ -15,13 +15,13 @@ end
 file_names = extractfield(rel_dir,'name');
 file_date = extractfield(rel_dir,'date');
 Notes_ind = contains(file_names,'-Notes.txt');
-VOG_ind = contains(file_names,{'SESSION','.dat','Lateral.txt','LARP.txt','RALP.txt'})&~Notes_ind;
+VOG_ind = contains(file_names,{'SESSION','.dat','Lateral.txt','LARP.txt','RALP.txt','export.mat'})&~Notes_ind;
 VOG_ind_num = find(VOG_ind);
 if all(~VOG_ind)
-    disp(['No LDVOG, NKI, or GNO files have been detected in ',Raw_Path])
+    disp(['No LDVOG, NKI, GNO, or ESC files have been detected in ',Raw_Path])
     return;
 end
-has_notes = contains(strrep(strrep(file_names(VOG_ind),'.txt',''),'.dat',''),strrep(file_names(Notes_ind),'-Notes.txt',''));
+has_notes = contains(strrep(strrep(strrep(file_names(VOG_ind),'.txt',''),'.dat',''),'.mat',''),strrep(file_names(Notes_ind),'-Notes.txt',''));
 VOG_files = file_names(VOG_ind_num(~has_notes));
 VOG_files_date = file_date(VOG_ind_num(~has_notes));
 %Set some parameters that will likely stay the same but can be edited
@@ -66,7 +66,28 @@ if any(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'})) %GNO
             fprintf(filePh,'%s\n',w_notes{:});
             fclose(filePh);
         end
-    end    
+    end 
+elseif any(contains(VOG_files,'export.mat')) %ESC
+    common_notes = inputdlg({'Subject:','Ear:','Visit:'},'Set VOG File Parameters',[1,40],{sub,ear,vis}); 
+    sub = common_notes{1};
+    ear = common_notes{2};
+    vis = common_notes{3};
+    gog = 'ESC';
+    ang = '0';
+    ESC_files = VOG_files(contains(VOG_files,'export.mat'));
+    for i = 1:length(ESC_files) 
+        fname = ESC_files{i};
+        dashes = strfind(fname,'-');
+        date = strrep(strrep(strrep(fname(dashes(1)-4:dashes(1)+14),'-',''),'.',''),'_','-');
+        w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];'Experiment '};
+        notes_check = inputdlg([fname,newline,newline,'Check Notes: ',newline,'Ex: aHIT-Impulse-NoStim-LHRH-150dps-pseudorandom'],'Set VOG File Parameters',[length(w_notes),70],{strjoin(w_notes,'\n')});
+        if ~isempty(notes_check)
+            w_notes = cellstr(notes_check{1,1});
+            filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');
+            fprintf(filePh,'%s\n',w_notes{:});
+            fclose(filePh);
+        end
+    end 
 else %LDVOG and NKI
     %% Initialize Figure
     fig = figure(1);

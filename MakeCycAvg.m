@@ -68,6 +68,18 @@ if contains(info.goggle_ver,'GNO') %No raw position, just velocity
     else
         stim1 = Data.HeadVel_Z;
     end 
+elseif contains(info.goggle_ver,'ESC') %No raw position, just velocity
+    te = Data.Time_Eye - Data.Time_Eye(1);
+    ts = Data.Time_Stim - Data.Time_Stim(1);
+    if contains(info.dataType,{'LH','RH'})
+        stim1 = Data.HeadVel_Z;
+    elseif contains(info.dataType,{'LA','RP'})
+        stim1 = Data.HeadVel_L;
+    elseif contains(info.dataType,{'RA','LP'})
+        stim1 = Data.HeadVel_R;
+    else
+        stim1 = Data.HeadVel_Z;
+    end    
 else
     if contains(info.dataType,'Activation')
         %preserve the time because this will be used to rejoin them
@@ -116,9 +128,13 @@ else
     end
 end
 % Assign Type and set detected traces
-if contains(info.goggle_ver,'GNO') %No raw pos traces 
+if contains(info.goggle_ver,{'GNO','ESC'}) %No raw pos traces 
     type = 3;
-    detec_head = Data.DetectedTraces_HeadVel;
+    if isfield(Data,'DetectedTraces_HeadVel')
+        detec_head = Data.DetectedTraces_HeadVel;
+    else
+        detec_head = [];
+    end
 elseif contains(info.dataType,{'Activation','Step'}) %No cycle averaging
     type = 2;
     detec_head = [];
@@ -139,7 +155,13 @@ if contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'LH','RH'})
 elseif contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'LA','RP'})
     traces_vel1 = {'RLARP'};
 elseif contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'RA','LP'})
-    traces_vel1 = {'RRALP'};    
+    traces_vel1 = {'RRALP'};   
+elseif contains(info.goggle_ver,'ESC')&&contains(info.dataType,{'LH','RH'})
+    traces_vel1 = {'LZ'};
+elseif contains(info.goggle_ver,'ESC')&&contains(info.dataType,{'LA','RP'})
+    traces_vel1 = {'LLARP'};
+elseif contains(info.goggle_ver,'ESC')&&contains(info.dataType,{'RA','LP'})
+    traces_vel1 = {'LRALP'};     
 elseif contains(info.dataType,{'X','Y'})
     traces_vel1 = all_traces(1:6); %LRZ vel 
 else

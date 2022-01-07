@@ -308,7 +308,32 @@ elseif contains(info.goggle_ver,'GNO') % GNO File
     catch
         DetectedTraces_HeadVel=[];
     end
-    warning('on')   
+    warning('on')  
+elseif contains(info.goggle_ver,'ESC') % ESC File
+    %%
+    data1 = load(In_Path);
+    data = data1.content_RAW.Data;
+    Time_Eye = (data(:,1) - data(1,1));
+    Time_Stim = Time_Eye;
+    Fs = round(1/median(diff(Time_Eye))); 
+    phi = -20;
+    A = ([cosd(phi),0,sind(phi);0,1,0;-sind(phi),0,cosd(phi)]'*data1.content_CAL.R)*data(:,7:9)'; %Use the calibration from the system
+    GyroX = A(1,:);
+    GyroY = A(2,:);
+    GyroZ = A(3,:);
+    GyroLARP = (GyroX - GyroY)/sqrt(2);
+    GyroRALP = (GyroX + GyroY)/sqrt(2);      
+    Horizontal_LE_Velocity = data(:,19);
+    Vertical_LE_Velocity = data(:,18); 
+%     clf;
+%     hold on
+%     plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
+%     plot(Time_Eye,Vertical_LE_Velocity,'Color',colors.l_y)
+%     plot(Time_Eye,Horizontal_LE_Velocity,'Color',colors.l_z)
+%     hold off 
+%     axis([Time_Stim(1) Time_Stim(end) -250 250])
+    info.TriggerShift = 0;
+    %%
 end
 %% Figure out how many experiments there are
 if size(fileinfo,2)==2 %New way w/ 2 columns
@@ -325,7 +350,7 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
     stim_info = strrep(stim_info,'manual','Manual'); %in case I forgot to capitalize
     %Check to make sure the right canal is in the notes
     canals = {'LARP','RALP','LHRH'};
-    [~,canal_i] = max(max([GyroLARP,GyroRALP,GyroZ]));
+    [~,canal_i] = max(max([reshape(GyroLARP,[],1),reshape(GyroRALP,[],1),reshape(GyroZ,[],1)]));
     notes_canal = find([any(contains(stim_info,'LARP')),any(contains(stim_info,'RALP')),any(contains(stim_info,'LHRH'))]);
     if canal_i~=notes_canal %Mismatch
         plot(GyroLARP,'Color','g')
@@ -672,6 +697,14 @@ if ~isempty(stim_info)
                 Data.HeadVel_L = GyroLARP(i1:i2);
                 Data.HeadVel_R = GyroRALP(i1:i2);
                 Data.DetectedTraces_HeadVel = DetectedTraces_HeadVel;
+            elseif contains(info.goggle_ver,'ESC')
+                Data.LE_Vel_Y = Vertical_LE_Velocity(i1:i2);
+                Data.LE_Vel_Z = Horizontal_LE_Velocity(i1:i2);
+                Data.HeadVel_X = GyroX(i1:i2);
+                Data.HeadVel_Y = GyroY(i1:i2);
+                Data.HeadVel_Z = GyroZ(i1:i2);
+                Data.HeadVel_L = GyroLARP(i1:i2);
+                Data.HeadVel_R = GyroRALP(i1:i2);
             else %LDVOG and NKI           
                 Data.Trigger = Stim(i1:i2); % computer trigger
                 Data.LE_Position_X = Torsion_LE_Position(i1:i2);

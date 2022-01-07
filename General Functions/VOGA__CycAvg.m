@@ -18,11 +18,7 @@ function VOGA__CycAvg
     end
     exp_names = unique(all_exp_names);
     if length(exp_names)>1
-        [indx,tf] = nmlistdlg('PromptString','Select experiment types to analyze:',...
-                       'SelectionMode','multiple',...
-                       'ListSize',[350 300],...
-                       'ListString',exp_names); 
-                   
+        [indx,tf] = nmlistdlg('PromptString','Select experiment types to analyze:','SelectionMode','multiple','ListSize',[350 300],'ListString',exp_names);               
     else
         tf = 1;
         indx = 1;
@@ -34,7 +30,7 @@ function VOGA__CycAvg
     end
     %% run until the user hits cancel on analyzing a file
     while(~done)
-        %% Select file
+        % Select file
         progress_tab = assessProgress(Path);
         if ~isempty(exp_types)
             rel_file = false(length(progress_tab{:,1}),length(exp_types));

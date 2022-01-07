@@ -40,6 +40,27 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
             Data_vel.RE_Vel_Y = -Data.RE_Vel_Y;
             Data_vel.RE_Vel_Y_cond = -Data.RE_Vel_Y(reshape(keep_inds,[],1)); 
         end
+    elseif contains(Data.info.goggle_ver,'ESC') %No position traces
+        Data_pos = [];
+        Data_pos_filt = [];
+        %Make Data_vel struct        
+        Data_vel.t = ts;
+        Data_vel.stim = stim;
+        Data_vel.LE_Vel_Z = Data.LE_Vel_Z;  
+        Data_vel.stim_cond = stim(reshape(keep_inds,[],1));
+        t_cond = median(diff(ts))*(0:length(Data_vel.stim_cond)-1)';
+        Data_vel.t_cond = t_cond;
+        Data_vel.LE_Vel_Z_cond = Data.LE_Vel_Z(reshape(keep_inds,[],1)); 
+        if contains(Data.info.dataType,{'RA','LP'})
+            Data_vel.LE_Vel_RALP = Data.LE_Vel_Y; 
+            Data_vel.LE_Vel_RALP_cond = Data.LE_Vel_Y(reshape(keep_inds,[],1)); 
+        elseif contains(Data.info.dataType,{'LA','RP'})
+            Data_vel.LE_Vel_LARP = -Data.LE_Vel_Y;
+            Data_vel.LE_Vel_LARP_cond = -Data.LE_Vel_Y(reshape(keep_inds,[],1)); 
+        else
+            Data_vel.LE_Vel_Y = Data.LE_Vel_Y;
+            Data_vel.LE_Vel_Y_cond = Data.LE_Vel_Y(reshape(keep_inds,[],1)); 
+        end
     else
         Data_pos = Data;
         Data_pos.te = te;
@@ -64,7 +85,7 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
     traces = filt.vel.Properties.RowNames;   
     Data_vel_filt.t = ts;
     Data_vel_filt.stim = stim;
-    if contains(Data.info.goggle_ver,'GNO')
+    if contains(Data.info.goggle_ver,{'GNO','ESC'})
         Data_vel_filt.t_cond = Data_vel.t_cond;
         Data_vel_filt.stim_cond = stim(reshape(keep_inds,[],1));
     end
@@ -74,7 +95,7 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
         canal = traces{i}(2:end); 
         var_n = [traces{i}(1),'E_Vel_',canal];
         if isfield(Data_vel,var_n)
-            if contains(Data.info.goggle_ver,'GNO')
+            if contains(Data.info.goggle_ver,{'GNO','ESC'})
                 rel_t = t_cond;                
                 long_i = reshape(1:(size(keep_inds,1)*size(keep_inds,2)),size(keep_inds,1),[]);
                 rel_trace = Data_vel.([var_n,'_cond']);
@@ -84,8 +105,12 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
                 temp4 = irls_filt(temp3,filt.vel.irlssmooth(traces{i}));   
                 temp5 = temp4;
                 temp5(long_i(t_interp,:)) = NaN; %Now remove trace if needed
-                temp5 = interp1(rel_t(~isnan(temp5)),temp5(~isnan(temp5)),rel_t);
-                temp6 = spline_filt(rel_t,temp5,rel_t,filt.vel.spline(traces{i}));
+                if any(~isnan(temp5))
+                    temp5 = interp1(rel_t(~isnan(temp5)),temp5(~isnan(temp5)),rel_t);
+                    temp6 = spline_filt(rel_t,temp5,rel_t,filt.vel.spline(traces{i}));
+                else
+                    temp6 = temp5;
+                end
                 Data_vel_filt.(var_n) = temp6;
                 Data_cyc.(var_n) = reshape(Data_vel_filt.(var_n),size(keep_inds,1),[]);
             else

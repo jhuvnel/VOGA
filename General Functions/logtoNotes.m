@@ -237,10 +237,14 @@ if tf1 == 1
                     experiments = cell(length(stim_starts),1);
                     for j = 1:length(stim_starts)
                         stim_tab = rel_dat(stim_starts(j):stim_ends(j),2:end);
+                        col_labs = stim_tab(1,:);
+                        col_labs(cellfun(@isempty,col_labs)) = [];
                         %Figure out what type of experiment it is
-                        if any(contains(stim_tab(1,:),'Depth of Modulation'))
+                        if isempty(col_labs)
+                            disp([fname,': Experiment type was not detected.'])
+                        elseif any(contains(col_labs,'Depth of Modulation'))
                             experiments(j) = {strcat('Experiment eeVOR-MultiVector-[',stim_tab(2:end,2),',',stim_tab(2:end,3),',',stim_tab(2:end,4),']')};
-                        elseif any(contains(stim_tab(1,:),'Frequency'))
+                        elseif any(contains(col_labs,'Frequency'))
                             ax_vec = str2double(stim_tab(2:end,2:4));
                             stim_axis = cell(size(ax_vec,1),1);
                             %Round to nearest 10 for continuity
@@ -256,7 +260,7 @@ if tf1 == 1
                                 stim_axis(combo_vec) = strcat('[',join(cellfun(@num2str,num2cell(ax_vec(combo_vec,:)./repmat(amp_mat(combo_vec),1,3)),'UniformOutput',false),','),']');
                             end
                             experiments(j) = {strcat('Experiment eeVOR-Sine-',stim_axis,'-',stim_tab(2:end,5),'Hz-',amp_vec,'dps')};
-                        elseif any(contains(stim_tab(1,:),'BSR (pps)'))
+                        elseif any(contains(col_labs,'BSR (pps)'))
                             %Figure out axis and if it's PFM or PAM
                             %Assume that axes are only LHRH, RALP, or LARP and no
                             %combinations

@@ -558,6 +558,7 @@ elseif any(contains(all_results.Type,'Impulse'))
                     end
                     hold off
                     set(gca,'XLim',[0,CycAvg.t(end)])
+                    text(0.99*CycAvg.t(end),-YMax/2,['Gain: ',num2str(mean(gain,'omitnan'),2),newline,'Latency (ms): ',num2str(round(mean(lat,'omitnan')),3)],'HorizontalAlignment','right','VerticalAlignment','bottom')
                 else
                     h = gobjects(length(canals)+1,1);
                     h(1) = plot(NaN,NaN,'k');
@@ -568,7 +569,6 @@ elseif any(contains(all_results.Type,'Impulse'))
                     hold off
                 end
                 title(labs{i})
-                text(0.99*CycAvg.t(end),-YMax/2,['Gain: ',num2str(mean(gain,'omitnan'),2),newline,'Latency (ms): ',num2str(mean(lat,'omitnan'),2)],'HorizontalAlignment','right','VerticalAlignment','bottom')
             end
             leg = legend(ha(1),h(leg_ind),leg_text(leg_ind),'NumColumns',2);
             leg.ItemTokenSize(1) = 7;
@@ -648,7 +648,11 @@ elseif any(contains(all_results.Type,'Impulse'))
                 ha(i).Position = [x_pos(i) y_pos(i) x_wid y_wid];
                 if ~isempty(rel_files{i})
                     load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
-                    CycAvg.t = reshape(0:1/CycAvg.Fs:(length(CycAvg.rz_cycavg)-1)/CycAvg.Fs,1,[]);
+                    if isfield(CycAvg,'rz_cycavg')
+                        CycAvg.t = reshape(0:1/CycAvg.Fs:(length(CycAvg.rz_cycavg)-1)/CycAvg.Fs,1,[]);
+                    else
+                        CycAvg.t = reshape(0:1/CycAvg.Fs:(length(CycAvg.lz_cycavg)-1)/CycAvg.Fs,1,[]);
+                    end
                     if -min(mean(CycAvg.stim))>max(mean(CycAvg.stim))
                         invh = -1;
                         inve = 1;
@@ -703,7 +707,7 @@ elseif any(contains(all_results.Type,'Impulse'))
                         xline(CycAvg.trace_start,'k--','LineWidth',2)
                     end
                     hold off
-                    text(0.99*CycAvg.t(end),-YMax/2,['Gain: ',num2str(mean(gain,'omitnan'),2),newline,'Latency (ms): ',num2str(mean(lat,'omitnan'),2)],'HorizontalAlignment','right','VerticalAlignment','bottom')
+                    text(0.99*CycAvg.t(end),-YMax/2,['Gain: ',num2str(mean(gain,'omitnan'),2),newline,'Latency (ms): ',num2str(round(mean(lat,'omitnan')),3)],'HorizontalAlignment','right','VerticalAlignment','bottom')
                 else
                     h = gobjects(length(canals)+1,1);
                     h(1) = plot(NaN,NaN,'k');
