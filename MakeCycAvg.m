@@ -62,7 +62,7 @@ if contains(info.goggle_ver,'GNO') %No raw position, just velocity
     if contains(info.dataType,{'LH','RH'})
         stim1 = Data.HeadVel_Z;
     elseif contains(info.dataType,{'LA','RP'})
-        stim1 = -Data.HeadVel_L;
+        stim1 = Data.HeadVel_L; %was negative here until 01/10/22
     elseif contains(info.dataType,{'RA','LP'})
         stim1 = Data.HeadVel_R;
     else

@@ -417,7 +417,6 @@ switch type
         cycle_params = [];
     case 3 
         %% Impulse
-        %saccade_thresh = 3000; %deg/s^2
         % Process Inputs
         %Make sure stim trace is time points long (1 x nt)
         if isfield(CycAvg,'rz_cyc')
@@ -449,10 +448,67 @@ switch type
         head_width = NaN(nc,1);
         head_maxvel = NaN(nc,1);
         head_accel = NaN(nc,1);
+        eye_saccade1 = NaN(nc,2);
+        eye_saccade2 = NaN(nc,2);
+        %Where to look for saccades
+        if contains(CycAvg.name,{'LH','RH'})
+            rel_tr = {'lz','rz'};
+        elseif contains(CycAvg.name,{'LA','RP'})
+            rel_tr = {'ll','rl'};
+        elseif contains(CycAvg.name,{'LP','RA'})
+            rel_tr = {'lr','rr'};
+        else
+            rel_tr = [];
+        end
         for tr = 1:length(traces)
             if isfield(CycAvg,[traces{tr},'_cyc'])
                 %Now find maxvel, gain and latency
                 eye_cyc = CycAvg.([traces{tr},'_cyc']);
+                %define start and end as 10dps
+                warning('off')
+                head = spline(t,CycAvg.stim_cycavg,t_upsamp);
+                eye = -spline(t,CycAvg.([traces{tr},'_cycavg']),t_upsamp);
+                warning('on')
+                if -min(head)>max(head)    
+                    neg_flag = -1;
+                end
+                head = neg_flag*head;
+                eye = neg_flag*eye;
+                [~,h_max] = max(head);
+                h_start = find(head<10&t_upsamp<t_upsamp(h_max),1,'last');
+                %Incase head zero crossing is weird, make the end the same size as start to max
+                h_end = min([find(head<10&t_upsamp>t_upsamp(h_max),1,'first'),(h_max-h_start)*2+h_start]);
+                head_start = t_upsamp(h_start);
+                head_end = t_upsamp(h_end);
+                avg_max_vel(tr) = max(eye(h_start:((h_max-h_start)*3+h_start)));
+                %Gain by taking the ratio of area under the curve
+                h_AUC = trapz(head(h_start:h_end))*median(diff(t_upsamp));
+                e_AUC = trapz(eye(h_start:h_end))*median(diff(t_upsamp)); 
+                avg_gain_AUC(tr) = e_AUC/h_AUC;
+                %Eye Latency
+                e_start = find(eye>(10+eye(h_start))&t_upsamp>=t_upsamp(h_start),1,'first');
+                if isempty(e_start) || e_start > h_end
+                    avg_lat(tr) = 1000*(t_upsamp(h_end)-t_upsamp(h_start)); %The full trace
+                    e_start = h_start;
+                else
+                    avg_lat(tr) = 1000*(t_upsamp(e_start)-t_upsamp(h_start)); %in ms
+                end
+                %Gain by taking the the ratio of head accel/eye accel
+                rel_eye = eye(e_start:h_end);
+                [~,max_eye] = max(rel_eye);
+                rel_eye = rel_eye(1:max_eye);
+                ts_e = t_upsamp(1:length(rel_eye));
+                eye_lin_fit = [ones(length(ts_e),1),ts_e']\rel_eye';
+                rel_head = head(h_start:h_max);
+                ts_h = t_upsamp(1:length(rel_head));
+                head_lin_fit = [ones(length(ts_h),1),ts_h']\rel_head';
+                avg_gain_Ga(tr) = eye_lin_fit(2)/head_lin_fit(2);
+                %Look for saccades
+                if any(contains(rel_tr,traces{tr})) %Look for saccades
+                    eye_cyc_prefilt = CycAvg.([traces{tr},'_cyc_prefilt'])';
+                    eye_diff = neg_flag*-spline(t,eye_cyc_prefilt-eye_cyc,t_upsamp);
+                    eye_diff(:,1:e_start) = 0;
+                end
                 for i = 1:nc
                     %define start and end as 10dps
                     warning('off')
@@ -494,48 +550,29 @@ switch type
                     head_lin_fit = [ones(length(ts_h),1),ts_h']\rel_head';
                     gain_Ga(i,tr) = eye_lin_fit(2)/head_lin_fit(2);
                     head_accel(i) = head_lin_fit(2);
+                    if any(contains(rel_tr,traces{tr})) %Look for saccades
+                        [max_eye,max_eye_t] = max(eye_diff(i,:));
+                        if max_eye > 100
+                            eye_saccade1(i,contains(rel_tr,traces{tr})) = 1000*(t_upsamp(max_eye_t)-t_upsamp(h_start)); %in ms
+                            eye_diff(i,1:max_eye_t+500) = 0;
+                            [max_eye2,max_eye_t2] = max(eye_diff(i,:));
+                            if max_eye2 > 50
+                                eye_saccade2(i,contains(rel_tr,traces{tr})) = 1000*(t_upsamp(max_eye_t2)-t_upsamp(h_start)); %in ms
+                            end
+                        end
+                    end
                 end
-                %define start and end as 10dps
-                warning('off')
-                head = spline(t,CycAvg.stim_cycavg,t_upsamp);
-                eye = -spline(t,CycAvg.([traces{tr},'_cycavg']),t_upsamp);
-                warning('on')
-                if -min(head)>max(head)    
-                    neg_flag = -1;
-                end
-                head = neg_flag*head;
-                eye = neg_flag*eye;
-                [~,h_max] = max(head);
-                h_start = find(head<10&t_upsamp<t_upsamp(h_max),1,'last');
-                %Incase head zero crossing is weird, make the end the same size as start to max
-                h_end = min([find(head<10&t_upsamp>t_upsamp(h_max),1,'first'),(h_max-h_start)*2+h_start]);
-                head_start = t_upsamp(h_start);
-                head_end = t_upsamp(h_end);
-                avg_max_vel(tr) = max(eye(h_start:((h_max-h_start)*3+h_start)));
-                %Gain by taking the ratio of area under the curve
-                h_AUC = trapz(head(h_start:h_end))*median(diff(t_upsamp));
-                e_AUC = trapz(eye(h_start:h_end))*median(diff(t_upsamp)); 
-                avg_gain_AUC(tr) = e_AUC/h_AUC;
-                %Eye Latency
-                e_start = find(eye>(10+eye(h_start))&t_upsamp>=t_upsamp(h_start),1,'first');
-                if isempty(e_start) || e_start > h_end
-                    avg_lat(tr) = 1000*(t_upsamp(h_end)-t_upsamp(h_start)); %The full trace
-                    e_start = h_start;
-                else
-                    avg_lat(tr) = 1000*(t_upsamp(e_start)-t_upsamp(h_start)); %in ms
-                end
-                %Gain by taking the the ratio of head accel/eye accel
-                rel_eye = eye(e_start:h_end);
-                [~,max_eye] = max(rel_eye);
-                rel_eye = rel_eye(1:max_eye);
-                ts_e = t_upsamp(1:length(rel_eye));
-                eye_lin_fit = [ones(length(ts_e),1),ts_e']\rel_eye';
-                rel_head = head(h_start:h_max);
-                ts_h = t_upsamp(1:length(rel_head));
-                head_lin_fit = [ones(length(ts_h),1),ts_h']\rel_head';
-                avg_gain_Ga(tr) = eye_lin_fit(2)/head_lin_fit(2);
-            end            
+                
+            end    
         end  
+        keep_inds = CycAvg.Data_allcyc.keep_inds(:,CycAvg.keep_tr);
+        head_3D = [CycAvg.Data.HeadVel_L,CycAvg.Data.HeadVel_R,CycAvg.Data.HeadVel_Z];
+        h_i = NaN(nc,1);       
+        for i = 1:nc
+            [~,head_i] = max(abs(Stim_All(i,:)));
+            h_i(i) = keep_inds(head_i,i);
+        end     
+        [~,~,head_misc] = calc_misalignment(stim_vect,head_3D(h_i,:));
         MaxVel = reshape([avg_max_vel;std(max_vel);avg_max_vel;std(max_vel)],1,[]);
         Gain = reshape([avg_gain_AUC;std(gain_AUC);avg_gain_Ga;std(gain_Ga)],1,[]);
         Latency = reshape([avg_lat;std(lat,'omitnan')],1,[]);
@@ -568,7 +605,10 @@ switch type
             cycle_params.GNODetec = 0;
             cycle_params.PercDetec = NaN;
         end
-        cycle_params.TimeElapsed = CycAvg.Data_rawvel.t(end);        
+        cycle_params.TimeElapsed = CycAvg.Data_rawvel.t(end); 
+        cycle_params.Saccade1 = mean(eye_saccade1,2,'omitnan');
+        cycle_params.Saccade2 = mean(eye_saccade2,2,'omitnan');
+        cycle_params.HeadMisc = head_misc;
     case 4 
         %% Pulse Train
         % Process Inputs

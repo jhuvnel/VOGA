@@ -53,7 +53,7 @@ function fig = plotSegment(Data)
         title('Angular Velocity')
         xlabel('Time(s)')
         ylabel('Velocity (dps)')
-        legend('Head -LARP','Head RALP','Head LHRH','Inv Eye Y','Inv Eye Z')
+        legend('Head LARP','Head RALP','Head LHRH','Inv Eye Y','Inv Eye Z')
     elseif contains(info.goggle_ver,'ESC')
         plot(ts,Data.HeadVel_L,'k:')
         hold on

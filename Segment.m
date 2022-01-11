@@ -273,7 +273,7 @@ elseif contains(info.goggle_ver,'GNO') % GNO File
     Time_Eye = (data(:,1) - data(1,1))/10e6;
     Time_Stim = Time_Eye;
     GyroZ = data(:,4);
-    GyroLARP = data(:,3);
+    GyroLARP = -data(:,3); %Invert to make it aligned with +L canal, wasn't negative here until 01/10/22
     GyroRALP = data(:,2);
     Fs = round(1/median(diff(Time_Eye)));    
     Horizontal_RE_Velocity = data(:,5);

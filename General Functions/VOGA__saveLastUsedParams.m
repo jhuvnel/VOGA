@@ -3,7 +3,7 @@ if ~any(contains(extractfield(dir(userpath),'name'),'VOGA_LastUsedFilterParams.m
     %Default table, no presets
     trace_names = {'LX','RX','LY','RY','LZ','RZ','LLARP','RLARP','LRALP','RRALP','ALL'};
     pos_filts = {'median','spline','sgolay1','sgolay2'}; %add more as needed
-    vel_filts = {'accel','median','spline','sgolay1','sgolay2','irlssmooth','slip'}; %add more as needed
+    vel_filts = {'accel','median','spline','sgolay1','sgolay2','irlssmooth'}; %add more as needed
     filt1.pos = array2table(NaN(length(trace_names),length(pos_filts)));
     filt1.pos.Properties.VariableNames = pos_filts;
     filt1.pos.Properties.RowNames = trace_names;
