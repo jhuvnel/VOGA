@@ -59,9 +59,13 @@ function moveGNOfiles(Path)
     %% Move files    
     names = extractfield(dir(Path),'name')';
     if any(contains(names,'Processed'))
-        mkdir('Combined Files')
+        movefile('Processed*','Raw Files')
+        cd('Raw Files')
+        if exist('Combined Files','dir')~=7
+            mkdir('Combined Files')
+        end
         movefile('Processed*','Combined Files')
-        movefile('Combined Files','Raw Files') 
+        cd ../
     end      
     if deidentify
         deidentify_filenames(Path,rm_string)

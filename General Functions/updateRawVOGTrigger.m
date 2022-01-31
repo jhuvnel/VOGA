@@ -147,12 +147,15 @@ while ~strcmp(opts{ind},'Save')
             time1 = out_nums(1);
             time2 = out_nums(2);
             len = out_nums(3);
+            XLim = min([time1 time2])+ [0,len]
+        else
+            XLim = [Time_Eye(1),Time_Eye(end)];
         end
         [~,t1] = min(abs(Time_Eye-time1));
         [~,t2] = min(abs(Time_Eye-(time1+len)));
         [~,t3] = min(abs(TEMP_Time_Eye-time2));
-        [~,t4] = min(abs(TEMP_Time_Eye-(time2+len)));
-        set(gca,'XLim',XLim,'YLim',YLim)
+        [~,t4] = min(abs(TEMP_Time_Eye-(time2+len)));        
+        set(gca,'XLim',XLim)
     elseif strcmp(opts{ind},'Set Plot Items')
         plot_opts = {'Plot Eyes','Plot Gyro','Plot Sync'};
         [ind3,tf3] = nmlistdlg('PromptString','Select an action:',...

@@ -381,15 +381,42 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
         thresh2 = 1; %Counts as 0.
         approx0 = find(abs(GyroAll)< thresh2);
         start1 = find(abs(GyroAll) > thresh);
-        start2 = start1([true;diff(start1)>Fs*45]); %make sure it's at least 45s long
+        start2 = start1([true;diff(start1)>Fs*10]); %make sure it's at least 45s long
         [~,inds] = min(abs(repmat(approx0',length(start2),1) - start2),[],2);
-        start = approx0(inds);
-        start = start([true;diff(start)>Fs*45]); %make sure it's at least 45s long
-        ends = [start(2:end)-1;length(Time_Eye)];
-        plot(Time_Stim,GyroAll,'k',Time_Stim(start),GyroAll(start),'r*',Time_Stim(ends),GyroAll(ends),'b*')
-        xlabel('Time (s)')
-        ylabel('Head Velocity')
-        legend('Stimulus','Start','End')
+        seg_start = approx0(inds);
+        seg_start = seg_start([true;diff(seg_start)>Fs*10]); %make sure it's at least 45s long
+        seg_end = [seg_start(2:end)-1;length(Time_Eye)];
+        if length(seg_start) ~= length(stim_info)
+            plot(NaN,NaN)
+            hold on
+            %Now plot all fills
+            for j = 1:length(seg_start)
+                fill([Time_Eye(seg_start(j)),Time_Eye(seg_end(j)),Time_Eye(seg_end(j)),Time_Eye(seg_start(j))]',300*[1,1,-1,-1]',[.85, .85, .85]);
+            end
+            plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
+            hold off
+            uiwait(msgbox('Select all valid segments.'))
+            keep = false(1,length(seg_start));
+            [x,~] = ginput(length(stim_info));
+            for i = 1:length(x)
+                t1 = Time_Eye(seg_start) - x(i);
+                i1 = find(t1 < 0);
+                keep(i1(end)) = true;
+            end
+            start = seg_start(keep);
+            ends = seg_end(keep);
+        else
+            start = seg_start;
+            ends = seg_end;
+        end
+        plot(NaN,NaN)
+        hold on
+        %Now plot all fills
+        for j = 1:length(start)
+            fill([Time_Eye(start(j)),Time_Eye(ends(j)),Time_Eye(ends(j)),Time_Eye(start(j))]',[500,500,-500,-500]','g');
+        end
+        plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
+        hold off
         pause(1)
     else %Sine or Impulses
         if length(stim_info) > 1 %multiple sine stimuli

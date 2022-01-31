@@ -102,15 +102,12 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
                 temp1 = med_filt(rel_trace,filt.vel.median(traces{i}));
                 temp2 = sgolay_filt(temp1,[filt.vel.sgolay1(traces{i}),filt.vel.sgolay2(traces{i})]);
                 temp3 = accel_QPR(rel_t,temp2,filt.vel.accel(traces{i}));
-                temp4 = irls_filt(temp3,filt.vel.irlssmooth(traces{i}));   
-                temp5 = temp4;
-                temp5(long_i(t_interp,:)) = NaN; %Now remove trace if needed
-                if any(~isnan(temp5))
-                    temp5 = interp1(rel_t(~isnan(temp5)),temp5(~isnan(temp5)),rel_t);
-                    temp6 = spline_filt(rel_t,temp5,rel_t,filt.vel.spline(traces{i}));
-                else
-                    temp6 = temp5;
-                end
+                temp4 = temp3;
+                temp4(long_i(t_interp,:)) = NaN; %Now remove trace if needed
+                temp4 = interp1(rel_t(~isnan(temp4)),temp4(~isnan(temp4)),rel_t);
+                temp4(isnan(temp4)) = 0; %trailing zeros
+                temp5 = irls_filt(temp4,filt.vel.irlssmooth(traces{i}));
+                temp6 = spline_filt(rel_t,temp5,rel_t,filt.vel.spline(traces{i})); 
                 Data_vel_filt.(var_n) = temp6;
                 Data_cyc.(var_n) = reshape(Data_vel_filt.(var_n),size(keep_inds,1),[]);
             else
@@ -119,10 +116,11 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
                 temp1 = med_filt(rel_trace,filt.vel.median(traces{i}));
                 temp2 = sgolay_filt(temp1,[filt.vel.sgolay1(traces{i}),filt.vel.sgolay2(traces{i})]);
                 temp3 = accel_QPR(rel_t,temp2,filt.vel.accel(traces{i}));
-                temp4 = irls_filt(temp3,filt.vel.irlssmooth(traces{i}));
-                temp5 = temp4;
-                temp5(keep_inds(t_interp,:)) = NaN; %Now remove trace if needed
-                temp5 = interp1(rel_t(~isnan(temp5)),temp5(~isnan(temp5)),rel_t);
+                temp4 = temp3;
+                temp4(keep_inds(t_interp,:)) = NaN; %Now remove trace if needed
+                temp4 = interp1(rel_t(~isnan(temp4)),temp4(~isnan(temp4)),rel_t);
+                temp4(isnan(temp4)) = 0; %trailing zeros
+                temp5 = irls_filt(temp4,filt.vel.irlssmooth(traces{i}));
                 temp6 = spline_filt(rel_t,temp5,rel_t,filt.vel.spline(traces{i}));
                 Data_vel_filt.(var_n) = temp6;
                 Data_cyc.(var_n) = Data_vel_filt.(var_n)(keep_inds);

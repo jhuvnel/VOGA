@@ -461,7 +461,7 @@ switch type
             rel_tr = [];
         end
         for tr = 1:length(traces)
-            if isfield(CycAvg,[traces{tr},'_cyc'])
+            if isfield(CycAvg,[traces{tr},'_cyc'])&&sum(~isnan(CycAvg.([traces{tr},'_cycavg'])))>1
                 %Now find maxvel, gain and latency
                 eye_cyc = CycAvg.([traces{tr},'_cyc']);
                 %define start and end as 10dps
