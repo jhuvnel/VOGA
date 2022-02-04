@@ -119,7 +119,7 @@ if(plotstimaxis)
 end
 
 Fs = CycAvg.Fs;
-ondur_samp = ondur*Fs;
+ondur_samp = round(ondur*Fs);
 start1 = 1;
 end1 = ondur_samp; 
 

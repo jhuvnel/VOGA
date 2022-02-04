@@ -51,7 +51,7 @@ function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,scr
         for i = 1:length(eye_fields)
             all_trac(:,:,i) = Data_cyc.(eye_fields{i}); 
         end
-        if size(Data_cyc.stim,2) > 1
+        if all(size(Data_cyc.stim) > 1)
             all_trac(:,:,end) = Data_cyc.stim;
         end
         [x,y] = ginput(1); %Assume this is on a cycle graph

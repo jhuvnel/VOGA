@@ -386,6 +386,8 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
         seg_start = approx0(inds);
         seg_start = seg_start([true;diff(seg_start)>Fs*10]); %make sure it's at least 45s long
         seg_end = [seg_start(2:end)-1;length(Time_Eye)];
+        too_long = (seg_end-seg_start)>130*Fs;
+        seg_end(too_long) = seg_start(too_long)+130*Fs; %make sure segment is not longer than 2.5 min
         if length(seg_start) ~= length(stim_info)
             plot(NaN,NaN)
             hold on

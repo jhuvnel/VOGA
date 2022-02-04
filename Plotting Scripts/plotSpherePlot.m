@@ -44,19 +44,35 @@ if annot
         'EdgeColor','none','interpreter','none');
 end
 Function = 2;
-plotstimaxis = 0;
+plotstimaxis = 1;
 plotelecaxis = 1;
-normlen = 1;
+normlen = 0;
 stim_ear = Ears{ismember(Subs,subject)};
 for i = 1:size(all_results2,1)
     load([Cyc_Path,filesep,all_results2.File{i}],'CycAvg')
+    stim_vect = all_results2.StimAxis{i};
+    if stim_vect(1)==0&&stim_vect(2)==0&&stim_vect(3)~=0
+        all_results2.AxisName{i} = 'LHRH';
+    elseif stim_vect(1)~=0&&stim_vect(2)==0&&stim_vect(3)==0
+        all_results2.AxisName{i} = 'LARP';
+    elseif stim_vect(1)==0&&stim_vect(2)~=0&&stim_vect(3)==0
+        all_results2.AxisName{i} = 'RALP';
+    elseif stim_vect(1)==stim_vect(2)&&stim_vect(3)==0
+        all_results2.AxisName{i} = 'X';
+    elseif stim_vect(1)==-stim_vect(2)&&stim_vect(3)==0
+        all_results2.AxisName{i} = 'Y';
+    end
     %Determine canal
-    if any(contains(all_results2.AxisName{i},{'LP','RA','RALP'})) %RALP
+    if contains(all_results2.AxisName{i},{'LP','RA','RALP'}) %RALP
         plot_colors = [colors.l_r;colors.r_r];
-    elseif any(contains(all_results2.AxisName{i},{'LH','RH','LHRH'})) %LHRH
+    elseif contains(all_results2.AxisName{i},{'LH','RH','LHRH'}) %LHRH
         plot_colors = [colors.l_z;colors.r_z];
-    elseif any(contains(all_results2.AxisName{i},{'LA','RP','LARP'})) %LARP
+    elseif contains(all_results2.AxisName{i},{'LA','RP','LARP'}) %LARP
         plot_colors = [colors.l_l;colors.r_l];
+    elseif contains(all_results2.AxisName{i},{'X'}) %X
+        plot_colors = [colors.l_x;colors.r_x];
+    elseif contains(all_results2.AxisName{i},{'Y'}) %Y
+        plot_colors = [colors.l_y;colors.r_y];
     else
         plot_colors = [0,0,0;0.5,0.5,0.5]; %black and gray
     end

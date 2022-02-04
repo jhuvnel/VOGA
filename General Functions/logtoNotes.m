@@ -193,7 +193,7 @@ if tf1 == 1
             common_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang]};
             %Find where the time stamps overlap
             rel_inds = logfile_times >= VOG_times(1) & logfile_times <= VOG_times(end);
-            rel_dat = data(rel_inds,~all(cellfun(@isempty,data(rel_inds,:))));
+            rel_dat = data(rel_inds,~all(cellfun(@isempty,data(rel_inds,:)),1));
             %% Check in case it's in another log file from another computer
             if ~isempty(rel_dat)
                 rel_dat(cellfun(@isempty,rel_dat(:,3)),:) = [];
