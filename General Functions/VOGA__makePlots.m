@@ -12,7 +12,7 @@ function VOGA__makePlots
     data = readtable('VOGA_VerInfo.txt','ReadVariableNames',false);
     params.version = data{1,2}{:};
     params.Experimenter = data{2,2}{:}; 
-    params.annot = 1;
+    params.annot = 0;
     params.YMax = NaN;
     %% Run until cancel 
     opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg',...

@@ -43,10 +43,11 @@ function plotBoutros2019Fig6(params)
 %                 return;
 %             end
 %            all_results2 = all_results(indx,:);
+            %all_results2 = all_results(contains(all_results.Goggle,'NKI'),:);
             all_results2 = all_results;
             ear = Ears{ismember(Subs,all_results2.Subject{end})}; %only one subject expected
             canals = {'RALP','LHRH','LARP'};
-            amps = {'20dps','50dps','100dps','200dps','300dps','400dps'};
+            amps = {'20dps','50dps','100dps','200dps','300dps','500dps'};
             freq = '2Hz';
             exp_ind = zeros(length(amps),length(canals));
             for i = 1:length(amps)
@@ -130,7 +131,7 @@ function plotBoutros2019Fig6(params)
             xlabel(ha(5),'% Modulation Depth','FontSize',14)
             ylabel(ha(1),'Left Eye','FontSize',14)
             ylabel(ha(4),'Right Eye','FontSize',14)
-            text(ha(4),-40,30,'VOR Component Magnitude (\circ/s)','Rotation',90,'FontSize',16,'FontWeight','bold')
+            text(ha(4),-40,15,'VOR Component Magnitude (\circ/s)','Rotation',90,'FontSize',16,'FontWeight','bold')
             colorsL = [colors.l_r;colors.l_z;colors.l_l];
             colorsR = [colors.r_r;colors.r_z;colors.r_l];
             hL = gobjects(1,3);

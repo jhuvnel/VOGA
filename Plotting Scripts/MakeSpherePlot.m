@@ -114,6 +114,9 @@ end
 %Plot intended axis (opposite of virtual head velocity)
 if(plotstimaxis)
     stimaxis = -CycAvg.info.stim_axis;
+    if all(stimaxis==0)&&contains(CycAvg.name,'[') %look for stim axis in the file name
+        stimaxis = -1*str2num(CycAvg.name(strfind(CycAvg.name,'['):strfind(CycAvg.name,']')));
+    end
     plot3vect(stimaxis','','k--');
     plot3(stimaxis(1),stimaxis(2),stimaxis(3),'','MarkerSize',8,'LineWidth',2,'Color','k')
 end

@@ -23,7 +23,7 @@ function plotCycAvg(CycAvg,plot_fits,lrz_xyz)
     %Colors
     % Normal colors
     load('VNELcolors.mat','colors')
-    figure;
+    figure('Color',[1,1,1]);
     switch type
         case 1 %Sine or other cycle average
             fields = fieldnames(CycAvg);
@@ -44,7 +44,8 @@ function plotCycAvg(CycAvg,plot_fits,lrz_xyz)
                 CycAvg.stim = mean(CycAvg.stim,1);
             end
             h = gobjects(length(traces)+1,1);
-            h(1) = plot(CycAvg.t(s),CycAvg.stim(s),'k','LineWidth',2);
+            %h(1) = plot(CycAvg.t(s),CycAvg.stim(s),'k','LineWidth',2);
+            h(1) = plot(CycAvg.t(s),CycAvg.stim(s),'--','Color',colors.l_y,'LineWidth',2);
             hold on
             for i = 1:length(traces)
                 trace = traces{i};
