@@ -5,9 +5,11 @@ file_names(~contains(file_names,'.txt')) = [];
 if isempty(file_names)
     file_names = {''};
 end
+cd(Raw_Path)
 % Load LE and RE calibration files, and distance to the wall
 [LEcalibFileName,LEcalibPathName] = uigetfile('.txt','Select LEFT EYE calibration file.');
 [REcalibFileName,REcalibPathName] = uigetfile('.txt','Select RIGHT EYE calibration file.');
+cd ../
 calib_file_fullpath_left = strcat(LEcalibPathName, LEcalibFileName);
 calib_file_fullpath_right = strcat(REcalibPathName, REcalibFileName);
 prompt = {'Enter the distance from the subject to the calibration grid [in]'};
@@ -33,7 +35,7 @@ VLeftIndex_Deg = 41;
 HRightIndex_Deg = 43;
 VRightIndex_Deg = 44;
 % Select which file(s) to recalibrate
-indx = nmlistdlg('PromptString','Select files to segment:','ListSize',[300 300],'ListString',file_names);
+indx = nmlistdlg('PromptString','Select files to recalibtrate:','ListSize',[300 300],'ListString',file_names);
 sel_files = file_names(indx);
 for f = 1:length(sel_files)
     % Load Data from File

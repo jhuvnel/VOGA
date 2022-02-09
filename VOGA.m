@@ -9,7 +9,8 @@
 %
 % Written by Andrianna Ayiotis
 % Updated on 2021-10-05
-opts = {'Initialize','Process Raw Data','Segment','Combine Segments','Cycle Average',...
+opts = {'Initialize','Recalibrate LDVOG','Process Raw Data','Segment',...
+    'Combine Segments','Cycle Average',...
     'Summary Table','Generate Figures','Set Version'};
 ind = 1; %Run the start procedure first
 tf1 = 1;
@@ -20,6 +21,8 @@ while tf1
             disp('VOGA instance ended.')
             return;
         end
+    elseif strcmp(opts{ind},'Recalibrate LDVOG')
+        RecalibrateRawLDVOG;
     elseif strcmp(opts{ind},'Process Raw Data') 
         VOGA__ProcessRawData;    
     elseif strcmp(opts{ind},'Segment')

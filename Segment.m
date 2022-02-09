@@ -7,7 +7,7 @@ function Segment(In_Path,Seg_Path)
 %% Find the Notes File
 slash = find(In_Path == filesep,1,'last');
 rawfile = In_Path(slash+1:end-4);
-notesfile = extractfield(dir([In_Path(1:min([strfind(In_Path,'_UpdatedTrigger')-1,length(In_Path)-4])),'*-Notes.txt']),'name');
+notesfile = extractfield(dir([In_Path(1:min([strfind(In_Path,'_Updated')-1,length(In_Path)-4])),'*-Notes.txt']),'name');
 if isempty(notesfile)
     disp(['No notes files were found for this file: ',In_Path])
     return;

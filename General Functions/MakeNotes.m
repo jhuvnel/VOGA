@@ -15,7 +15,7 @@ end
 file_names = extractfield(rel_dir,'name');
 file_date = extractfield(rel_dir,'date');
 Notes_ind = contains(file_names,'-Notes.txt');
-VOG_ind = contains(file_names,{'SESSION','.dat','Lateral.txt','LARP.txt','RALP.txt','export.mat'})&~Notes_ind;
+VOG_ind = contains(file_names,{'SESSION','.dat','Lateral.txt','LARP.txt','RALP.txt','export.mat'})&~Notes_ind&~contains(file_names,'Raw');
 VOG_ind_num = find(VOG_ind);
 if all(~VOG_ind)
     disp(['No LDVOG, NKI, GNO, or ESC files have been detected in ',Raw_Path])
@@ -105,7 +105,7 @@ else %LDVOG and NKI
         if contains(fname,'SESSION') %LDVOG
             VOG_data = readtable([Raw_Path,filesep,fname]);
             %Make date and other labels
-            parts = split(fname,'-');
+            parts = split(strrep(fname,'_','-'),'-');
             if isduration(VOG_data{end,end})&&~isnan(VOG_data{end,end})
                 %Use the timestamps on the file itself
                 VOG_times = datetime(strrep(parts{2},'.txt',''),'InputFormat','yyyyMMMdd')+[VOG_data{1,end},VOG_data{end,end}];
@@ -160,6 +160,7 @@ else %LDVOG and NKI
             sub_i = 1:length(Time_Eye);
         end
         plot(Time_Eye(sub_i),GyroX(sub_i),'k:',Time_Eye(sub_i),GyroY(sub_i),'k--',Time_Eye(sub_i),GyroZ(sub_i),'k-',Time_Eye(sub_i),100*Stim(sub_i),'b')
+        title(strrep(fname,'_',' '))
         xlabel('Time (s)')
         ylabel('Velocity (dps)')
         legend('GyroX','GyroY','GyroZ','Trigger')
