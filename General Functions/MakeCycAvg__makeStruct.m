@@ -15,10 +15,14 @@ function CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_i
         trac = lower(traces{i}(1:2));
         var_n = [traces{i}(1),'E_Vel_',traces{i}(2:end)];
         if isfield(Data_cyc,var_n)
-            CycAvg.([trac,'_cycavg']) = mean(Data_cyc.(var_n)(:,keep_tr),2,'omitnan')';
-            CycAvg.([trac,'_cycstd']) = std(Data_cyc.(var_n)(:,keep_tr),0,2,'omitnan')';
-            CycAvg.([trac,'_cyc']) = Data_cyc.(var_n)(:,keep_tr)';
-            if contains(Data.info.goggle_ver,'GNO')&&isfield(Data_vel,var_n)
+            if all(size(Data_cyc.(var_n)(:,keep_tr))>1)
+                CycAvg.([trac,'_cycavg']) = mean(Data_cyc.(var_n)(:,keep_tr),2,'omitnan')';
+                CycAvg.([trac,'_cycstd']) = std(Data_cyc.(var_n)(:,keep_tr),0,2,'omitnan')';
+                CycAvg.([trac,'_cyc']) = Data_cyc.(var_n)(:,keep_tr)';
+            else
+                CycAvg.([trac,'_cyc']) = Data_cyc.(var_n)';
+            end
+            if (contains(Data.info.goggle_ver,'GNO')&&isfield(Data_vel,var_n))||contains(fname,{'Activation','VelStep'})
                 CycAvg.([trac,'_cyc_prefilt']) = Data_vel.(var_n)(Data_cyc.keep_inds(:,keep_tr));              
             end
         end

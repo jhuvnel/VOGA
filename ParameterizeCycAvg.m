@@ -81,11 +81,11 @@ elseif contains(fname,{'RALP','RA'})
 elseif contains(fname,'LP')
     stim_vect = [0 -1 0];
     axis_name = 'RALP';
-elseif contains(fname,'RH')
-    stim_vect = [0 0 -1];
-    axis_name = 'LHRH';
 elseif contains(fname,{'LHRH','LH','RotaryChair'})
     stim_vect = [0 0 1];
+    axis_name = 'LHRH';
+elseif contains(fname,'RH')
+    stim_vect = [0 0 -1];
     axis_name = 'LHRH';
 elseif contains(fname,'X')
     stim_vect = [0.707 0.707 0];
@@ -351,48 +351,93 @@ switch type
         else
             sub_i = true(1,length(t));
         end
-        % Find exponential fits
-        makefit = @(tt,p) p(:,1).*exp(p(:,2).*tt)+p(:,3).*exp(p(:,4).*tt); %2nd order exponential fit same syntax as matlab's built-in         
-        all_fits = NaN(length(traces),length(t));
-        params = NaN(2*length(traces),4);
-        dconfint = NaN(2*length(traces),4);
-        high_i = t(find(Stim==1,1,'first'));
-        low_i = t(find(Stim==0,1,'first'));
-        for i = 1:length(traces)
+%        if ~contains(fname,'VelStep') %Fit activation data to 2nd order exponential
+            % Find exponential fits
+            makefit = @(tt,p) p(:,1).*exp(p(:,2).*tt)+p(:,3).*exp(p(:,4).*tt); %2nd order exponential fit same syntax as matlab's built-in         
+            all_fits = NaN(length(traces),length(t));
+            params = NaN(2*length(traces),4);
+            dconfint = NaN(2*length(traces),4);
+            high_i = t(find(Stim==1,1,'first'));
+            low_i = t(find(Stim==0,1,'first'));
             tt = t(sub_i);
-            long_dat = CycAvg.([traces{i},'_cyc']);
-            dat = long_dat(sub_i);
-            %Stim is high
-            t_high = tt(Stim(sub_i)==1&~isnan(dat));
-            [fitobj,gof] = fit(t_high'-high_i,dat(Stim(sub_i)==1&~isnan(dat))','exp2');
-            RMSE(1,i) = gof.rmse;
-            params(i,:) = coeffvalues(fitobj);
-            dconfint(i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
-            %Stim is low
-            t_low = tt(Stim(sub_i)==0&~isnan(dat));
-            [fitobj,gof] = fit(t_low'-low_i,dat(Stim(sub_i)==0&~isnan(dat))','exp2');
-            RMSE(1,length(traces)+i) = gof.rmse;
-            params(length(traces)+i,:) = coeffvalues(fitobj);
-            dconfint(length(traces)+i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
-            %Trace fit
-            high_fit = makefit(t-high_i,params(i,1:4));
-            low_fit = makefit(t-low_i,params(length(traces)+i,1:4));
-            all_fits(i,Stim==1) = high_fit(Stim==1);
-            all_fits(i,Stim==0) = low_fit(Stim==0);
-        end    
-        tau_all = -1./params(:,[2,4]);
-        tau_all(tau_all < 0) = NaN;  
-        [tau,tau_i] = min(tau_all(:,1:2),[],2);
-        tau_conf = dconfint(:,2);
-        tau_conf(tau_i==2) = dconfint(tau_i==2,4);
-        tau(isnan(tau_conf)) = NaN;
-        tau_conf(isnan(tau)) = NaN;
-        Tau = reshape([tau';tau_conf'],1,[]);
-        max_vel = sum(params(:,[1,3]),2);
-        max_vel_conf = dconfint(:,1)+dconfint(:,3);
-        max_vel(isnan(max_vel_conf)) = NaN;
-        max_vel_conf(isnan(max_vel)) = NaN;
-        MaxVel = reshape([max_vel';max_vel_conf'],1,[]);
+            for i = 1:length(traces)               
+                long_dat = CycAvg.([traces{i},'_cyc']);
+                dat = reshape(long_dat(sub_i),1,[]);
+                %Stim is high
+                t_high = tt(Stim(sub_i)==1&~isnan(dat));
+                [fitobj,gof] = fit(t_high'-high_i,dat(Stim(sub_i)==1&~isnan(dat))','exp2');
+                RMSE(1,i) = gof.rmse;
+                params(i,:) = coeffvalues(fitobj);
+                dconfint(i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
+                %Stim is low
+                t_low = tt(Stim(sub_i)==0&~isnan(dat));
+                [fitobj,gof] = fit(t_low'-low_i,dat(Stim(sub_i)==0&~isnan(dat))','exp2');
+                RMSE(1,length(traces)+i) = gof.rmse;
+                params(length(traces)+i,:) = coeffvalues(fitobj);
+                dconfint(length(traces)+i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
+                %Trace fit
+                high_fit = makefit(t-high_i,params(i,1:4));
+                low_fit = makefit(t-low_i,params(length(traces)+i,1:4));
+                all_fits(i,Stim==1) = high_fit(Stim==1);
+                all_fits(i,Stim==0) = low_fit(Stim==0);
+            end    
+            tau_all = -1./params(:,[2,4]);
+            tau_all(tau_all < 0) = NaN;  
+            [tau,tau_i] = min(tau_all(:,1:2),[],2);
+            tau_conf = dconfint(:,2);
+            tau_conf(tau_i==2) = dconfint(tau_i==2,4);
+            tau(isnan(tau_conf)) = NaN;
+            tau_conf(isnan(tau)) = NaN;
+            Tau = reshape([tau';tau_conf'],1,[]);
+            max_vel = sum(params(:,[1,3]),2);
+            max_vel_conf = dconfint(:,1)+dconfint(:,3);
+            max_vel(isnan(max_vel_conf)) = NaN;
+            max_vel_conf(isnan(max_vel)) = NaN;
+            MaxVel = reshape([max_vel';max_vel_conf'],1,[]);
+%         else %Fit velstep to a 1st order exponential
+%             % Find exponential fits
+%             makefit = @(tt,p) p(:,1).*exp(tt.*p(:,2));
+%             all_fits = NaN(length(traces),length(t));
+%             params = NaN(2*length(traces),2);
+%             dconfint = NaN(2*length(traces),2);
+%             high_i = t(find(Stim==1,1,'first'));
+%             low_i = t(find(Stim==0,1,'first'));
+%             warning('off')
+%             for i = 1:length(traces)
+%                 tt = t(sub_i);
+%                 long_dat = CycAvg.([traces{i},'_cyc']);
+%                 dat = long_dat(sub_i);
+%                 %Stim is high
+%                 t_high = tt(Stim(sub_i)==1&~isnan(dat));
+%                 [fitobj,gof] = fit(t_high'-high_i,dat(Stim(sub_i)==1&~isnan(dat))','exp1');
+%                 RMSE(1,i) = gof.rmse;
+%                 params(i,:) = coeffvalues(fitobj);
+%                 dconfint(i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
+%                 %Stim is low
+%                 t_low = tt(Stim(sub_i)==0&~isnan(dat));
+%                 [fitobj,gof] = fit(t_low'-low_i,dat(Stim(sub_i)==0&~isnan(dat))','exp1');
+%                 RMSE(1,length(traces)+i) = gof.rmse;
+%                 params(length(traces)+i,:) = coeffvalues(fitobj);
+%                 dconfint(length(traces)+i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
+%                 %Trace fit
+%                 high_fit = makefit(t-high_i,params(i,:));
+%                 low_fit = makefit(t-low_i,params(length(traces)+i,:));
+%                 all_fits(i,Stim==1) = high_fit(Stim==1);
+%                 all_fits(i,Stim==0) = low_fit(Stim==0);
+%             end  
+%             warning('on')
+%             tau = -1./params(:,2);
+%             tau(tau < 0) = NaN;  
+%             tau_conf = dconfint(:,2);
+%             tau(isnan(tau_conf)) = NaN;
+%             tau_conf(isnan(tau)) = NaN;
+%             Tau = reshape([tau';tau_conf'],1,[]);
+%             max_vel = params(:,1);
+%             max_vel_conf = dconfint(:,1);
+%             max_vel(isnan(max_vel_conf)) = NaN;
+%             max_vel_conf(isnan(max_vel)) = NaN;
+%             MaxVel = reshape([max_vel';max_vel_conf'],1,[]);
+%         end        
         % Misalignment
         A = NaN(1,8);
         all_high_L = all_fits([3,5,1],Stim==1);
@@ -561,8 +606,7 @@ switch type
                             end
                         end
                     end
-                end
-                
+                end               
             end    
         end  
         keep_inds = CycAvg.Data_allcyc.keep_inds(:,CycAvg.keep_tr);

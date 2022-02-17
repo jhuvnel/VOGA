@@ -299,6 +299,8 @@ while ~strcmp(opts{ind},'Save') %Run until it's ready to save or just hopeless
         good_rng = 'Redo';
         if type == 1
             cyc_ax = ha(4);
+        elseif type == 2
+            cyc_ax = ha(2);
         elseif type == 3
             cyc_ax = ha(3);
         end
