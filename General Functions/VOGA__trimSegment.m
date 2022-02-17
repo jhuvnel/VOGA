@@ -11,6 +11,9 @@ fname = [Seg_Path,filesep,exp_names{indx}];
 load(fname,'Data');
 fig = plotSegment(Data);
 t = Data.Time_Eye - Data.Time_Eye(1);
+hold on
+plot(ts,sm*stim,'k','LineWidth',2) %only NKI and LDVOG
+hold off
 tot = t(end)-t(1);
 set(fig,'units','inches','position',[0 0 13 9])
 set(gca,'XLim',[t(1)-0.1*tot, t(end)+0.1*tot])
