@@ -37,4 +37,5 @@ for i = 1:length(fields)
     end
 end
 save(fname,'Data')
+close(fig);
 end
