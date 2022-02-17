@@ -11,7 +11,7 @@
 % Updated on 2022-02-14
 opts = {'Process Raw Data','Segment','Cycle Average','Summary Table',...
     'Generate Figures','Advanced'};
-advanced_opts = {'Recalibrate LDVOG','Combine Segments','Set Version'};
+advanced_opts = {'Recalibrate LDVOG','Combine Segments','Trim Segment','Set Version'};
 %Run the start procedure first
 code_Path = addVOGA;
 if VOGA__checkFolders
@@ -42,6 +42,8 @@ while tf1
                         RecalibrateRawLDVOG; 
                     case 'Combine Segments'
                         VOGA__combineSegments;
+                    case 'Trim Segment'
+                        VOGA__trimSegment;
                     case 'Set Version'
                         VOGA__setVersion;
                 end
