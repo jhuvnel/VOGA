@@ -68,7 +68,6 @@ function fig = plotSegment(Data)
         ylabel('Velocity (dps)')
         legend('Head LARP','Head RALP','Head LHRH','Eye Y','Eye Z')
     else %LDVOG and NKI
-        plot(ts,sm*stim,'k')
         hold on
         plot(te,Data.LE_Position_X,'Color',colors.l_x)
         plot(te,Data.LE_Position_Y,'Color',colors.l_y)
@@ -76,6 +75,7 @@ function fig = plotSegment(Data)
         plot(te,Data.RE_Position_X,'Color',colors.r_x)
         plot(te,Data.RE_Position_Y,'Color',colors.r_y)
         plot(te,Data.RE_Position_Z,'Color',colors.r_z)
+        plot(ts,sm*stim,'k')
         hold off
         axis([0 te(end) -20 20])
         title('Raw Angular Position')
