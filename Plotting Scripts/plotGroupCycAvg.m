@@ -349,6 +349,14 @@ if any(contains(all_results.Type,'Exponential'))
                     rel_tau(ii) = CycAvg.parameterized.(['Tau_',upper(rel_canals{ii}),'_HIGH']);
                 end
                 hold off
+                if contains(labs{i},' -')
+                    text_y_pos = -YMax;
+                else
+                    title(strrep(labs{i},[' ',num2str(rel_amp),'dps'],''))
+                    text_y_pos = -0.5*YMax;
+                end
+                rel_gain(isnan(rel_gain)) = 0;
+                rel_tau(isnan(rel_tau)) = 0;
                 text(115,text_y_pos,['Hain Product: ',num2str(round(max(rel_gain.*rel_tau),2),2)],'HorizontalAlignment','right','VerticalAlignment','bottom')
             else
                 h = gobjects(length(canals)+1,1);
@@ -359,14 +367,6 @@ if any(contains(all_results.Type,'Exponential'))
                 end
                 hold off
             end
-            if contains(labs{i},' -')
-                text_y_pos = -YMax;
-            else
-                title(strrep(labs{i},[' ',num2str(rel_amp),'dps'],''))
-                text_y_pos = -0.5*YMax;
-            end
-            rel_gain(isnan(rel_gain)) = 0;
-            rel_tau(isnan(rel_tau)) = 0;
         end
         leg_reord = [2,4,6,1,3,5,7];
         leg = legend(ha(1),h(leg_reord),leg_text(leg_reord),'NumColumns',2,'Location','northeast');
