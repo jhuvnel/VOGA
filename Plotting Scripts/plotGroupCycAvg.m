@@ -349,6 +349,7 @@ if any(contains(all_results.Type,'Exponential'))
                     rel_tau(ii) = CycAvg.parameterized.(['Tau_',upper(rel_canals{ii}),'_HIGH']);
                 end
                 hold off
+                text(115,text_y_pos,['Hain Product: ',num2str(round(max(rel_gain.*rel_tau),2),2)],'HorizontalAlignment','right','VerticalAlignment','bottom')
             else
                 h = gobjects(length(canals)+1,1);
                 h(1) = plot(NaN,NaN,'k');
@@ -366,7 +367,6 @@ if any(contains(all_results.Type,'Exponential'))
             end
             rel_gain(isnan(rel_gain)) = 0;
             rel_tau(isnan(rel_tau)) = 0;
-            text(115,text_y_pos,['Hain Product: ',num2str(round(max(rel_gain.*rel_tau),2),2)],'HorizontalAlignment','right','VerticalAlignment','bottom')
         end
         leg_reord = [2,4,6,1,3,5,7];
         leg = legend(ha(1),h(leg_reord),leg_text(leg_reord),'NumColumns',2,'Location','northeast');

@@ -1,5 +1,5 @@
 function trace_out = accel_QPR(t_in,trace_in,param)
-    if nargin < 3 || length(param)~=1 || isnan(param)
+    if nargin < 3 || length(param)~=1 || isnan(param) || all(isnan(trace_in))
         trace_out = trace_in;
     else
         %Find parts of the traces above/below the threshold and linearly
@@ -13,7 +13,11 @@ function trace_out = accel_QPR(t_in,trace_in,param)
             trace_out(nan_locs(small_gaps(i)):nan_locs(small_gaps(i)+1)) = NaN;
         end
         t_nonan = t_in(~isnan(trace_out));
-        trace_out = interp1(t_nonan,trace_out(~isnan(trace_out)),t_in);
+        if ~isempty(t_nonan)
+            trace_out = interp1(t_nonan,trace_out(~isnan(trace_out)),t_in);
+        else
+            trace_out = trace_in;
+        end
         %plot(t_in,trace_in,'k.',t_in,trace_out,'b*')
     end
 end
