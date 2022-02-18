@@ -369,15 +369,18 @@ switch type
                 RMSE(1,i) = gof.rmse;
                 params(i,:) = coeffvalues(fitobj);
                 dconfint(i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
+                high_fit = makefit(t-high_i,params(i,1:4));
                 %Stim is low
                 t_low = tt(Stim(sub_i)==0&~isnan(dat));
-                [fitobj,gof] = fit(t_low'-low_i,dat(Stim(sub_i)==0&~isnan(dat))','exp2');
-                RMSE(1,length(traces)+i) = gof.rmse;
-                params(length(traces)+i,:) = coeffvalues(fitobj);
-                dconfint(length(traces)+i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
-                %Trace fit
-                high_fit = makefit(t-high_i,params(i,1:4));
-                low_fit = makefit(t-low_i,params(length(traces)+i,1:4));
+                if length(t_low)>4
+                    [fitobj,gof] = fit(t_low'-low_i,dat(Stim(sub_i)==0&~isnan(dat))','exp2');
+                    RMSE(1,length(traces)+i) = gof.rmse;
+                    params(length(traces)+i,:) = coeffvalues(fitobj);
+                    dconfint(length(traces)+i,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
+                    low_fit = makefit(t-low_i,params(length(traces)+i,1:4));
+                else
+                    low_fit = NaN*high_fit;
+                end
                 all_fits(i,Stim==1) = high_fit(Stim==1);
                 all_fits(i,Stim==0) = low_fit(Stim==0);
             end    

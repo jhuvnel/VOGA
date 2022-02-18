@@ -241,6 +241,9 @@ if any(contains(all_results.Type,'Exponential'))
     else
         conds = unique(rel_file_parts);
     end
+    if isempty(conds)
+        conds = all_results2.Condition(1);
+    end
     enum = length(conds);
     fig_names = cell(anum,1);
     for j = 1:anum
@@ -372,7 +375,7 @@ if any(contains(all_results.Type,'Exponential'))
         ylabel(ha(1:enum:end),'Angular Velocity (dps)')
         set(ha(1:end-enum),'XTickLabel',[])
         set(ha(mod(1:2*enum,enum)~=1),'YTickLabel',[])
-        set(ha,'XLim',CycAvg.t([1,end]))
+        set(ha,'XLim',[0 120])
         set(ha(1:enum),'YLim',[-YMax/2 YMax])
         set(ha(enum+1:end),'YLim',[-YMax YMax/2])
         fig_names{j} = [Path,filesep,'Figures',filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];

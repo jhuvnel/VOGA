@@ -17,15 +17,19 @@ set(gca,'XLim',[t(1)-0.1*tot, t(end)+0.1*tot])
 good_rng = 'Redo';
 def = {num2str(t(1)),num2str(t(end))};
 while strcmp(good_rng,'Redo')
-    t_bound = inputdlg({'Start Time: ','End Time:'},'Plot settings',[1 50],def);    
-    hold on
-    h1 = xline(str2num(t_bound{1}),'LineWidth',10);
-    h2 = xline(str2num(t_bound{2}),'LineWidth',10);
-    good_rng = questdlg('Keep or redo the range?','','Keep','Redo','Redo');  
-    delete(h1)
-    delete(h2)
-    def = t_bound;
-    hold off
+    t_bound = inputdlg({'Start Time: ','End Time:'},'Plot settings',[1 50],def); 
+    if isempty(t_bound)
+       good_rng = 'Redo';
+    else
+        hold on
+        h1 = xline(str2num(t_bound{1}),'LineWidth',10);
+        h2 = xline(str2num(t_bound{2}),'LineWidth',10);
+        good_rng = questdlg('Keep or redo the range?','','Keep','Redo','Redo');  
+        delete(h1)
+        delete(h2)
+        def = t_bound;
+        hold off
+    end 
 end
 [~,t1] = min(abs(t-str2num(t_bound{1})));
 [~,t2] = min(abs(t-str2num(t_bound{2})));

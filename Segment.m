@@ -376,7 +376,7 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
         case 3
             GyroAll = GyroZ;
     end
-    if all(contains(stim_info,'VelStep')) % Velstep
+    if any(contains(stim_info,'VelStep')) % Velstep
         thresh = 50; %Adjust as needed
         thresh2 = 1; %Counts as 0.
         approx0 = find(abs(GyroAll)< thresh2);
