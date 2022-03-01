@@ -181,7 +181,7 @@ else %LDVOG and NKI
         end
         while ~strcmp(opts{ind},'Save')&&~strcmp(opts{ind},'Skip')
             if strcmp(opts{ind},'Edit Notes')
-                notes_check = inputdlg('Check Notes: ','Set VOG File Parameters',[length(w_notes),70],{strjoin(w_notes,'\n')}); 
+                notes_check = inputdlg(['Check Notes: ',newline,'Ex: RotaryChair-Sine-NoStim-LHRH-0.05Hz-100dps'],'Set VOG File Parameters',[length(w_notes),70],{strjoin(w_notes,'\n')}); 
                 if ~isempty(notes_check)
                     w_notes = cellstr(notes_check{1,1});
                     clf(fig2)

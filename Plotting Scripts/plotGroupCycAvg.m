@@ -131,17 +131,30 @@ if any(contains(all_results.Type,'Sine'))
                 if ~isempty(rel_files{i})
                     load([Cyc_Path,filesep,rel_files{i}],'CycAvg')
                     fields = fieldnames(CycAvg);
-                    if all(CycAvg.info.stim_axis == [0 0 1])||all(CycAvg.info.stim_axis == [0 0 -1])
+                    if contains(rel_files{i},{'LH','RH'})
                         rel_canals = {'lz','rz'};
-                    elseif all(CycAvg.info.stim_axis == [1 0 0])||all(CycAvg.info.stim_axis == [-1 0 0])
+                    elseif contains(rel_files{i},{'LA','RP'})
                         rel_canals = {'ll','rl'};
-                    elseif all(CycAvg.info.stim_axis == [0 1 0])||all(CycAvg.info.stim_axis == [0 -1 0])
+                    elseif contains(rel_files{i},{'RA','LP'})
                         rel_canals = {'lr','rr'};    
-                    elseif all(CycAvg.info.stim_axis == [0.707 0.707 0])||all(CycAvg.info.stim_axis == [-0.707 -0.707 0])
+                    elseif contains(rel_files{i},{'X'})
                         rel_canals = {'lx','rx'}; 
-                    elseif all(CycAvg.info.stim_axis == [0.707 -0.707 0])||all(CycAvg.info.stim_axis == [-0.707 0.707 0])
+                    elseif contains(rel_files{i},{'Y'})
                         rel_canals = {'ly','ry'}; 
+                    else
+                        rel_canals = {};
                     end
+%                     if all(CycAvg.info.stim_axis == [0 0 1])||all(CycAvg.info.stim_axis == [0 0 -1])
+%                         rel_canals = {'lz','rz'};
+%                     elseif all(CycAvg.info.stim_axis == [1 0 0])||all(CycAvg.info.stim_axis == [-1 0 0])
+%                         rel_canals = {'ll','rl'};
+%                     elseif all(CycAvg.info.stim_axis == [0 1 0])||all(CycAvg.info.stim_axis == [0 -1 0])
+%                         rel_canals = {'lr','rr'};    
+%                     elseif all(CycAvg.info.stim_axis == [0.707 0.707 0])||all(CycAvg.info.stim_axis == [-0.707 -0.707 0])
+%                         rel_canals = {'lx','rx'}; 
+%                     elseif all(CycAvg.info.stim_axis == [0.707 -0.707 0])||all(CycAvg.info.stim_axis == [-0.707 0.707 0])
+%                         rel_canals = {'ly','ry'}; 
+%                     end
                     if ~ismember('t',fields)
                         CycAvg.t = reshape((0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs),[],1);
                     else
@@ -264,14 +277,19 @@ if any(contains(all_results.Type,'Exponential'))
             end
         end
         fig_name = [common_cond,' ',num2str(rel_amp),'dps Velocity Step'];
-        if contains(conds{j},{'X','Y'})
+        if all(contains(conds,{'X','Y'}))
             leg_text = {'Head Velocity','Left X','Right X',...
                 'Left Y','Right Y','Left Z','Right Z'};
             canals = {'lx','rx','ly','ry','lz','rz'};
-        else
+        elseif all(~contains(conds,{'X','Y'}))
             leg_text = {'Head Velocity','Left LARP','Right LARP',...
                 'Left RALP','Right RALP','Left Z','Right Z'};
             canals = {'ll','rl','lr','rr','lz','rz'};
+        else
+            leg_text = {'Head Velocity','Left LARP','Right LARP',...
+                'Left RALP','Right RALP','Left Z','Right Z',...
+                'Left X','Right X','Left Y','Right Y'};
+            canals = {'ll','rl','lr','rr','lz','rz','lx','rx','ly','ry'};
         end
         figure('Units','inches','Position',[0.25    0.25   17    8],'Color',[1,1,1])
         %Title
@@ -345,8 +363,8 @@ if any(contains(all_results.Type,'Exponential'))
                 for ii = 1:length(rel_canals)
                     plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cyc_prefilt'])(s),'.','Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]),'LineWidth',1);
                     plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg_fit'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]),'LineWidth',2);
-                    rel_gain(ii) = abs(CycAvg.parameterized.(['MaxVel_',upper(rel_canals{ii}),'_HIGH'])/rel_amp);
-                    rel_tau(ii) = CycAvg.parameterized.(['Tau_',upper(rel_canals{ii}),'_HIGH']);
+                    rel_gain(ii) = abs(CycAvg.cycle_params.exp_ord1_high_params.(rel_canals{ii})(1)/rel_amp);
+                    rel_tau(ii) = CycAvg.cycle_params.exp_ord1_high_params.(rel_canals{ii})(2);
                 end
                 hold off
                 if contains(labs{i},' -')

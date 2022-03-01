@@ -19,7 +19,7 @@ def = {num2str(t(1)),num2str(t(end))};
 while strcmp(good_rng,'Redo')
     t_bound = inputdlg({'Start Time: ','End Time:'},'Plot settings',[1 50],def); 
     if isempty(t_bound)
-       good_rng = 'Redo';
+       good_rng = 'Done';
     else
         hold on
         h1 = xline(str2num(t_bound{1}),'LineWidth',10);
@@ -31,15 +31,17 @@ while strcmp(good_rng,'Redo')
         hold off
     end 
 end
-[~,t1] = min(abs(t-str2num(t_bound{1})));
-[~,t2] = min(abs(t-str2num(t_bound{2})));
-fields = fieldnames(Data);
-old_size = length(t);
-for i = 1:length(fields)
-    if any(size(Data.(fields{i}))==old_size)
-        Data.(fields{i}) = Data.(fields{i})(t1:t2);
+if strcmp(good_rng,'Keep')
+    [~,t1] = min(abs(t-str2num(t_bound{1})));
+    [~,t2] = min(abs(t-str2num(t_bound{2})));
+    fields = fieldnames(Data);
+    old_size = length(t);
+    for i = 1:length(fields)
+        if any(size(Data.(fields{i}))==old_size)
+            Data.(fields{i}) = Data.(fields{i})(t1:t2);
+        end
     end
+    save(fname,'Data')
 end
-save(fname,'Data')
 close(fig);
 end
