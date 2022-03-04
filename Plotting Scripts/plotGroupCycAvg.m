@@ -144,6 +144,8 @@ if any(contains(all_results.Type,'Sine'))
                         rel_canals = {'lx','rx'}; 
                     elseif contains(rel_files{i},{'Y'})
                         rel_canals = {'ly','ry'}; 
+                    elseif contains(rel_files{i},'RotaryChair')
+                        rel_canals = {'lz','rz'};
                     else
                         rel_canals = {};
                     end
