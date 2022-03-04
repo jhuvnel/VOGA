@@ -125,6 +125,9 @@ if any(contains(all_results.Type,'Sine'))
             x_pos = x_min:(x_wid+x_space):x_max;
             y_pos = 0.12;
             YMax_vals = NaN(1,length(length(labs)));
+            rel_gain_pos = NaN(1,length(labs));
+            rel_gain_neg = NaN(1,length(labs));
+            rel_phase = NaN(1,length(labs));
             for i = 1:length(rel_files)
                 ha(i) = subplot(1000,1000,1);
                 ha(i).Position = [x_pos(i) y_pos x_wid y_height];
@@ -144,17 +147,6 @@ if any(contains(all_results.Type,'Sine'))
                     else
                         rel_canals = {};
                     end
-%                     if all(CycAvg.info.stim_axis == [0 0 1])||all(CycAvg.info.stim_axis == [0 0 -1])
-%                         rel_canals = {'lz','rz'};
-%                     elseif all(CycAvg.info.stim_axis == [1 0 0])||all(CycAvg.info.stim_axis == [-1 0 0])
-%                         rel_canals = {'ll','rl'};
-%                     elseif all(CycAvg.info.stim_axis == [0 1 0])||all(CycAvg.info.stim_axis == [0 -1 0])
-%                         rel_canals = {'lr','rr'};    
-%                     elseif all(CycAvg.info.stim_axis == [0.707 0.707 0])||all(CycAvg.info.stim_axis == [-0.707 -0.707 0])
-%                         rel_canals = {'lx','rx'}; 
-%                     elseif all(CycAvg.info.stim_axis == [0.707 -0.707 0])||all(CycAvg.info.stim_axis == [-0.707 0.707 0])
-%                         rel_canals = {'ly','ry'}; 
-%                     end
                     if ~ismember('t',fields)
                         CycAvg.t = reshape((0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs),[],1);
                     else
@@ -183,13 +175,21 @@ if any(contains(all_results.Type,'Sine'))
                         plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s) - CycAvg.([canals{ii},'_cycstd'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]))
                         h(ii+1) = plot(CycAvg.t(s),CycAvg.([canals{ii},'_cycavg'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',2);
                     end
+                    gain_pos = NaN(1,length(rel_canals));
+                    gain_neg = NaN(1,length(rel_canals));               
                     for ii = 1:length(rel_canals)
                         fill([CycAvg.t(s)',fliplr(CycAvg.t(s)')],[CycAvg.([rel_canals{ii},'_cycavg'])(s)-CycAvg.([rel_canals{ii},'_cycstd'])(s),fliplr((CycAvg.([rel_canals{ii},'_cycavg'])(s)+CycAvg.([rel_canals{ii},'_cycstd'])(s)))],colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2),'_s']))
                         plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg'])(s) + CycAvg.([rel_canals{ii},'_cycstd'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]))
                         plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg'])(s) - CycAvg.([rel_canals{ii},'_cycstd'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]))
                         plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]),'LineWidth',2);
+                        gain_pos(ii) = CycAvg.parameterized.(['Gain_',upper(rel_canals{ii}),'_HIGH']);
+                        gain_neg(ii) = CycAvg.parameterized.(['Gain_',upper(rel_canals{ii}),'_LOW']);
                     end
                     hold off
+                    phase = [CycAvg.parameterized.Phase_L,CycAvg.parameterized.Phase_R];
+                    rel_gain_pos(i) = max(gain_pos);
+                    rel_gain_neg(i) = max(gain_neg);
+                    rel_phase(i) = mean(phase);                    
                 else
                     h = gobjects(length(canals)+1,1);
                     h(1) = plot(NaN,NaN,'k');
@@ -220,6 +220,17 @@ if any(contains(all_results.Type,'Sine'))
                 YLim = [-YMax YMax];
             end
             set(ha,'YLim',YLim)
+            for i = 1:length(rel_files)
+                if ~isempty(rel_files{i})
+                    axes(ha(i))
+                    XLim = get(gca,'XLim');
+                    YLim = get(gca,'YLim');
+                    text(0.99*diff(XLim)+XLim(1),YLim(1),['Gain POS: ',num2str(round(rel_gain_pos(i),2),2),newline,...
+                        'Gain NEG: ',num2str(round(rel_gain_neg(i),2),2),newline,...
+                        'Phase (deg): ',num2str(rel_phase(i),2)],...
+                        'HorizontalAlignment','right','VerticalAlignment','bottom')
+                end
+            end           
             fig_names{j} = [Path,filesep,'Figures',filesep,'CycleAverages_',strrep(fig_name,' ','-'),'.fig'];
             savefig(fig_names{j})
             close;
@@ -361,7 +372,7 @@ if any(contains(all_results.Type,'Exponential'))
                     h(ii+1) = plot(CycAvg.t(s),CycAvg.([canals{ii},'_cyc'])(s),'Color',colors.([canals{ii}(1),'_',canals{ii}(2)]),'LineWidth',1);
                 end
                 for ii = 1:length(rel_canals)
-                    plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cyc_prefilt'])(s),'.','Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]),'LineWidth',1);
+                    plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cyc_prefilt'])(s),'.','Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2),'_s']),'LineWidth',1);
                     plot(CycAvg.t(s),CycAvg.([rel_canals{ii},'_cycavg_fit'])(s),'Color',colors.([rel_canals{ii}(1),'_',rel_canals{ii}(2)]),'LineWidth',2);
                     rel_gain(ii) = abs(CycAvg.cycle_params.exp_ord1_high_params.(rel_canals{ii})(1)/rel_amp);
                     rel_tau(ii) = CycAvg.cycle_params.exp_ord1_high_params.(rel_canals{ii})(2);
