@@ -32,7 +32,7 @@ if isempty(res_file)
     MakeCycleSummaryTable(Path,Cyc_Path,rerun);
     res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 end
-load(res_file{end},'all_results')
+load([Path,filesep,res_file{end}],'all_results')
 %% Sine
 if any(contains(all_results.Type,'Sine'))
     all_results2 = all_results(contains(all_results.Type,'Sine'),:);
@@ -227,7 +227,7 @@ if any(contains(all_results.Type,'Sine'))
                     YLim = get(gca,'YLim');
                     text(0.99*diff(XLim)+XLim(1),YLim(1),['Gain POS: ',num2str(round(rel_gain_pos(i),2),2),newline,...
                         'Gain NEG: ',num2str(round(rel_gain_neg(i),2),2),newline,...
-                        'Phase (deg): ',num2str(rel_phase(i),2)],...
+                        'Phase (deg): ',num2str(round(rel_phase(i),0),3)],...
                         'HorizontalAlignment','right','VerticalAlignment','bottom')
                 end
             end           
