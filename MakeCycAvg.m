@@ -314,12 +314,12 @@ line_wid.bold = 2;
             'ListSize',[150 180],...
             'ListString',opts,...
             'Position',[screen_size(3)-4,screen_size(4)-3.75,3,3.75]);
-        sel = opts{ind};
         if tf2 == 0 %Treat this like an exit
             CycAvg = [];
             analyzed = 0;
             return;
         end
+        sel = opts{ind};
     end
     %% Create to Save
     CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);

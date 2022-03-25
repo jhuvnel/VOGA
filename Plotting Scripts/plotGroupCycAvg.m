@@ -730,18 +730,6 @@ if any(contains(all_results.Type,'Impulse'))
                         trace = canals{ii};                       
                          h(ii+1) = plot(NaN,NaN,'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
                     end                   
-%                     for ii = 1:length(canals)
-%                         trace = canals{ii};                       
-%                         h(ii+1) = plot(NaN,NaN,'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
-%                         if isfield(CycAvg,[trace,'_cyc_prefilt'])
-%                             leg_ind(ii+1) = true;
-%                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_prefilt']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
-%                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);                        
-%                         elseif isfield(CycAvg,[trace,'_cyc'])
-%                             leg_ind(ii+1) = true;
-%                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);                        
-%                         end
-%                     end 
                     gain = NaN(1,length(rel_canals));
                     lat = NaN(1,length(rel_canals));
                     for ii = 1:length(rel_canals)
@@ -758,11 +746,10 @@ if any(contains(all_results.Type,'Impulse'))
                         xline(CycAvg.stim_start,'k','LineWidth',2)
                         xline(CycAvg.stim_end,'k','LineWidth',2)
                         xline(CycAvg.trace_start,'k--','LineWidth',2)
-%                         saccades = [CycAvg.cycle_params.Saccade1;CycAvg.cycle_params.Saccade2]/1000+CycAvg.stim_start;
-%                         saccades(isnan(saccades)) = [];
-%                         if ~isempty(saccades)
-%                             plot(saccades,0.98*YMax*ones(1,length(saccades)),'k*') 
-%                         end
+                        saccades = CycAvg.cycle_params.Saccades/1000+CycAvg.stim_start;
+                        if ~isempty(saccades)
+                            plot(saccades,0.98*YMax*ones(1,length(saccades)),'k*') 
+                        end
                     end                    
                     hold off
                     text(0.99*CycAvg.t(end),-YMax/2,['Gain: ',num2str(mean(gain,'omitnan'),2),newline,'Latency (ms): ',num2str(round(mean(lat,'omitnan')),3)],'HorizontalAlignment','right','VerticalAlignment','bottom')
@@ -882,18 +869,6 @@ if any(contains(all_results.Type,'Impulse'))
                     h(1) = plot(NaN,NaN,'k','LineWidth',1);
                     hold on
                     plot(CycAvg.t,invh*CycAvg.stim,'k','LineWidth',0.5);
-%                     for ii = 1:length(canals)
-%                         trace = canals{ii};
-%                         h(ii+1) = plot(NaN,NaN,'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
-%                         if isfield(CycAvg,[trace,'_cyc_prefilt'])
-%                             leg_ind(ii+1) = true;
-%                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc_prefilt']),'Color',colors.([trace(1),'_',trace(2),'_s']),'LineWidth',0.5);
-%                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2),'']),'LineWidth',1);                  
-%                         elseif isfield(CycAvg,[trace,'_cyc'])
-%                             leg_ind(ii+1) = true;
-%                             plot(CycAvg.t,inve*CycAvg.([trace,'_cyc']),'Color',colors.([trace(1),'_',trace(2)]),'LineWidth',1);
-%                         end
-%                     end  
                     gain = NaN(1,length(rel_canals));
                     lat = NaN(1,length(rel_canals));
                     %Plot the most salient canal again
@@ -912,6 +887,10 @@ if any(contains(all_results.Type,'Impulse'))
                         xline(CycAvg.stim_start,'k','LineWidth',2)
                         xline(CycAvg.stim_end,'k','LineWidth',2)
                         xline(CycAvg.trace_start,'k--','LineWidth',2)
+                        saccades = CycAvg.cycle_params.Saccades/1000+CycAvg.stim_start;
+                        if ~isempty(saccades)
+                            plot(saccades,0.98*YMax*ones(1,length(saccades)),'k*') 
+                        end
                     end
                     hold off
                     text(0.99*CycAvg.t(end),-YMax/2,['Gain: ',num2str(mean(gain,'omitnan'),2),newline,'Latency (ms): ',num2str(round(mean(lat,'omitnan')),3)],'HorizontalAlignment','right','VerticalAlignment','bottom')
