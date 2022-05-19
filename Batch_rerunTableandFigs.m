@@ -9,3 +9,4 @@ for i = 1:length(folders)
     RerunTableandFigs(folders{i})
     close all;
 end
+disp('DONE!')

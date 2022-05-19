@@ -23,7 +23,7 @@ function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
 % Pulses (pps)
 % PhaseDur (us)
 % CurrAmp (uA)
-fname = strrep(strrep(CycAvg.name,'CycAvg_',''),'.mat','');
+fname = strrep(strrep(strrep(CycAvg.name,'CycAvg_',''),'.mat',''),'_CycAvg','');
 if contains(fname,'_Updated')
     und = strfind(fname,'_');
     fname = fname(1:und(1)-1);
