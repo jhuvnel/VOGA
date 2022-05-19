@@ -191,7 +191,8 @@ if any(contains(all_results.Type,'Sine'))
                     phase = [CycAvg.parameterized.Phase_L,CycAvg.parameterized.Phase_R];
                     rel_gain_pos(i) = max(gain_pos);
                     rel_gain_neg(i) = max(gain_neg);
-                    rel_phase(i) = mean(phase);                    
+                    rel_phase(i) = mean(phase);    
+                    set(gca,'XLim',[0,CycAvg.t(end)])
                 else
                     h = gobjects(length(canals)+1,1);
                     h(1) = plot(NaN,NaN,'k');
@@ -213,8 +214,7 @@ if any(contains(all_results.Type,'Sine'))
                     leg_pos = leg.Position; %legend position
                     perc_pos = ((y_height+y_pos)-leg_pos(2))/y_height; %percentage of the axes that are just the legend
                     YMax_vals(i) = max(max_eyevel)*0.5/(0.5-perc_pos);
-                end
-                set(gca,'XLim',[0,CycAvg.t(end)])
+                end                
             end
             if isempty(YMax)
                 YLim = [-1 1]*ceil(1.1*max(YMax_vals)/10)*10; %Round up to the nearest 10;
