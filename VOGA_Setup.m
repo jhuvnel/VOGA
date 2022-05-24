@@ -3,6 +3,6 @@
 addVOGA
 copyfile('addVOGA.m',userpath)
 % Set the new version or make the VOGA_VerInfo.txt if it doesn't exist
-current_ver = 'v4.8.2';
+current_ver = 'v4.8.3';
 VOGA__setVersion(current_ver);
 VOGA__saveLastUsedParams;

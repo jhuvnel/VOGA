@@ -90,7 +90,11 @@ if any(contains(all_results.Type,'Sine'))
         for i = 1:length(labs)
             files = cyc_files(sum(ismember(file_parts,[split(conds(j));split(labs(i))]'),2)==length([split(conds(j));split(labs(i))]));
             if ~isempty(files)
-                rel_files(i) = files;
+                if length(files)==1
+                    rel_files(i) = files;
+                else
+                    rel_files(i) = files(end);
+                end
             end
         end
         %Only plot if there are more than two CycAvg for the
