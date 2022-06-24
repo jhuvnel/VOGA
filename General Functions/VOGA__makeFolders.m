@@ -26,6 +26,9 @@ function VOGA__makeFolders(Path)
     if ~any(contains(path_folders,'Figures'))
         mkdir('Figures')
     end
+    if ~any(contains(path_folders,'CRFs'))
+        mkdir('CRFs')
+    end
     if ~strcmp(start_path,Path)
         cd(start_path)
     end

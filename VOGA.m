@@ -10,7 +10,7 @@
 % Written by Andrianna Ayiotis
 % Updated on 2022-02-14
 opts = {'Process Raw Data','Segment','Cycle Average','Summary Table',...
-    'Generate Figures','Advanced'};
+    'Generate Figures','CRF','Advanced'};
 advanced_opts = {'Recalibrate LDVOG','Combine Segments','Trim Segment','Set Version'};
 %Run the start procedure first
 code_Path = addVOGA;
@@ -32,6 +32,8 @@ while tf1
             VOGA__SummaryTable;
         case 'Generate Figures'
             VOGA__makePlots;
+        case 'CRF'
+            VOGA__CRF;
         case 'Advanced'
             [ind2,tf2] = nmlistdlg('PromptString','Select an action:','SelectionMode','single',...
                        'ListSize',[150 125],'ListString',advanced_opts); 
