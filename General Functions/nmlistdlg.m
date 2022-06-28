@@ -213,7 +213,9 @@ try
     %(the box would disappear and cancel before user selection but it still
     %worked on her lab PC). May need to change from ispc in the future based
     %on other computers
-    if contains(version,'2021a')
+    % In June of 2022 AIA realized she would need it to work for future
+    % versions too.
+    if contains(version,'R202')
         c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely(true);
     else
         c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely();
