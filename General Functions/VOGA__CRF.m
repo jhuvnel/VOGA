@@ -18,9 +18,15 @@ Cyc_Path = [Path,filesep,'Cycle Averages'];
 Fig_Path = [Path,filesep,'Figures'];
 CRF_Path = [Path,filesep,'CRFs'];
 rel_tab = extractfield(dir([Path,filesep,'*Results.mat']),'name');
-if isempty(rel_tab)
-    disp('No Results.mat table has been generated yet. Please complete analysis first or create the CRF manually.')
+rel_xml = extractfield(dir([Path,filesep,'*.xml']),'name');
+if isempty(rel_tab) && isempty(rel_xml)
+    disp('Folder not detected as Maestro results and no Results.mat table has been generated yet.')
+    disp('Please complete analysis first or create the CRF manually.')
     return;
+elseif isempty(rel_tab) %No rel tab but XML files so this is a Maestro folder
+     plotIFT_fromXML(Path)
+     disp('Items for the CRF are now in the folder')
+     return;
 end
 load([Path,filesep,rel_tab{end}],'all_results')
 all_rawfiles = cell(size(all_results,1),1);
