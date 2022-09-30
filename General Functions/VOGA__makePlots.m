@@ -1,9 +1,6 @@
 function VOGA__makePlots
     code_Path = [userpath,filesep,'VOGA'];
     params.Path = cd;
-    params.Raw_Path = [cd,filesep,'Raw Files'];
-    params.Seg_Path = [cd,filesep,'Segmented Files'];
-    params.Cyc_Path = [cd,filesep,'Cycle Averages'];
     params.code_Path = code_Path;
     % Get version and experimenter info from the file
     if ~any(contains(extractfield(dir(userpath),'name'),'VOGA_VerInfo.txt'))
@@ -22,6 +19,14 @@ function VOGA__makePlots
                        'ListSize',[150 125],...
                        'ListString',opts);  
     while tf
+        %Expect to be in a visit folder with the right structure
+        if ~VOGA__checkFolders(0)&&contains(opts{ind},{'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized','Sphere Plot'})
+            error('Expected folder structure not present. Navigate to appropriate folder before trying again.')
+        elseif contains(opts{ind},{'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized','Sphere Plot'})
+            params.Raw_Path = [cd,filesep,'Raw Files'];
+            params.Seg_Path = [cd,filesep,'Segmented Files'];
+            params.Cyc_Path = [cd,filesep,'Cycle Averages'];
+        end
         if strcmp(opts{ind},'Raw VOG')
             in_args = inputdlg({'Plot eye movements (0/1): ','Plot head movement in XYZ or LRZ (xyz/lrz):'},'Plot settings',[1 50],{'0','lrz'});
             if ~isempty(in_args)
@@ -58,8 +63,8 @@ function VOGA__makePlots
             plotGroupCycAvg(params);            
         elseif strcmp(opts{ind},'Parameterized')  
             plotParamResults(params);
-        elseif strcmp(opts{ind},'Across Subjects') %So far only Rotary Chair
-            plotRotaryChairDSMB;
+        elseif strcmp(opts{ind},'Across Subjects') 
+            plotSummaryFigures(params);
         elseif strcmp(opts{ind},'Sphere Plot')  
             in_args = inputdlg({'Descriptive annotation on figure (0/1): '},'Plot settings',[1 50],{'1'});
             if ~isempty(in_args)
