@@ -1,3 +1,4 @@
+
 %% MakeCycAvg.m
 % This function was created to automate the data analysis pipeline for the
 % LDVOG data sets as much as possible.
@@ -5,6 +6,7 @@
 
 function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,from_file)
 %% General Setup
+% test
 clc;
 % Plot defaults
 all_traces = {'LX','RX','LY','RY','LZ','RZ','LLARP','RLARP','LRALP','RRALP'};
