@@ -7,6 +7,9 @@ Cyc_Path = params.Cyc_Path;
 code_Path = params.code_Path;
 version = params.version;
 Experimenter = params.Experimenter;
+sub_info = params.sub_info;
+Subs = sub_info{:,1};
+Ears = sub_info{:,2};
 if isfield(params,'annot')
     annot = params.annot;
 else
@@ -22,11 +25,6 @@ end
 close all;
 load('VNELcolors.mat','colors')
 code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
-warning('off')
-sub_info = readtable('SubjectInfo.xlsx');
-warning('on')
-Subs = sub_info{:,1};
-Ears = sub_info{:,2};
 % Load table in question
 res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 if isempty(res_file)

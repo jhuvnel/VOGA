@@ -490,11 +490,11 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
                     i1 = find(t1 < 0);
                     keep(i1(end)) = true;
                 end
-                start = seg_start(keep);
-                ends = seg_end(keep);
+                start = round(seg_start(keep));
+                ends = round(seg_end(keep));
             else
-                start = seg_start;
-                ends = seg_end;
+                start = round(seg_start);
+                ends = round(seg_end);
             end
             plot(NaN,NaN)
             hold on
