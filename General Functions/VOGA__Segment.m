@@ -1,4 +1,11 @@
-function VOGA__Segment
+function end_flag = VOGA__Segment
+if ~VOGA__checkFolders(0)
+    disp('Folder structure not present. Generate folders, and process raw data" first.')
+    end_flag = true;
+    return;
+else
+    end_flag = false;
+end
 Raw_Path = [cd,filesep,'Raw Files'];
 Seg_Path = [cd,filesep,'Segmented Files'];
 file_names = extractfield(dir(Raw_Path),'name');

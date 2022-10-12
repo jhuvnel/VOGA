@@ -9,25 +9,23 @@
 %
 % Written by Andrianna Ayiotis
 % Updated on 2022-02-14
-opts = {'Process Raw Data','Segment','Cycle Average','Summary Table',...
+opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average','Summary Table',...
     'Generate Figures','CRF','Advanced'};
 advanced_opts = {'Recalibrate LDVOG','Combine Segments','Trim Segment','Set Version'};
 %Run the start procedure first
 code_Path = addVOGA;
-if VOGA__checkFolders
-    disp('VOGA instance ended.')
-    return;
-end
 resp1 = '';
 tf1 = 1;
 while tf1
     switch resp1
+        case 'Generate Folders'
+            VOGA__makeFolders;
         case 'Process Raw Data'
-            VOGA__ProcessRawData;
+            end_flag = VOGA__ProcessRawData;
         case 'Segment'
-            VOGA__Segment;
+            end_flag = VOGA__Segment;
         case 'Cycle Average'
-            VOGA__CycAvg;
+            end_flag = VOGA__CycAvg;
         case 'Summary Table'
             VOGA__SummaryTable;
         case 'Generate Figures'
