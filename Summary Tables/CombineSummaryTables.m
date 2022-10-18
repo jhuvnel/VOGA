@@ -55,12 +55,11 @@ if contains(type,'One Visit')
             sub = subs(contains(subs,'MVI'));
             all_results.Subject = repmat(sub(end),length(all_results.Subject),1);
         end
-        exp_types = join(unique(all_results.Experiment,'stable'),'-');
-        fname = [Path,filesep,subject,'_',vis,'_',exp_types{:}];
+        fname = [Path,filesep,subject,'_',vis,'_VOG'];
         delete([Path,filesep,'*Results.mat']) %Remove outdated versions
-        save([fname,'_Results.mat'],'all_results')
+        save([fname,'Results.mat'],'all_results')
         delete([Path,filesep,'*Param.mat']) %Remove outdated versions
-        save([fname,'_CycParam.mat'],'cyc_params')
+        save([fname,'CycParam.mat'],'cyc_params')
     else
         all_results = [];
         cyc_params = [];
@@ -100,12 +99,11 @@ elseif contains(type,'All Visits')
             sub = subs(contains(subs,'MVI'));
             all_results.Subject = repmat(sub(1),length(all_results.Subject),1);
         end
-        exp_types = join(unique(all_results.Experiment,'stable'),'-');
-        fname = [Path,filesep,subject,'_',exp_types{:}];
+        fname = [Path,filesep,subject,'_VOG'];
         delete([Path,filesep,'*Results.mat']) %Remove outdated versions
-        save([fname,'_Results.mat'],'all_results')
+        save([fname,'Results.mat'],'all_results')
         delete([Path,filesep,'*Param.mat']) %Remove outdated versions
-        save([fname,'_CycParam.mat'],'cyc_params')
+        save([fname,'CycParam.mat'],'cyc_params')
     end
 elseif contains(type,'All Subjects')    
     sub_folds = extractfield(dir(Path),'name',extractfield(dir(Path),'isdir')...
@@ -132,10 +130,9 @@ elseif contains(type,'All Subjects')
     if ~isempty(vertcat(tabs{:}))
         all_results = vertcat(tabs{:});
         cyc_params = vertcat(params{:});
-        exp_types = join(unique(all_results.Experiment,'stable'),'-');
-        fname = [Path,filesep,'ALLMVI_',exp_types{:}];
-        delete([Path,filesep,'*Results.mat']) %Remove outdated versions
-        save([fname,'_Results.mat'],'all_results')
+        fname = [Path,filesep,'ALLMVI-VOG'];
+        delete([Path,filesep,'*VOGResults.mat']) %Remove outdated versions
+        save([fname,'Results.mat'],'all_results')
     end
 end
 end
