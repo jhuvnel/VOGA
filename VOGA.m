@@ -1,21 +1,25 @@
 %% VOGA.m
-% This script should be used to segment, filter data, select cycles, and
-% parameterize batches of files. 
-% To initialize after MATLAB has restarted, make sure all folders and
-% subfolders within the "VOGA" folder are on the path by running "addVOGA."
+% Video Oculography Analyzer (VOGA)
+%
+% This script should be used to connect raw files with metadata, segment,
+% filter, select cycles, parameterize, and plot batches of files
+% containing VOG data. 
 % To analyze data, navivate to the path with the Raw File, Segmented Files,
 % and Cycle Average folders and then run "VOGA." Click cancel to end the
 % loop.
-%
-% Written by Andrianna Ayiotis
-% Updated on 2022-02-14
-opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average','Summary Table',...
-    'Generate Figures','CRF','Advanced'};
-advanced_opts = {'Recalibrate LDVOG','Combine Segments','Trim Segment','Set Version'};
-%Run the start procedure first
-code_Path = addVOGA;
+%Current version of VOGA - Changed with each GitHub committ
+current_ver = 'v4.11.0';
+%VOGA Menu Options
+opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average',...
+    'Summary Table','Generate Figures','CRF','Advanced'};
+advanced_opts = {'Automatic VOG Analysis','Recalibrate LDVOG','Combine Segments',...
+    'Trim Segment','Set Version'};
 resp1 = '';
 tf1 = 1;
+%Run the start procedure first--will make the files needed if they don't
+%exist yet
+VOGA__setVersion(current_ver,0);
+VOGA__saveLastUsedParams;
 while tf1
     switch resp1
         case 'Generate Folders'
@@ -38,6 +42,8 @@ while tf1
             if tf2
                 resp2 = advanced_opts{ind2};
                 switch resp2
+                    case 'Automatic VOG Analysis'
+                        VOGA__automaticAnalysis;
                     case 'Recalibrate LDVOG'
                         RecalibrateRawLDVOG; 
                     case 'Combine Segments'
@@ -45,7 +51,7 @@ while tf1
                     case 'Trim Segment'
                         VOGA__trimSegment;
                     case 'Set Version'
-                        VOGA__setVersion;
+                        VOGA__setVersion(current_ver,1);
                 end
             end           
     end
