@@ -133,7 +133,7 @@ elseif contains(type,'All Subjects')
         all_results = vertcat(tabs{:});
         cyc_params = vertcat(params{:});
         exp_types = join(unique(all_results.Experiment,'stable'),'-');
-        fname = [Path,filesep,'AllMVI_',exp_types{:}];
+        fname = [Path,filesep,'ALLMVI_',exp_types{:}];
         delete([Path,filesep,'*Results.mat']) %Remove outdated versions
         save([fname,'_Results.mat'],'all_results')
     end
