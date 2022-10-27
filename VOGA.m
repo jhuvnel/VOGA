@@ -8,12 +8,12 @@
 % and Cycle Average folders and then run "VOGA." Click cancel to end the
 % loop.
 %Current version of VOGA - Changed with each GitHub committ
-current_ver = 'v4.11.0';
+current_ver = 'v4.12.0';
 %VOGA Menu Options
 opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average',...
     'Summary Table','Generate Figures','CRF','Advanced'};
 advanced_opts = {'Automatic VOG Analysis','Recalibrate LDVOG','Combine Segments',...
-    'Trim Segment','Set Version'};
+    'Trim Segment','Rename Files','Set Version'};
 resp1 = '';
 tf1 = 1;
 %Run the start procedure first--will make the files needed if they don't
@@ -50,6 +50,8 @@ while tf1
                         VOGA__combineSegments;
                     case 'Trim Segment'
                         VOGA__trimSegment;
+                    case 'Rename Files'
+                        VOGA__RenameFiles;
                     case 'Set Version'
                         VOGA__setVersion(current_ver,1);
                 end

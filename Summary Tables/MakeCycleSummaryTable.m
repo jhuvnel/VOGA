@@ -7,7 +7,7 @@
 %This version takes in all CycAvg types that have been defined and saves a
 %table for each
 
-function all_results = MakeCycleSummaryTable(out_path,Cyc_Path,rerun)
+function [all_results,cyc_params] = MakeCycleSummaryTable(out_path,Cyc_Path,rerun)
     if nargin < 1
         out_path = cd;
     end
@@ -62,6 +62,7 @@ function all_results = MakeCycleSummaryTable(out_path,Cyc_Path,rerun)
         else
             disp(['No Cycle Average Files found in this directory: ',Cyc_Path])
             all_results = [];
+            cyc_params = [];
             return;
         end
     end       

@@ -20,13 +20,11 @@ while tf % Run until the user selects cancel
     if ~any(contains(extractfield(dir(userpath),'name'),'VOGA_VerInfo.txt'))
         VOGA__setVersion;
     end
-    data = readtable('VOGA_VerInfo.txt','ReadVariableNames',false);
+    data = readtable([userpath,filesep,'VOGA_VerInfo.txt'],'ReadVariableNames',false);
     params.version = data{1,2}{:};
     params.Experimenter = data{2,2}{:}; 
     % Get subject info
-    warning('off')
     sub_info = readtable('SubjectInfo.xlsx');
-    warning('on')
     params.sub_info = sub_info;
     %Add the plot parameters
     params.annot = str2double(plot_params{1});
