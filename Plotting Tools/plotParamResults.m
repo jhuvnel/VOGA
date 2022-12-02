@@ -32,7 +32,7 @@ if isempty(res_file)
     MakeCycleSummaryTable(Path,Cyc_Path,rerun);
     res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 end
-load(res_file{end},'all_results')
+load([Path,filesep,res_file{end}],'all_results')
 if any(contains(all_results.Type,'Sine'))
     %% Sinusoids
     all_canals = {'LARP','RALP','LHRH','Y','X'}; %Preferred order

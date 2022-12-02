@@ -1,151 +1,81 @@
-function end_flag = VOGA__ProcessRawData
-if ~VOGA__checkFolders(1)
-    disp('VOGA instance ended.') %Only way to get here is if you hit "Exit" on the dialogue
-    end_flag = true;
-    return;
-else
-    end_flag = false;
+function flag = VOGA__ProcessRawData(Path)
+if nargin < 1
+    Path = cd;
 end
-%Make Notes Files, edit notes files and edit VOG trigger if needed
-Path = cd;
-Raw_Path = [cd,filesep,'Raw Files'];
-%% Move Files into a Workable State
-%% NKI/NL
-%Transfer NKI Raw Files from their subfolders if they exist
-NKIfold = extractfield(dir(Raw_Path),'name',find(extractfield(dir(Raw_Path),'isdir')));
-NKIfold(contains(NKIfold,{'.','trash','Trash','TRASH','archive','Archive','ARCHIVE'})) = []; %ignore the invisible directories and anything labelled trash/archive
-if isempty(NKIfold) %No NKI folders
+if ~VOGA__makeFolders(Path)
     return;
 end
-for i = 1:length(NKIfold)
-    dat_file = extractfield(dir([Raw_Path,filesep,NKIfold{i},filesep,'*Test.dat']),'name');
-    avi_file = extractfield(dir([Raw_Path,filesep,NKIfold{i},filesep,'*Test.avi']),'name');
-    for j = 1:length(dat_file)
-        movefile([Raw_Path,filesep,NKIfold{i},filesep,dat_file{j}],[Raw_Path,filesep,NKIfold{i},'_',dat_file{j}]);
-    end
-    for j = 1:length(avi_file)
-        movefile([Raw_Path,filesep,NKIfold{i},filesep,avi_file{j}],[Raw_Path,filesep,NKIfold{i},'_',avi_file{j}]);
-    end
-end 
-%% Split and move GNO files into Raw Files
-names = extractfield(dir(Path),'name')';
-isfold = extractfield(dir(Path),'isdir')';
-% See if there are any relevant files/folders at all on the path
-if ~any(contains(names,{'.txt','.xml','.csv','.avi','video'}))
-    disp('No GNO file types detected.')
-    return;
-end    
-deidentify_dat = questdlg('Do the file names need to be de-identified?','','Yes','No','No');
-if isempty(deidentify_dat)
-    disp('Ending GNO file transfer process.')
-    return;
-elseif strcmp(deidentify_dat,'Yes')
-    deidentify = 1;
-    rm_string = inputdlg('Enter the subject name to deidentify (including the _ in the middle):');
-    if isempty(rm_string)|| isempty(rm_string{:})
-        disp('Ending GNO file transfer process.')
-        return;
+Raw_Path = [Path,filesep,'Raw Files'];
+%% Handle folders in the main path
+fold_Path = extractfield(dir(Path),'name',extractfield(dir(Path),'isdir'));
+fold_Path(contains(lower(fold_Path),{'archive','trash','.'})) = [];
+fold_Path(contains(fold_Path,{'Raw Files','Segmented Files','Cycle Averages','Figures','CRFs'})) = []; %Expected folders
+for i = 1:length(fold_Path)
+    if contains(lower(fold_Path{i}),'video') %GNO videos, move the videos in Raw Files
+        movefile([Path,filesep,fold_Path{i},filesep,'*'],Raw_Path)
+        rmdir([Path,filesep,fold_Path{i}])
+    elseif contains(lower(fold_Path{i}),'calibration') %ESC and sometimes LDVOG, move the whole folder
+        movefile([Path,filesep,fold_Path{i}],[Raw_Path,filesep,fold_Path{i}])
+    elseif ~isempty(dir([Path,filesep,fold_Path{i},filesep,'*.dat'])) %Detect NKI/NL folder by the presence of .dat files
+        collapseFolder(Path,fold_Path{i})
+    elseif contains(Path,'ESC') %ESC3 has a lot of folders
+        collapseFolder(Path,fold_Path{i})
     else
-        rm_string = rm_string{:};
+        disp(['Unclear how to process folder: ',fold_Path{i}])
     end
-else
-    deidentify = 0;
 end
-% Move video files
-if any(contains(names,'video')&isfold)
-    dir_names = names(contains(names,'video')&isfold);
-    disp('Moving videos now')
-    for i = 1:length(dir_names)
-        cd([Path,filesep,dir_names{i}])
-        movefile('*',Path) %Move everything to the root directory
-        cd(Path)
-        rmdir([Path,filesep,dir_names{i}])
-    end
-elseif any(contains(names,'.avi'))  
-    disp('No video folder found but video files have been found.')
-else
-    disp('No video folder or files are present')
-end
-% Break up text/xml/csv files
-file_check = {'Processed','Lateral','LARP','RALP'};
-all_ext = {'.txt','.xml','.csv','.avi'};
-for j = 1:3
-    ext = all_ext{j};
-    if any(contains(names,ext)&~contains(names,file_check))
-        disp(['Parsing ',ext,' files now...'])
-        fnames = names(contains(names,ext)&~contains(names,file_check))';
-        for i = 1:length(fnames)
-            fname = fnames{i};
-            splitGNOfile(Path,fname,deidentify)
-            movefile(fname,['Processed_',fname]) %Add this prefix to not redo files that have already been processed
+%% Handle files in the main path 
+file_Path = extractfield(dir(Path),'name',~extractfield(dir(Path),'isdir'));
+file_Path(contains(file_Path,{'thumbs.db','DS_Store'})) = [];
+if ~isempty(file_Path)
+    num_dash = cellfun(@length,strfind(file_Path,'_')); %GNO files have exactly 7 _ in the file names
+    file_check = {'Processed','Lateral','LARP','RALP'}; %GNO pre-processed files, ready to be moved
+    GNO_ext = {'.txt','.xml','.csv','.avi'};
+    if contains(Path,'ESC') %detect ESC files by this convention
+        % For the 2016-2022 files, the data files don't yet have the .mat
+        % extension needed to open them
+        for j = 1:length(file_Path)
+            rel_file = file_Path{j};
+            ext = rel_file(find(rel_file=='.',1,'last')+1:end);
+            if ~all(ismember(lower(ext),'abcdefghijklmnopqrstuvwxyz')) %not valid file extenstion
+                movefile([Path,filesep,rel_file],[Path,filesep,rel_file,'.mat'])
+            end
         end
-    elseif any(contains(names,ext)&contains(names,file_check))
-        disp(['All ',ext,' files appear to have already been processed and are being moved to Raw Files'])    
-    else
-        disp(['No ',ext,' files found'])
+        rel_file = extractfield(dir(Path),'name',~extractfield(dir(Path),'isdir'));
+        for j = 1:length(rel_file)
+            movefile([Path,filesep,rel_file{j}],[Raw_Path,filesep,rel_file{j}])
+        end
+    elseif any((num_dash==7|(num_dash==8&contains(file_Path,file_check)))&contains(file_Path,GNO_ext))||contains(Path,'GNO')
+        rel_file = file_Path(num_dash==7&contains(file_Path,GNO_ext)); %Just focus on splitting the files first
+        rel_file(contains(rel_file,'.avi')) = []; %Nothing to do with videos
+        disp('Splitting GNO files.')
+        for j = 1:length(rel_file)
+            disp(['File ',num2str(j),'/',num2str(length(rel_file))])
+            splitGNOfile(Path,rel_file{j},0) %Already deidentified above
+            movefile([Path,filesep,rel_file{j}],[Path,filesep,'Processed_',rel_file{j}]) %Add this prefix to not redo files that have already been processed
+        end
+        disp('Done splitting GNO files.')
+        %Rerun this part to find new files on the path that need to be moved
+        file_Path = extractfield(dir(Path),'name',~extractfield(dir(Path),'isdir'));
+        if any(contains(file_Path,'Processed')) %Move processed files into a folder and move it
+            if ~isfolder([Raw_Path,filesep,'Combined Files'])
+                mkdir([Raw_Path,filesep,'Combined Files'])
+            end        
+            movefile([Path,filesep,'Processed*'],[Raw_Path,filesep,'Combined Files'])
+        end
+        file_Path(contains(file_Path,'Processed')) = []; 
+        for j = 1:length(GNO_ext)
+            if any(contains(file_Path,GNO_ext{j}))
+                movefile([Path,filesep,'*',GNO_ext{j}],[Path,filesep,'Raw Files'])
+            end
+        end
+    else %Move all non .pdf files
+        rel_file = file_Path(~contains(file_Path,'.pdf'));
+        for j = 1:length(rel_file)
+            movefile([Path,filesep,rel_file{j}],[Raw_Path,filesep,rel_file{j}])
+        end
     end
-end
-% Move files    
-names = extractfield(dir(Path),'name')';
-if any(contains(names,'Processed'))
-    movefile('Processed*','Raw Files')
-    cd('Raw Files')
-    if exist('Combined Files','dir')~=7
-        mkdir('Combined Files')
-    end
-    movefile('Processed*','Combined Files')
-    cd ../
-end      
-if deidentify
-    deidentify_filenames(Path,rm_string)
-end
-names = extractfield(dir(Path),'name')';
-for j = 1:length(all_ext)
-    if any(contains(names,all_ext{j}))
-        movefile(['*',all_ext{j}],'Raw Files')
-    end
-end 
-%% Move ESC files into Raw Files
-names = extractfield(dir(Path),'name')';
-if ~any(contains(names,{'_export'}))
-    disp('No ESC file types detected.')
-    return;
-end    
-deidentify_dat = questdlg('Do the file names need to be de-identified?','','Yes','No','No');
-if isempty(deidentify_dat)
-    disp('Ending GNO file transfer process.')
-    return;
-elseif strcmp(deidentify_dat,'Yes')
-    deidentify = 1;
-    rm_string = inputdlg('Enter the subject name to deidentify (including the _ in the middle):');
-    if isempty(rm_string)|| isempty(rm_string{:})
-        disp('Ending GNO file transfer process.')
-        return;
-    else
-        rm_string = rm_string{:};
-    end
-else
-    deidentify = 0;
-end
-if deidentify
-    deidentify_filenames(Path,rm_string)
-end
-names = extractfield(dir(Path),'name')';
-for j = 1:length(names)
-    if contains(names{j},'export')
-        movefile(names{j},[names{j},'.mat'])
-    end
-end 
-movefile('*.mat','Raw Files')
-movefile('*.pdf','Raw Files')
-%% If GNO/ESC, open PDF for notes, close manually later
-pdf_files = extractfield(dir([cd,filesep,'*.pdf']),'name');
-for i = 1:length(pdf_files)
-    open(pdf_files{i})
 end
 %% Create Notes Files
-%Detect and process log files (eeVOR)
-logtoNotes(Raw_Path)
-%Make notes files in other ways
-MakeNotes(Raw_Path)
+flag = MakeNotes(Raw_Path);
 end

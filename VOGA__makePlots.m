@@ -1,4 +1,4 @@
-function VOGA__makePlots
+function VOGA__makePlots(plot_type,Path)
 opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized',...
     'Across Subjects','Sphere Plot','Edit Plot Params'};
 %Default plot parameters (No annotation, No set Y-axis maximum, Show eye
@@ -6,12 +6,19 @@ opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized',..
 %[not xyz])
 plot_params = {'0','','1','0','lrz'};
 %The subset of options that can be run within a folder that covers one experiment within a visit (not aggregated)
-fold_level_opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized','Sphere Plot'}; 
-%The subset of options that need to be run at the directory above the subject folders(aggregated)
-exp_level_opts = {'Across Subjects'};
-%Prompt the user to select an option
-[ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
-    'SelectionMode','single','ListSize',[150 125],'ListString',opts);
+fold_level_opts = {'Raw VOG','Segment','Cycle Average','Group Cycle Avg','Parameterized','Sphere Plot'};
+if nargin < 1 || ~ismember(plot_type,opts)
+    plot_type = '';
+    %Prompt the user to select an option
+    [ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
+        'SelectionMode','single','ListSize',[150 125],'ListString',opts);
+else
+    tf = 1;
+    ind = find(ismember(opts,plot_type));
+end
+if nargin < 2
+    Path = cd;
+end
 while tf % Run until the user selects cancel
     %% Set up for each figure type
     code_Path = [userpath,filesep,'VOGA'];
@@ -33,28 +40,21 @@ while tf % Run until the user selects cancel
     params.plot_fits = str2double(plot_params{4});
     params.lrz_xyz = plot_params{5};
     if any(contains(fold_level_opts,opts{ind}))
-        if ~VOGA__checkFolders(0) %Expected folders not there
+        if ~VOGA__makeFolders(Path,0) %Expected folders not there
                 new_path = uigetdir('Select the path. Should be a folder containing one experiment type for one visit.');
             if isnumeric(new_path)
                 error('No folder selected.')
             end
             cd(new_path)
-            if ~VOGA__checkFolders(0) %New path still not right
+            if ~VOGA__makeFolders(Path,0) %New path still not right
                 error('Expected folder structure not present. Navigate to appropriate folder before trying again.')
             end
         end
-        params.Path = cd;
-        params.Raw_Path = [cd,filesep,'Raw Files'];
-        params.Seg_Path = [cd,filesep,'Segmented Files'];
-        params.Cyc_Path = [cd,filesep,'Cycle Averages'];
+        params.Path = Path;
+        params.Raw_Path = [Path,filesep,'Raw Files'];
+        params.Seg_Path = [Path,filesep,'Segmented Files'];
+        params.Cyc_Path = [Path,filesep,'Cycle Averages'];
     end
-%     if any(contains(exp_level_opts,opts{ind}))
-%         new_path = uigetdir('Select the path. Should be a folder containing one experiment type for one visit.');
-%         if isnumeric(new_path)
-%             error('No folder selected.')
-%         end
-%         cd(new_path)
-%     end
     if strcmp(opts{ind},'Raw VOG')
         %Select file inside this function
         plotRawVOG(params.Raw_Path,params.plot_eyes,params.lrz_xyz) 
@@ -93,9 +93,11 @@ while tf % Run until the user selects cancel
             plot_params = temp_plot_params;
         end        
     end
-    [ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
-        'SelectionMode','single',...
-        'ListSize',[150 125],...
-        'ListString',opts);
+    if isempty(plot_type)
+        [ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
+            'SelectionMode','single','ListSize',[150 125],'ListString',opts);
+    else
+        tf = 0;
+    end
 end
 end

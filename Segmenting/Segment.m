@@ -2,12 +2,13 @@
 %Make a segmenting pipeline
 %Parameters assume all LDVOG data was recorded AFTER 2016-09-26, consistent
 %with recorded dates for the MVI trial
-%Works for LDVOG, NKI, and GNO. Limited workability for Moog
+%Works for LDVOG, NKI, GNO, and ESC. Limited workability for Moog
 function Segment(In_Path,Seg_Path)
 %% Find the Notes File
 slash = find(In_Path == filesep,1,'last');
-rawfile = In_Path(slash+1:end-4);
-notesfile = extractfield(dir([In_Path(1:min([strfind(In_Path,'_Updated')-1,length(In_Path)-4])),'*-Notes.txt']),'name');
+dot = find(In_Path == '.',1,'last');
+rawfile = In_Path(slash+1:dot-1);
+notesfile = extractfield(dir([In_Path(1:min([strfind(In_Path,'_Updated')-1,dot-1])),'*-Notes.txt']),'name');
 if isempty(notesfile)
     disp(['No notes files were found for this file: ',In_Path])
     return;
@@ -33,7 +34,7 @@ if length(info.exp_date)==14 %Just missing '-' in between date and time
     info.exp_date = [info.exp_date(1:8),'-',info.exp_date(9:end)];
 elseif length(info.exp_date)==8 %Just date, add time
     underscore = strfind(rawfile,'_');
-    if contains(info.goggle_ver,'NKI')
+    if contains(info.goggle_ver,{'NKI','NL'})
         VOG_time = datestr(datetime(rawfile(underscore(4)+1:underscore(7)-1),'InputFormat','hh_mm_a'),'HHMMSS');
     elseif contains(info.goggle_ver,'LDVOG')
         if ~isempty(underscore)
@@ -49,7 +50,7 @@ elseif length(info.exp_date)==8 %Just date, add time
     info.exp_date = [info.exp_date,'-',VOG_time];
 end
 %% Load Data Types In
-if contains(info.goggle_ver,'NKI')
+if contains(info.goggle_ver,{'NKI','NL'})
     info.TriggerShift = 0; %measure and change
     %Suppress the warning that one of the columns is not a proper
     %column name for a MATLAB table so it got renamed
@@ -280,60 +281,165 @@ elseif contains(info.goggle_ver,'GNO') % GNO File
     Vertical_RE_Velocity = data(:,6);  
     info.TriggerShift = 0;
     % Find the accepted traces
-    warning('off')
-    try
-        GNO_processed = readtable(strrep(In_Path,'.txt','.csv'));
-        h_ind = find(contains(GNO_processed{:,1},'Head'));
-        left_imp = find(contains(GNO_processed{:,1},'Impulse')&contains(GNO_processed{:,2},'L'));
-        left_ind = NaN(length(left_imp),1);
-        for i = 1:length(left_imp)
-            ind = find((h_ind-left_imp(i))>0,1,'first');
-            left_ind(i) = h_ind(ind);
+    if isfile(strrep(In_Path,'.txt','.csv'))       
+        GNO_CSV = table2cell(readtable(strrep(In_Path,'.txt','.csv'),'ReadVariableNames',false));
+        is_text = cellfun(@ischar,GNO_CSV(1,:));        
+        head_ind = find(any(contains(GNO_CSV(:,is_text),'Head'),2));
+        left_ind = find(any(contains(GNO_CSV(:,is_text),'Left')&contains(GNO_CSV(:,is_text),'Direction'),2));
+        right_ind = find(any(contains(GNO_CSV(:,is_text),'Right')&contains(GNO_CSV(:,is_text),'Direction'),2));
+        %Turn numbers that were accidentally converted to chars back into numbers
+        GNO_CSV(~isnan(str2double(GNO_CSV))) = num2cell(str2double(GNO_CSV(~isnan(str2double(GNO_CSV))))); 
+        %Find Left and Right Impulses
+        dir_ind = [left_ind;right_ind];
+        dir_ind_key = [repmat({'L'},length(left_ind),1);repmat({'R'},length(right_ind),1)];
+        impulse_side = repmat({''},length(head_ind),1);
+        for i = 1:length(head_ind)
+            temp = head_ind(i)-dir_ind;
+            temp(temp<0) = NaN;
+            if any(~isnan(temp)) %Otherwise a "Head" label with no associated impulse direction
+                [~,m_ind] = min(temp);
+                impulse_side(i) = dir_ind_key(m_ind);
+            end
         end
-        right_imp = find(contains(GNO_processed{:,1},'Impulse')&contains(GNO_processed{:,2},'R'));
-        right_ind = NaN(length(right_imp),1);
-        for i = 1:length(right_imp)
-            ind = find((h_ind-right_imp(i))>0,1,'first');
-            right_ind(i) = h_ind(ind);
-        end        
-        detected_left = str2double(split(strrep(GNO_processed{left_ind,1},',Head,',''),','))';
-        detected_right = str2double(split(strrep(GNO_processed{right_ind,1},',Head,',''),','))';    
-        if contains(In_Path,'Lateral')
-            DetectedTraces_HeadVel = [detected_left,-detected_right];
-        elseif contains(In_Path,'LARP')
-            DetectedTraces_HeadVel = [-detected_left,detected_right];
-        elseif contains(In_Path,'RALP')
-            DetectedTraces_HeadVel = [-detected_left,detected_right];
+        if any(contains(impulse_side,{'L','R'}))
+            left_ind = head_ind(contains(impulse_side,'L'));
+            right_ind = head_ind(contains(impulse_side,'R'));
+            %Take only the numeric columns
+            col_num = ~cellfun(@ischar,GNO_CSV(head_ind(find(contains(impulse_side,{'L','R'}),1,'first')),:));
+            %Now find the head traces and save them
+            if all(~col_num) %All in one cell as text
+                detected_left = str2double(split(join(GNO_CSV(left_ind,:),','),','))';
+                detected_left(all(isnan(detected_left),2),:) = [];
+                detected_right = str2double(split(join(GNO_CSV(right_ind,:),','),','))';
+                detected_right(all(isnan(detected_right),2),:) = [];
+            else %Numbers in cells           
+                detected_left = cell2mat(GNO_CSV(left_ind,col_num))';
+                detected_right = cell2mat(GNO_CSV(right_ind,col_num))'; 
+            end
+            if contains(In_Path,'Lateral')
+                DetectedTraces_HeadVel = [detected_left,-detected_right];
+            elseif contains(In_Path,'LARP')
+                DetectedTraces_HeadVel = [-detected_left,detected_right];
+            elseif contains(In_Path,'RALP')
+                DetectedTraces_HeadVel = [-detected_left,detected_right];
+            end
+        else
+            DetectedTraces_HeadVel=[];
         end
-    catch
+    else
+        GNO_CSV = [];
         DetectedTraces_HeadVel=[];
     end
-    warning('on')  
-elseif contains(info.goggle_ver,'ESC') % ESC File
-    %%
+    %Put xml data in the segment too
+    if isfile(strrep(In_Path,'.txt','.xml'))
+        GNO_XML = cellstr(readlines(strrep(In_Path,'.txt','.xml')));
+    else
+        GNO_XML = [];
+    end
+elseif contains(info.goggle_ver,{'ESC1','ESC2'}) % ESC File with .mat
     data1 = load(In_Path);
-    data = data1.content_RAW.Data;
-    Time_Eye = (data(:,1) - data(1,1));
-    Time_Stim = Time_Eye;
+    if isfield(data1,'content_RAW')
+        phi = -20;
+        data = data1.content_RAW.Data;
+        if isfield(data1.content_CAL,'R')
+            eye_cal_gyro = ([cosd(phi),0,sind(phi);0,1,0;-sind(phi),0,cosd(phi)]'*data1.content_CAL.R);
+            eye_cal_accel = ([cosd(phi),0,sind(phi);0,1,0;-sind(phi),0,cosd(phi)]'*data1.content_CAL.R);
+        else %Missing calibration 
+            eye_cal_gyro = eye(3);
+            eye_cal_accel = eye(3);
+        end
+        labs = cellstr(data1.content_RAW.DataNames);
+    elseif isfield(data1,'Data')
+        data = data1.Data;
+        labs = cellstr(data1.DataNames);
+        eye_cal_gyro = eye(3);
+        eye_cal_accel = eye(3);   
+    end 
+    EyeTimeIndex = find(contains(labs,'SystemTime'));
+    if ~isempty(EyeTimeIndex) % Most cases
+        HeadTimeIndex = find(contains(labs,'InertialTime'));
+        XvelHeadIndex = find(contains(labs,'InertialVelX'));
+        YvelHeadIndex = find(contains(labs,'InertialVelY'));
+        ZvelHeadIndex = find(contains(labs,'InertialVelZ'));
+        XaccelHeadIndex = find(contains(labs,'InertialAccelX'));
+        YaccelHeadIndex = find(contains(labs,'InertialAccelY'));
+        ZaccelHeadIndex = find(contains(labs,'InertialAccelZ'));
+        Time_Eye = data(:,EyeTimeIndex) - data(1,EyeTimeIndex);
+        Time_Stim = data(:,HeadTimeIndex) - data(1,HeadTimeIndex);
+        Horizontal_LE_Velocity = data(:,contains(labs,'EyeVelZ'));
+        Vertical_LE_Velocity = data(:,contains(labs,'EyeVelY'));
+        Torsion_LE_Velocity = data(:,contains(labs,'EyeVelX'));  
+        A = eye_cal_gyro*data(:,[XvelHeadIndex,YvelHeadIndex,ZvelHeadIndex])';
+        GyroX = A(1,:);
+        GyroY = A(2,:);
+        GyroZ = A(3,:);
+        GyroLARP = (GyroX - GyroY)/sqrt(2);
+        GyroRALP = (GyroX + GyroY)/sqrt(2); 
+        B = eye_cal_accel*data(:,[XaccelHeadIndex,YaccelHeadIndex,ZaccelHeadIndex])';
+        AccelX = B(1,:);
+        AccelY = B(2,:);
+        AccelZ = B(3,:);
+    elseif any(contains(labs,'RealTime'))
+        %Old version missing much data
+        %Time vec is in msec
+        t1 = data(:,strcmp(labs,'Time')); %in msec
+        nan_time = isnan(t1);
+        len = size(data,1)-sum(nan_time);
+        Time_Eye = (0:(len-1))*10-3; %now in sec
+        Time_Stim = Time_Eye;
+        Horizontal_LE_Velocity = NaN(len,1);
+        Vertical_LE_Velocity = NaN(len,1);
+        Torsion_LE_Velocity = NaN(len,1);
+        GyroX = NaN(len,1);
+        GyroY = NaN(len,1);
+        GyroZ = NaN(len,1);
+        GyroLARP = NaN(len,1);
+        GyroRALP = NaN(len,1);
+        AccelX = NaN(len,1);
+        AccelY = NaN(len,1);
+        AccelZ = NaN(len,1);
+        if any(contains(reshape(fileinfo,[],1),'LHRH'))
+            Horizontal_LE_Velocity = data(~nan_time,contains(labs,'EyeVel'));
+            GyroZ = data(~nan_time,contains(labs,'HeadVel'));
+        elseif any(contains(reshape(fileinfo,[],1),'LARP'))
+            Vertical_LE_Velocity = data(~nan_time,contains(labs,'EyeVel'));
+            GyroLARP = data(~nan_time,contains(labs,'HeadVel'));
+        elseif any(contains(reshape(fileinfo,[],1),'RALP'))
+            Vertical_LE_Velocity = data(~nan_time,contains(labs,'EyeVel'));
+            GyroRALP = data(~nan_time,contains(labs,'HeadVel'));
+        end       
+    else
+        disp(['Not segmented: ',In_Path])
+        return;
+    end
     Fs = round(1/median(diff(Time_Eye))); 
-    phi = -20;
-    A = ([cosd(phi),0,sind(phi);0,1,0;-sind(phi),0,cosd(phi)]'*data1.content_CAL.R)*data(:,7:9)'; %Use the calibration from the system
-    GyroX = A(1,:);
-    GyroY = A(2,:);
-    GyroZ = A(3,:);
-    GyroLARP = (GyroX - GyroY)/sqrt(2);
-    GyroRALP = (GyroX + GyroY)/sqrt(2);      
-    Horizontal_LE_Velocity = data(:,19);
-    Vertical_LE_Velocity = data(:,18); 
-%     clf;
-%     hold on
-%     plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
-%     plot(Time_Eye,Vertical_LE_Velocity,'Color',colors.l_y)
-%     plot(Time_Eye,Horizontal_LE_Velocity,'Color',colors.l_z)
-%     hold off 
-%     axis([Time_Stim(1) Time_Stim(end) -250 250])
     info.TriggerShift = 0;
-    %%
+    if isfile(strrep(strrep(In_Path,'_export',''),'.mat','.xls'))
+        fname = strrep(strrep(In_Path,'_export',''),'.mat','.xls');
+        movefile(fname,strrep(fname,'.xls','.csv'))
+        ESC_CSV = cellstr(readlines(strrep(fname,'.xls','.csv')));
+        ESC_CSV(cellfun(@isempty,ESC_CSV)) = [];
+        ESC_CSV = split(ESC_CSV,',');
+        movefile(strrep(fname,'.xls','.csv'),fname)
+    else
+        ESC_CSV = [];
+    end    
+    %plot(Time_Eye,GyroZ,'k-',Time_Eye,GyroY,'g-',Time_Eye,GyroX,'b-')
+elseif contains(info.goggle_ver,'ESC3') % ESC File with .csv data
+    % NEEDS MORE WORK
+    disp('New ESC system not yet supported')
+    return;
+%     data = readtable(In_Path); %Time Stamp??
+%     gyro_data = readtable([In_Path(1:strfind(In_Path,'_EyePosition')),'ImuData.csv']);
+%     if contains(In_Path,'Right')
+%         Horizontal_RE_Position = data.Horizontal;
+%         Vertical_RE_Position = data.Vertical;
+%         Torsion_RE_Position = data.Torsion;
+%     else
+%         Horizontal_LE_Position = data.Horizontal;
+%         Vertical_LE_Position = data.Vertical;
+%         Torsion_LE_Position = data.Torsion;
+%     end
 end
 %% Figure out how many experiments there are
 if size(fileinfo,2)==2 %New way w/ 2 columns
@@ -351,8 +457,13 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
     %Check to make sure the right canal is in the notes
     canals = {'LARP','RALP','LHRH'};
     [~,canal_i] = max(max([reshape(GyroLARP,[],1),reshape(GyroRALP,[],1),reshape(GyroZ,[],1)]));
-    notes_canal = find([any(contains(stim_info,'LARP')),any(contains(stim_info,'RALP')),any(contains(stim_info,'LHRH'))]);
-    if canal_i~=notes_canal %Mismatch
+    notes_canal = find([any(contains(stim_info,'LARP')),any(contains(stim_info,'RALP')),any(contains(stim_info,'LHRH')),any(contains(stim_info,'trash'))]);
+    if canal_i~=notes_canal && contains(info.goggle_ver,'GNO') %Trust the file name
+        canal = find([contains(info.rawfile,'LARP.txt'),contains(info.rawfile,'RALP.txt'),contains(info.rawfile,'Lateral.txt')]);    
+    elseif notes_canal==4 %trash
+        canal = 1;
+    elseif canal_i~=notes_canal %Mismatch
+        figure(1)
         plot(GyroLARP,'Color','g')
         hold on
         plot(GyroRALP,'Color','b')
@@ -368,13 +479,12 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
     else
         canal = notes_canal;
     end
-    switch canal
-        case 1
-            GyroAll = GyroLARP;
-        case 2
-            GyroAll = GyroRALP;
-        case 3
-            GyroAll = GyroZ;
+    if canal==1
+        GyroAll = GyroLARP;
+    elseif canal==2
+        GyroAll = GyroRALP;
+    else
+        GyroAll = GyroZ;
     end
     if any(contains(stim_info,'VelStep')) % Velstep
         thresh = 50; %Adjust as needed
@@ -742,14 +852,22 @@ if ~isempty(stim_info)
                 Data.HeadVel_L = GyroLARP(i1:i2);
                 Data.HeadVel_R = GyroRALP(i1:i2);
                 Data.DetectedTraces_HeadVel = DetectedTraces_HeadVel;
+                Data.CSVData = GNO_CSV;
+                Data.XMLData = GNO_XML;
             elseif contains(info.goggle_ver,'ESC')
                 Data.LE_Vel_Y = Vertical_LE_Velocity(i1:i2);
                 Data.LE_Vel_Z = Horizontal_LE_Velocity(i1:i2);
+                Data.LE_Vel_X = Torsion_LE_Velocity(i1:i2);
                 Data.HeadVel_X = GyroX(i1:i2);
                 Data.HeadVel_Y = GyroY(i1:i2);
                 Data.HeadVel_Z = GyroZ(i1:i2);
                 Data.HeadVel_L = GyroLARP(i1:i2);
                 Data.HeadVel_R = GyroRALP(i1:i2);
+                Data.HeadAccel_X = AccelX(i1:i2);
+                Data.HeadAccel_Y = AccelY(i1:i2);
+                Data.HeadAccel_Z = AccelZ(i1:i2);
+                Data.AllData = data1;
+                Data.CSVData = ESC_CSV;
             else %LDVOG and NKI           
                 Data.Trigger = Stim(i1:i2); % computer trigger
                 Data.LE_Position_X = Torsion_LE_Position(i1:i2);

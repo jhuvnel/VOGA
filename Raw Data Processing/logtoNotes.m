@@ -1,31 +1,19 @@
-%Takes in the Raw Path to Fitting Software log files and makes the appropriate Notes files
+%Takes in the Raw Path to LDHP/LDPC Fitting Software log files and makes the appropriate Notes files
 %This ignores VOG files that already have notes files.
 function logtoNotes(Raw_Path)
-rel_dir = [dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])]; %update if more file extensions are added
-if isempty(rel_dir)
-    disp(['No folders or files have been detected in ',Raw_Path])
-    return;
+%Update this line to include more extensions as needed
+file_names = extractfield([dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])],'name');
+if isempty(file_names)
+    file_names = '';
 end
-file_names = extractfield(rel_dir,'name');
-file_date = extractfield(rel_dir,'date');
 Notes_ind = contains(file_names,'-Notes.txt');
-VOG_ind = contains(file_names,{'SESSION','.dat'})&~Notes_ind;
-VOG_ind_num = find(VOG_ind);
-if all(~VOG_ind)
-    disp(['No LDVOG/NKI files have been detected in ',Raw_Path])
-    return;
-end
+Log_ind = contains(file_names,{'LDHP','LDPC'});
+VOG_ind = find(contains(file_names,{'SESSION','.dat'})&~Notes_ind&~Log_ind);
 has_notes = contains(strrep(strrep(file_names(VOG_ind),'.txt',''),'.dat',''),strrep(file_names(Notes_ind),'-Notes.txt',''));
-VOG_files = file_names(VOG_ind_num(~has_notes));
-VOG_files_date = file_date(VOG_ind_num(~has_notes));
-if all(VOG_ind|Notes_ind)
-    disp(['No log files detected in ',Raw_Path])
-    return;
-elseif isempty(VOG_files)
-    disp(['All VOG files already have Notes files in ',Raw_Path])
+VOG_files = file_names(VOG_ind(~has_notes));
+if isempty(VOG_files)||isempty(Log_ind) %No files or log files
     return;
 end
-possible_log = file_names(~Notes_ind&~VOG_ind);
 %% Find all log/autoscan/VOG files
 %Start with log files
 [indx_l,tf1] = nmlistdlg('PromptString','Select log files:','ListSize',[300 300],'ListString',possible_log);
@@ -170,7 +158,7 @@ if tf1 == 1
                 % Index for the VOG GPIO line
                 StimIndex = 35; 
                 Stim = VOG_data{1:length(Time_Eye),StimIndex};
-            elseif contains(fname,'.dat') %NKI
+            elseif contains(fname,'.dat') %NKI/NL
                 %Load file
                 warning('off')
                 VOG_data = readtable([Raw_Path,filesep,fname],'ReadVariableNames',true);
@@ -181,7 +169,7 @@ if tf1 == 1
                 VOG_time.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
                 VOG_times = [VOG_time-seconds(VOG_data{end,1}) VOG_time];
                 date = datestr(VOG_times(1),'yyyymmdd-HHMMss');
-                gog = 'NKI1';
+                gog = 'NL2'; %Changed from NKI1 to NL2 on 2022/07/28
                 ang = '0';
                 %Load items for plotting
                 Time_Eye = VOG_data.EyeTime;        
@@ -206,7 +194,7 @@ if tf1 == 1
                     experiments = cell(length(rel_exp),1);
                     for j = 1:length(experiments)
                         line = rel_exp{j};
-                        curr = num2str(round(str2num(strrep(line(strfind(line,':')+1:end),' ','')),0));
+                        curr = num2str(round(str2double(strrep(line(strfind(line,':')+1:end),' ','')),0));
                         electrode = strrep(line(strfind(line,' E')+1:strfind(line,' E')+3),' ','');
                         rate_line = rel_dat{find(contains(rel_dat(1:e_i(j),2),'(pps)'),1,'last'),2};
                         pps = strrep(rate_line(strfind(rate_line,':')+1:end),' ','');

@@ -1,30 +1,55 @@
-function MakeNotes(Raw_Path)
-%% Notes about the Notes
-% fn = {'RotaryChair-Sine','RotaryChair-VelStep','RotaryChair-SumSine',...
-%         'aHIT-Sine','aHIT-Impulses',...
-%         'eeVOR-Sine','eeVOR-PulseTrain','eeVOR-MultiVector','eeVOR-Autoscan','eeVOR-Activation'};
-%     descrip = {'Condition-Axis-Freq-Speed','Condition-Axis-Speed(n=neg velocity)','Condition-Axis-Freq1-Freq2-Freq3-Speed',...
-%         'Condition-Axis-Freq-Speed','Condition-Axis-Speed',...
-%         'Axis-Freq-Speed','PFM/PAM-Axis-pps-uA','DOMAxis','Canal/Electrode-pps-us-uA','Light/Dark#'};
-%% Find Files to Make Notes
-rel_dir = [dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat']);dir([Raw_Path,filesep,'*.mat'])]; %update if more file extensions are added
-if isempty(rel_dir)
-    disp(['No folders or files have been detected in ',Raw_Path])
-    return;
+%% Make Notes
+% RotaryChair-Sine-Condition-Axis-Freq-Speed
+% RotaryChair-VelStep-Condition-Axis-Speed(n=neg velocity)
+% RotaryChair-SumSine-Condition-Axis-Freq1-Freq2-Freq3-Speed
+% aHIT-Sine-Condition-Axis-Freq-Speed
+% aHIT-Impulses-Condition-Axis-Speed
+% Manual-Impulses-Condition-Axis-Speed
+% eeVOR-Sine-Axis-Freq-Speed
+% eeVOR-PulseTrain-PFM/PAM-Axis-pps-uA
+% eeVOR-MultiVector-DOMAxis
+% eeVOR-Autoscan-Canal/Electrode-pps-us-uA
+% eeVOR-Activation-Light/Dark#
+
+function flag = MakeNotes(Raw_Path)
+%% Input
+if nargin < 1
+    if isfolder([cd,filesep,'Raw Files'])
+        Raw_Path = [cd,filesep,'Raw Files'];
+    else
+        Raw_Path = cd;
+    end
 end
+%% Process Log Files first
+logtoNotes(Raw_Path)
+%% Find Files to Make Notes
+VOG_fname_pat = {'SESSION','Lateral.txt','LARP.txt','RALP.txt',...
+    '.dat','.mat','EyePositionData'};
+rel_dir = dir(Raw_Path);
+rel_dir(extractfield(rel_dir,'isdir')) = [];
 file_names = extractfield(rel_dir,'name');
 file_date = extractfield(rel_dir,'date');
+if isempty(file_names)
+    file_names = '';
+    file_date = [];
+end
 Notes_ind = contains(file_names,'-Notes.txt');
-VOG_ind = contains(file_names,{'SESSION','.dat','Lateral.txt','LARP.txt','RALP.txt','export.mat'})&~Notes_ind&~contains(file_names,'Raw');
-VOG_ind_num = find(VOG_ind);
-if all(~VOG_ind)
-    disp(['No LDVOG, NKI, GNO, or ESC files have been detected in ',Raw_Path])
+VOG_ind = find(contains(file_names,VOG_fname_pat)&~Notes_ind&~contains(file_names,'Raw')); %Raw = LDVOG calibration file
+has_notes = contains(file_names(VOG_ind),strrep(file_names(Notes_ind),'-Notes.txt',''));
+VOG_files = file_names(VOG_ind(~has_notes));
+VOG_files_date = file_date(VOG_ind(~has_notes));
+if ~any(VOG_ind)
+    flag = ['No VOG files (LDVOG/NL/GNO/ESC) have been detected: ',Raw_Path];
+elseif isempty(VOG_files)
+    flag = ['All VOG Files have Notes files: ',Raw_Path];
+else
+    flag = '';
+end
+if ~isempty(flag)
+    disp(flag)
     return;
 end
-has_notes = contains(strrep(strrep(strrep(file_names(VOG_ind),'.txt',''),'.dat',''),'.mat',''),strrep(file_names(Notes_ind),'-Notes.txt',''));
-VOG_files = file_names(VOG_ind_num(~has_notes));
-VOG_files_date = file_date(VOG_ind_num(~has_notes));
-%Set some parameters that will likely stay the same but can be edited
+%% Set some parameters that will likely stay the same but can be edited
 path_parts = strsplit(strrep(strrep(Raw_Path,'_',''),' ',''),filesep);
 if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected formatting
     sub = path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')};
@@ -43,44 +68,148 @@ if any(contains(path_parts,'Visit'))
 else
     vis = '';
 end
-%% Partition by File Type
-if any(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'})) %GNO
+if isempty(sub)||isempty(ear)||isempty(vis)
     common_notes = inputdlg({'Subject:','Ear:','Visit:'},'Set VOG File Parameters',[1,40],{sub,ear,vis}); 
+    if isempty(common_notes)
+        return;
+    end
     sub = common_notes{1};
     ear = common_notes{2};
     vis = common_notes{3};
-    gog = 'GNO';
+end
+%% Partition by File Type
+if any(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'})) %GNO    
     ang = '0';
     GNO_files = VOG_files(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'}));
+    GNO_SerialNums = {'129852','5628','989477','3012563'}; %The order for GNO1/2/3/4
     for i = 1:length(GNO_files) 
         fname = GNO_files{i};
         dashes = strfind(fname,'_');
         date = fname;
         date(dashes(5)) = '-';
         date = strrep(date(dashes(2)+1:dashes(8)-1),'_','');
-        w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];'Experiment '};
-        notes_check = inputdlg([fname,newline,newline,'Check Notes: ',newline,'Ex: aHIT-Impulse-NoStim-LHRH-150dps-pseudorandom'],'Set VOG File Parameters',[length(w_notes),70],{strjoin(w_notes,'\n')});
+        if contains(fname,'Lateral')
+            canal = 'LHRH';
+        elseif contains(fname,'LARP')
+            canal = 'LARP';
+        elseif contains(fname,'RALP')
+            canal = 'RALP';
+        else
+            canal = '';
+        end
+        %Defaults
+        type = 'Manual';
+        cond = '';
+        %Try to plot the accepted head traces (if none, plot the whole time
+        %trace)
+        try
+            GNO_CSV = readtable([Raw_Path,filesep,fname(1:end-4),'.csv'],'ReadVariableNames',false);
+            h_ind = find(contains(GNO_CSV{:,1},'Head'));
+            left_imp = find(contains(GNO_CSV{:,1},'Impulse')&contains(GNO_CSV{:,2},'L'));
+            left_ind = NaN(length(left_imp),1);
+            for ii = 1:length(left_imp)
+                ind = find((h_ind-left_imp(ii))>0,1,'first');
+                left_ind(ii) = h_ind(ind);
+            end
+            right_imp = find(contains(GNO_CSV{:,1},'Impulse')&contains(GNO_CSV{:,2},'R'));
+            right_ind = NaN(length(right_imp),1);
+            for ii = 1:length(right_imp)
+                ind = find((h_ind-right_imp(ii))>0,1,'first');
+                right_ind(ii) = h_ind(ind);
+            end        
+            detected_left = str2double(split(strrep(GNO_CSV{left_ind,1},',Head,',''),','))';
+            detected_right = str2double(split(strrep(GNO_CSV{right_ind,1},',Head,',''),','))';
+            t = (0:size(detected_left)-1)*1000/246;
+            figure;
+            plot(t,detected_left,'k',t,detected_right,'k')            
+        catch
+            plotRawVOG([Raw_Path,filesep,fname])
+        end
+        %Try to load the xml file and automatically make the notes
+        try
+            fdata = cellstr(readlines([Raw_Path,filesep,fname(1:end-4),'.xml']));
+            exp_info = strrep(extractXMLdataline(fdata{contains(fdata,'<Remarks>')}),' ','');
+            if contains(lower(exp_info),'ahit')
+                type = 'aHIT';
+            elseif contains(lower(exp_info),'chair')
+                type = 'RotaryChair';
+            end
+            if contains(lower(exp_info),{'off','nostim','preop','preact','pre-op'})||contains(Raw_Path,'Visit 0')
+                cond = 'NoStim';
+            elseif contains(lower(exp_info),{'constant','baseline'})
+                cond = 'ConstantRate';
+            elseif contains(lower(exp_info),{'motionmod','mod','accel'})
+                cond = 'MotionMod';
+            end
+            gog_line = fdata{contains(fdata,'GogglesSN')};
+            gog_num = gog_line(ismember(gog_line,'0123456789'));
+            gog_detect = find(ismember(GNO_SerialNums,gog_num));
+            gog = ['GNO',num2str(gog_detect)];            
+        catch
+            exp_info = '(No File)';
+            gog = 'GNO';
+        end
+        exp = [type,'-Impulse-',cond,'-',canal,'-150dps'];
+        w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];['Experiment ',exp]};
+        prompt = ['File Name: ',fname,newline,'Experimenter Remarks: ',exp_info,newline,newline,'Check Notes: ',newline,'Ex: aHIT-Impulse-NoStim-LHRH-150dps-pseudorandom'];
+        notes_check = inputdlg(prompt,'Set VOG File Parameters',[length(w_notes),80],{strjoin(w_notes,'\n')});
         if ~isempty(notes_check)
             w_notes = cellstr(notes_check{1,1});
             filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');
             fprintf(filePh,'%s\n',w_notes{:});
             fclose(filePh);
         end
+        close;
     end 
-elseif any(contains(VOG_files,'export.mat')) %ESC
-    common_notes = inputdlg({'Subject:','Ear:','Visit:'},'Set VOG File Parameters',[1,40],{sub,ear,vis}); 
-    sub = common_notes{1};
-    ear = common_notes{2};
-    vis = common_notes{3};
-    gog = 'ESC';
+elseif contains(Raw_Path,'ESC') %ESC
     ang = '0';
-    ESC_files = VOG_files(contains(VOG_files,'export.mat'));
+    ESC_files = find(contains(VOG_files,{'.mat','EyePositionData'}));
     for i = 1:length(ESC_files) 
-        fname = ESC_files{i};
-        dashes = strfind(fname,'-');
-        date = strrep(strrep(strrep(fname(dashes(1)-4:dashes(1)+14),'-',''),'.',''),'_','-');
-        w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];'Experiment '};
-        notes_check = inputdlg([fname,newline,newline,'Check Notes: ',newline,'Ex: aHIT-Impulse-NoStim-LHRH-150dps-pseudorandom'],'Set VOG File Parameters',[length(w_notes),70],{strjoin(w_notes,'\n')});
+        fname = VOG_files{ESC_files(i)};
+        exp_info = strrep(strrep(strrep(fname,'.',' '),'_',' '),'-',' ');
+        date_pat1 = digitsPattern(4)+' '+digitsPattern(2)+' '+digitsPattern(2)+' '+digitsPattern(2)+' '+digitsPattern(2)+' '+digitsPattern(2);
+        if any(strfind(exp_info,date_pat1)) %In the expected yyyy-MM-dd_HH.mm.ss file format in file name
+            VOG_time = datetime(cell2mat(extract(exp_info,date_pat1)),'InputFormat','yyyy MM dd HH mm ss');
+        else
+            VOG_time = datetime(VOG_files_date{ESC_files(i)}); %use file creation/saving time since there are variable naming standards
+            VOG_time.Format = 'yyyy-MM-dd HH:mm:ss';
+        end
+        if VOG_time < datetime(2018,1,17,0,0,0) 
+            gog = 'ESC1'; %Yuri/Schubert pair? Hard to tell
+        elseif VOG_time < datetime(2022,11,2,0,0,0)
+            gog = 'ESC2';  %Kheradmand pair 
+        else 
+            gog = 'ESC3';  %MVI pair
+        end        
+        date = datestr(VOG_time,'yyyymmdd-HHMMss');
+        if contains(exp_info,{'Lateral','LHRH'})
+            canal = 'LHRH';
+        elseif contains(exp_info,'LARP')
+            canal = 'LARP';
+        elseif contains(exp_info,'RALP')
+            canal = 'RALP';
+        else
+            canal = '';
+        end
+        if contains(lower(exp_info),'ahit')
+            type = 'aHIT';
+        elseif contains(lower(exp_info),'chair')
+            type = 'RotaryChair';
+        else
+            type = 'Manual';
+        end
+        if contains(lower(exp_info),{'off','nostim','preop','preact','pre-op'})||contains(Raw_Path,'Visit 0')
+            cond = 'NoStim';
+        elseif contains(lower(exp_info),{'constant','baseline'})
+            cond = 'ConstantRate';
+        elseif contains(lower(exp_info),{'motionmod','mod','accel'})
+            cond = 'MotionMod';
+        else
+            cond = '';
+        end
+        exp = [type,'-Impulse-',cond,'-',canal,'-150dps'];
+        w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];['Experiment ',exp]};
+        notes_check = inputdlg([fname,newline,newline,'Check Notes: ',newline,'Ex: aHIT-Impulse-NoStim-LHRH-150dps-pseudorandom'],'Set VOG File Parameters',[length(w_notes),80],{strjoin(w_notes,'\n')});
         if ~isempty(notes_check)
             w_notes = cellstr(notes_check{1,1});
             filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');
@@ -141,7 +270,11 @@ else %LDVOG and NKI
             VOG_time.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
             VOG_times = [VOG_time-seconds(VOG_data{end,1}) VOG_time];
             date = datestr(VOG_times(1),'yyyymmdd-HHMMss');
-            gog = 'NKI1';
+            if VOG_times(1) > datetime(2022,07,28)
+                gog = 'NL2'; %Changed from NKI1 to NL2 on 2022/07/28
+            else
+                gog = 'NL1';
+            end
             ang = '0';
             %Load items for plotting
             Time_Eye = VOG_data.EyeTime;        
@@ -153,7 +286,19 @@ else %LDVOG and NKI
         else%Ignore unknown file type
             %ADD CODE here
         end
-        w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang]};
+        if contains(Raw_Path,'Rotary') %All the normal experiments
+            w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];...
+                'Experiment RotaryChair-VelStep-NoStim-LHRH-240dps';...
+                'Experiment RotaryChair-VelStep-NoStim-LHRH-n240dps';...
+                'Experiment RotaryChair-Sine-NoStim-LHRH-0.05Hz-100dps';...
+                'Experiment RotaryChair-Sine-NoStim-LHRH-0.1Hz-100dps';...
+                'Experiment RotaryChair-Sine-NoStim-LHRH-0.2Hz-100dps';...
+                'Experiment RotaryChair-Sine-NoStim-LHRH-0.5Hz-100dps';...
+                'Experiment RotaryChair-Sine-NoStim-LHRH-1Hz-100dps';...
+                };
+        else
+            w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];'Experiment '};
+        end
         if length(Time_Eye) > 1000000
             sub_i = floor(linspace(1,length(Time_Eye),1000000));
         else

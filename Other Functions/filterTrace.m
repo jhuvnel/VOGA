@@ -1,6 +1,12 @@
 function trace_out = filterTrace(type,trace_in,param,t_in,t_out)
 %Add more filter types as needed
 switch type
+    case 'lowpass'
+        if nargin < 4 || length(param)~=1 || isnan(param) || all(isnan(trace_in))
+            trace_out = trace_in;
+        else
+            trace_out = lowpass(trace_in,param,1/median(diff(t_in)));
+        end        
     case 'spline'
         if nargin < 5 || length(param)~=1 || isnan(param) || all(isnan(trace_in))
             trace_out = trace_in;

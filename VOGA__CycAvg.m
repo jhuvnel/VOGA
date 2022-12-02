@@ -1,10 +1,6 @@
-function end_flag = VOGA__CycAvg
-if ~VOGA__checkFolders(0)
-    disp('Folder structure not present. Generate folders, process raw data, and segment first.')
-    end_flag = true;
+function VOGA__CycAvg
+if ~VOGA__makeFolders
     return;
-else
-    end_flag = false;
 end
 Path = cd;
 Seg_Path = [Path,filesep,'Segmented Files'];

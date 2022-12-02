@@ -1,7 +1,18 @@
 %% Filter position and velocity
 function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp)
     %% Validate Parameters
-    %Set the all values
+    %Make sure all expected table columns are there
+    pos_labs = {'median','spline','sgolay1','sgolay2','lowpass'};
+    vel_labs = {'median','spline','irlssmooth','sgolay1','sgolay2','accel'};    
+    missing_pos_labs = pos_labs(~ismember(pos_labs,filt.pos.Properties.VariableNames));
+    missing_vel_labs = vel_labs(~ismember(vel_labs,filt.vel.Properties.VariableNames));
+    for i = 1:length(missing_pos_labs)
+        filt.pos.(missing_pos_labs{i}) = NaN(size(filt.pos,1),1);
+    end
+    for i = 1:length(missing_vel_labs)
+        filt.vel.(missing_vel_labs{i}) = NaN(size(filt.vel,1),1);
+    end
+    %Set the "ALL" values
     filt.pos(:,~isnan(filt.pos{'ALL',:})) = repmat(filt.pos(end,~isnan(filt.pos{'ALL',:})),11,1);
     filt.vel(:,~isnan(filt.vel{'ALL',:})) = repmat(filt.vel(end,~isnan(filt.vel{'ALL',:})),11,1);       
     %Position
@@ -10,6 +21,7 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
     sgolay_f = MakeCycAvg__filterParameterCheck([filt.pos.sgolay1,filt.pos.sgolay2],'sgolay');
     filt.pos.sgolay1 = sgolay_f(:,1);
     filt.pos.sgolay2 = sgolay_f(:,2);
+    filt.pos.lowpass = MakeCycAvg__filterParameterCheck(filt.pos.lowpass,'lpass');
     %Velocity
     filt.vel.median = MakeCycAvg__filterParameterCheck(filt.vel.median,'med');
     filt.vel.spline = MakeCycAvg__filterParameterCheck(filt.vel.spline,'spline');
@@ -73,9 +85,10 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
             if isfield(Data,var_n)
                 rel_trace = Data.(var_n);
                 temp1 = filterTrace('median',rel_trace,filt.pos.median(i));
-                temp2 = filterTrace('sgolay',temp1,[filt.pos.sgolay1(i),filt.pos.sgolay2(i)]);
-                temp3 = filterTrace('spline',temp2,filt.pos.spline(i),te,ts);
-                Data_pos_filt.(var_n) = temp3;
+                temp2 = filterTrace('lowpass',temp1,filt.pos.lowpass(i),te);
+                temp3 = filterTrace('sgolay',temp2,[filt.pos.sgolay1(i),filt.pos.sgolay2(i)]);
+                temp4 = filterTrace('spline',temp3,filt.pos.spline(i),te,ts);
+                Data_pos_filt.(var_n) = temp4;
             end
         end
         Data_pos_filt.t = ts;
@@ -109,7 +122,7 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
                 temp3 = filterTrace('accel',temp2,filt.vel.accel(i));
                 temp4 = filterTrace('manual_interp',temp3,[],rm_ind,rel_t);
                 temp5 = filterTrace('irls',temp4,filt.vel.irlssmooth(i));
-                temp6 = filterTrace('spline',temp5,filt.vel.spline(i));
+                temp6 = filterTrace('spline',temp5,filt.vel.spline(i),rel_t,rel_t);
                 Data_vel_filt.(var_n) = temp6;
                 Data_cyc.(var_n) = reshape(Data_vel_filt.(var_n),size(keep_inds,1),[]);
             else
@@ -121,7 +134,7 @@ function [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCyc
                 temp3 = filterTrace('accel',temp2,filt.vel.accel(i));
                 temp4 = filterTrace('manual_interp',temp3,[],rm_ind,rel_t);
                 temp5 = filterTrace('irls',temp4,filt.vel.irlssmooth(i));
-                temp6 = filterTrace('spline',temp5,filt.vel.spline(i));
+                temp6 = filterTrace('spline',temp5,filt.vel.spline(i),rel_t,rel_t);
                 Data_vel_filt.(var_n) = temp6;
                 Data_cyc.(var_n) = Data_vel_filt.(var_n)(keep_inds);
             end

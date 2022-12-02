@@ -581,7 +581,7 @@ switch type
                         wind1 = floor(10e-3/Ts);
                         wind2 = floor(step/Ts);
                         t2 = (wind1+1):wind2:length(pos_eye);
-                        dpos_eye = spline_filt(t_upsamp(t2),pos_eye(t2)-pos_eye(t2-wind1),t_upsamp,0.9999995);
+                        dpos_eye = filterTrace('spline',pos_eye(t2)-pos_eye(t2-wind1),0.9999995,t_upsamp(t2),t_upsamp);
                         [pk,loc,wid,prom2] = findpeaks(dpos_eye,t_upsamp,'MinPeakProminence',prom,'WidthReference','halfprom','MinPeakDistance',50e-3); %At least 25ms apart 
                         starts = zeros(1,length(loc));
                         for ii = 1:length(starts)

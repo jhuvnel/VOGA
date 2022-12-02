@@ -5,8 +5,7 @@
 
 function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,from_file)
 %% General Setup
-% test
-clc;
+%clc;
 % Plot defaults
 all_traces = {'LX','RX','LY','RY','LZ','RZ','LLARP','RLARP','LRALP','RRALP'};
 traces_pos1 = all_traces(1:6); %XYZ pos
@@ -63,47 +62,40 @@ if strcmp(from_file,'Auto')
     traces_pos = traces_pos1;
     traces_vel = traces_vel1;
     YLim.Pos = [-30 30];
-    if type == 3 %Impulses        
-        YLim.Vel = -250*[-1 1];
-    else
-        YLim.Vel = 150*[-1 1];
-    end
+    YLim.Vel = 175*[-1 1];
     info.TriggerShift2 = 0;
     [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,detec_head);
-	filt = filt1;
+	%First pass at filtering
+    filt = filt1;
+    filt.pos{:,:} = NaN;
     filt.vel{:,:} = NaN;
-    if contains(fname,{'LA','RP'})
-        rel_eyes = contains(filt.vel.Properties.RowNames,'LARP');            
-    elseif contains(fname,{'RA','LP'})
-        rel_eyes = contains(filt.vel.Properties.RowNames,'RALP');
-    elseif contains(fname,{'LH','RH'})
-        rel_eyes = contains(filt.vel.Properties.RowNames,'Z');
-    end 
-    if contains(fname,'Autoscan')
-        targ_tr_irls = 2;
-        targ_tr_spline = 0.99995;
-        filt.vel.irlssmooth(1:end-1) = 15; %heuristic--NEED TO FIX 
-        filt.vel.irlssmooth(rel_eyes) = targ_tr_irls;
-        filt.vel.spline(rel_eyes) = targ_tr_spline;
-    end
-    %First Pass at cycle average making
-    if contains(info.dataType,'Impulse')&&~isempty(detec_tr) %remove erroneous head traces using auto-detected traces as a template
-        head_templ = mean(stims(:,detec_tr),2);
-        head_templ_sd = std(stims(:,detec_tr),[],2);
-        out_of_bounds = stims > head_templ+3*head_templ_sd | stims < head_templ-3*head_templ_sd;
-        keep_tr = ~any(out_of_bounds(t_snip<0.23&t_snip>0.1,:))&any(stims(t_snip<0.2,:)<10)&any(stims(t_snip<0.4&t_snip>0.1,:)<0);
-    else
-        keep_tr = true(1,size(keep_inds,2));    
-    end
+    filt.pos.median(contains(filt.pos.Properties.RowNames,'X')) = 11;
+    filt.pos.median(contains(filt.pos.Properties.RowNames,'Y')) = 5;
+    filt.pos.median(contains(filt.pos.Properties.RowNames,'Z')) = 3;
+    filt.pos.lowpass(contains(filt.pos.Properties.RowNames,'X')) = 10;
+    filt.pos.spline(contains(filt.pos.Properties.RowNames,'Y')) = 1-5e-6;
+    filt.pos.spline(contains(filt.pos.Properties.RowNames,'Z')) = 1-5e-7; 
+    filt.vel.irlssmooth('ALL') = 2; %Just squish some saccades down
+    keep_tr = true(1,size(keep_inds,2)); %Keep all cycles
     [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp);
     CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
-    %Update cycle selection or filtering based on this
-    
-    
+    %Update the torsion filtering based on these results
+    new_filt = MakeCycAvg__automatedFiltering(CycAvg,'pos');
+    [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(new_filt,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp);
+    CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+    % Run to remove obivious outliers
+    keep_tr = MakeCycAvg__automatedCycleRemoval(CycAvg,1);
+    CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+    % Use adaptive velocity filtering
+    new_filt = MakeCycAvg__automatedFiltering(CycAvg,'vel');
+    [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(new_filt,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp);
+    CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
+    %Now remove cycles again
+    keep_tr = MakeCycAvg__automatedCycleRemoval(CycAvg,2);
+    CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);    
     MakeCycAvg__plotFullCycAvg([],type,colors,line_wid,YLim.Pos,YLim.Vel,traces_pos,traces_vel,CycAvg);
     %Create to Save
-    CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);
-    CycAvg = ParameterizeCycAvg(CycAvg);
+    CycAvg = ParameterizeCycAvg(CycAvg);       
     filt_params.filt1 = filt;
     filt_params.YLim = YLim;
     VOGA__saveLastUsedParams(filt_params)
@@ -363,7 +355,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             [Data,good_rng] = MakeCycAvg__shortenSegment(ha,te,Data,screen_size);
             if strcmp(good_rng,'Keep') %Did shorten segment
                 save([strrep(Cyc_Path,'Cycle Averages','Segmented Files'),filesep,fname],'Data')
-                [Data,info,Fs,te,ts,stim1,type,detec_head,filt1,traces_vel1] = MakeCycAvg_startProcess(Data,info,filt1,all_traces);
+                [Data,info,Fs,te,ts,stim1,type,detec_head,filt1,traces_vel1] = MakeCycAvg__startProcess(Data,info,filt1,all_traces);
                 [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,Fs,ts,stim1,detec_head);
                 [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt1,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp);
                 CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_interp,Data,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc);

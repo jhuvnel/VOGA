@@ -11,23 +11,24 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
     if nargin < 1
         Raw_Path = cd;
     end
-    all_files = extractfield(dir(Raw_Path),'name',find(~extractfield(dir(Raw_Path),'isdir')));
-    LDVOG_files = all_files(contains(all_files,'SESSION')&contains(all_files,'.txt')&~contains(all_files,'Notes.txt'));
-    NKI_files = all_files(contains(all_files,'.dat'));
-    GNO_files = all_files(contains(all_files,{'Lateral.txt','LARP.txt','RALP.txt'}));
-    VOG_files = [LDVOG_files;NKI_files;GNO_files];   
-    [indx,tf] = nmlistdlg('PromptString','Select files to plot:',...
-                               'ListSize',[300 300],...
-                               'ListString',VOG_files,...
-                               'SelectionMode','multiple');
-    if tf~=1
-        return;
+    if isfile(Raw_Path)
+        rel_files = {Raw_Path};
+        indx = 1;
+    else
+        VOG_files = extractfield([dir([Raw_Path,filesep,'SESSION*.txt']);dir([Raw_Path,filesep,'*.dat'])...
+            dir([Raw_Path,filesep,'*Lateral.txt']);dir([Raw_Path,filesep,'LARP*.txt']);dir([Raw_Path,filesep,'RALP*.txt'])],'name'); 
+        VOG_files(contains(VOG_Files,'-Notes')) = [];
+        [indx,tf] = nmlistdlg('PromptString','Select files to plot:','ListSize',[300 300],'ListString',VOG_files,'SelectionMode','multiple');
+        if tf~=1
+            return;
+        end
+        rel_files = strcat(Raw_Path,filesep,VOG_files(indx));
     end
-    for i = 1:length(indx)
+    for i = 1:length(rel_files)
         %% Make Plot
         figure;
-        file = [Raw_Path,filesep,VOG_files{indx(i)}];
-        if ismember(VOG_files{indx(i)},NKI_files)
+        file = rel_files{i};
+        if contains(file,'.dat')
             warning('off')
             data = readtable(file,'ReadVariableNames',true);
             warning('on')
@@ -66,7 +67,7 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
             else
                 legend([leg_text,{'Trigger'}])
             end  
-        elseif ismember(VOG_files{indx(i)},LDVOG_files)
+        elseif contains(file,'SESSION')
             data = readtable(file);
             % Generate Time_Eye vector
             Time = data{:,2};
@@ -127,23 +128,23 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
             else
                 legend([leg_text,{'Trigger'}])
             end  
-        elseif ismember(VOG_files{indx(i)},GNO_files)
+        elseif contains(file,{'Lateral.txt','LARP.txt','RALP.txt'})
             data = table2array(readtable(file));
             Time_Eye = (data(:,1) - data(1,1))/10e6;
             GyroZ = data(:,4);
             GyroL = data(:,3);
             GyroR = data(:,2);
-            if contains(VOG_files{indx(i)},'LARP')
+            if contains(rel_files{indx(i)},'LARP')
                 RZ = data(:,5);
                 RL = data(:,6); 
                 RR = NaN*data(:,6);
                 RY = NaN*data(:,6);
-            elseif contains(VOG_files{indx(i)},'RALP')
+            elseif contains(rel_files{indx(i)},'RALP')
                 RZ = data(:,5);
                 RR = data(:,6); 
                 RL = NaN*data(:,6);
                 RY = NaN*data(:,6);
-            elseif contains(VOG_files{indx(i)},'Lateral')
+            elseif contains(rel_files{indx(i)},'Lateral')
                 RZ = data(:,5);
                 RY = data(:,6);
                 RR = NaN*data(:,6);
@@ -166,6 +167,6 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
         end      
         xlabel('Time (s)')
         ylabel('Velocity (dps)')
-        title(strrep(strrep(VOG_files{indx(i)},'_',' '),'-',' '))  
+        title(strrep(strrep(rel_files{indx(i)},'_',' '),'-',' '),'interpreter','none') 
     end
 end

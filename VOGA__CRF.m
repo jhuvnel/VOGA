@@ -11,8 +11,15 @@
 %This script requres a Results.mat table to have already been made and
 %Cycle Average Figures to already have been generated to fully function. It
 %will create some of the files depending on availability of data.
+
+function VOGA__CRF(Path)
 %% Initialize
-Path = cd;
+if nargin < 1
+    Path = cd;
+end
+if ~VOGA__makeFolders(Path)
+    return;
+end
 Raw_Path = [Path,filesep,'Raw Files'];
 Cyc_Path = [Path,filesep,'Cycle Averages'];
 Fig_Path = [Path,filesep,'Figures'];
@@ -80,3 +87,4 @@ writetable(CRF_tabs.RALP,[CRF_Path,filesep,'CRF_Tables.xlsx'],'Sheet','RALP');
 writetable(CRF_tabs.info,[CRF_Path,filesep,'CRF_Tables.xlsx'],'Sheet','Info');
 %% End
 disp('Items now in the CRFs folder')
+end

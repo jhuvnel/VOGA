@@ -1,6 +1,9 @@
 function param_out = MakeCycAvg__filterParameterCheck(param_in,type)
     param_out = param_in;
     switch type
+        case {'Lowpass','lowpass','lpass'} %lowpass filter
+            param_out = abs(floor(param_out)); %positive integer
+            param_out(param_out==0) = NaN; %rm if 0
         case {'Median','median','med','Med'}
             param_out = abs(floor(param_out)); %positive integer
             param_out(mod(param_out,2)==0) = param_out(mod(param_out,2)==0)+1; %make out

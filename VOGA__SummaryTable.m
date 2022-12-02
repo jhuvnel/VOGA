@@ -7,8 +7,9 @@ opts = {'Folder (Load)','Folder (Rerun)',...
     'ListSize',[150 125],...
     'ListString',opts);
 if tf
-    if contains(opts{ind},'Folder')&&~VOGA__checkFolders(0) %Expecting to be in a Visit folder with the right structure
-        error('Expected folder structure not present. Navigate to appropriate directory with "Cycle Average" folder before trying again.')
+    if contains(opts{ind},'Folder')&&~VOGA__makeFolders(cd,0) %Expecting to be in a Visit folder with the right structure
+        disp('Expected folder structure not present. Navigate to appropriate directory with "Cycle Average" folder before trying again.')
+        return;
     end
     if strcmp(opts{ind},'Folder (Rerun)')
         MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],1);
