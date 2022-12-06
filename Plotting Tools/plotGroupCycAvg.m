@@ -416,48 +416,45 @@ if any(contains(all_results.Type,'Exponential'))
 end
 %% Autoscan
 if any(contains(all_results.Condition,'Autoscan'))
+    %Sorted to already be in the correct order
     all_results = all_results(contains(all_results.Condition,'Autoscan'),:);
-    electrodes = unique(all_results.Electrode);
-    e_num = regexp(electrodes,'\d*','Match');
-    e_num = str2double(vertcat(e_num{:}));
-    [~,ia] = sort(e_num);
-    electrodes = electrodes(ia);
+    temp_e = split(all_results.Electrode,'E');
+    all_results.Enum = str2double(temp_e(:,2));
+    all_results = sortrows(sortrows(sortrows(all_results,'CurrentAmp(uA)','ascend'),'PhaseDur(us)','ascend'),'Enum','ascend');
+    elec_phase = strcat(all_results.Electrode,{' '},num2str(all_results.('PhaseDur(us)')),'us');
+    elec_opts = unique(elec_phase,'stable');
     %Select Files to Plot
-    canal = listdlg('PromptString','Which three electrodes?',...
-        'ListString',electrodes,...
-        'SelectionMode','multiple');
-    i1 = find(contains(all_results.Electrode,electrodes(canal(1))));
-    i2 = find(contains(all_results.Electrode,electrodes(canal(2))));
-    i3 = find(contains(all_results.Electrode,electrodes(canal(3))));
-    if ~(length(i3)==length(i1)&&length(i1)==length(i2))
-        error('Unequal number of files for each electrode')
+    canal = listdlg('PromptString','Plot which electrodes and phase durations?',...
+        'ListString',elec_opts,'SelectionMode','multiple');
+    if isempty(canal)
+        return;
     end
-    [curr1,i11] = sort(all_results.('CurrentAmp(uA)')(i1));
-    i1 = i1(i11);
-    [curr2,i22] = sort(all_results.('CurrentAmp(uA)')(i2));
-    i2 = i2(i22);
-    [curr3,i33] = sort(all_results.('CurrentAmp(uA)')(i3));
-    i3 = i3(i33);
-    row1 = all_results.File(i1);
-    row2 = all_results.File(i2);
-    row3 = all_results.File(i3);
-    f_order = [row1;row2;row3];
-    n_col = length(row1);  
-    curr_lab = cellstr(num2str([curr1;curr2;curr3]));
-    curr_lab{1} = [curr_lab{1},'\muA'];
-    curr_lab{1+n_col} = [curr_lab{1+n_col},'\muA'];
-    curr_lab{1+2*n_col} = [curr_lab{1+2*n_col},'\muA'];
+    rel_results = all_results(ismember(elec_phase,elec_opts(canal)),:);
     % Make the figure name
-    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),all_results.Condition,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('PulseFreq(pps)'))),' ',''),'pps'),strcat(strrep(cellstr(num2str(all_results.('PhaseDur(us)'))),' ',''),'us')];   
-    fig_title = {strjoin([join(unique(file_parts,'stable')),strjoin(electrodes(canal),' ')])};
+    file_parts = [rel_results.Subject,rel_results.Visit,cellstr(datestr(rel_results.Date,'yyyymmdd')),...
+        rel_results.Condition,rel_results.Goggle,strcat(strrep(cellstr(num2str(rel_results.('PulseFreq(pps)'))),' ',''),'pps')];   
+    fig_title = {strjoin([join(unique(file_parts,'stable')),strjoin(elec_opts(canal),'_')])};
+    elec_phase = strcat(rel_results.Electrode,{' '},num2str(rel_results.('PhaseDur(us)')),'us');
+    rel_ep = unique(elec_phase,'stable');
+    n_row = length(rel_ep);
+    rel_ep_inds = false(size(rel_results,1),n_row);
+    rel_ep_s  = NaN(1,n_row);
+    for i = 1:n_row
+        rel_ep_inds(:,i) = contains(elec_phase,rel_ep{i});
+        rel_ep_s(i) = find(rel_ep_inds(:,i)==1,1,'first');
+    end
+    n_col = sum(rel_ep_inds);
+    f_order = rel_results.File;
+    curr_lab = cellstr(num2str(rel_results.('CurrentAmp(uA)')));
+    curr_lab(rel_ep_s) = strcat(curr_lab(rel_ep_s),'\muA');
+    cyc_lab = cellstr(num2str(rel_results.Cycles));
+    cyc_lab(rel_ep_s) = strcat('n=',cyc_lab(rel_ep_s));
     % Plot Current Levels
     fig = figure;
     fig.Color = [1,1,1];
     fig.Units = 'inches';
     fig.Position = [1 1 8 4];
     if annot
-        annotation('textbox',[0 .9 1 .1],'String',fig_title,'FontSize',14,...
-            'HorizontalAlignment','center','EdgeColor','none');
         annotation('textbox',[0 0 1 1],'String',['VOGA',version,...
             newline,Experimenter],'FontSize',5,...
             'EdgeColor','none','interpreter','none');
@@ -466,38 +463,34 @@ if any(contains(all_results.Condition,'Autoscan'))
     end
     ha = gobjects(1,length(f_order));
     %Set params
-    %grid_on = false;
+    grid_on = false;
     if isempty(YMax)
         YMax = 100;
     end
     YLim = YMax*[-1 1];
-    x_min = 0.01;
+    x_min = 0.15;
     x_max = 0.95;
     space_x = 0.01;
     y_min = 0.08;
-    y_max = 0.92;
+    y_max = 0.98;
     space_y = 0.03;
     %Calculate
-    x_wid = (x_max - x_min - space_x*(n_col-1))/n_col;
-    fig_row_pos = repmat(x_min:(x_wid+space_x):x_max,1,3);
-    y_wid = (y_max - y_min - space_y*2)/3;
-    fig_col_pos = reshape(repmat(fliplr(y_min:(y_wid+space_y):y_max),n_col,1),[],1)';
-    annotation('line',fig_row_pos(end)+[0 x_wid],y_min-0.01*[1 1],'LineWidth',2)
-    annotation('line',(x_max+space_x)*[1 1],y_min+[0 YMax*y_wid/(2*YLim(2))],'LineWidth',2)
-    annotation('textbox','String','0.5s','EdgeColor','none',...
-        'Position',[fig_row_pos(end),0,x_wid,y_min-0.01],'HorizontalAlignment','right','VerticalAlignment','middle')
-    annotation('textbox','String',[num2str(YMax),newline,'\circ/s'],'EdgeColor','none',...
-        'Position',[x_max+space_x,y_min,1-(x_max+space_x),YMax*y_wid/(2*YLim(2))],'HorizontalAlignment','center','VerticalAlignment','middle')
+    x_wid = (x_max - x_min - space_x*(n_col-1))./n_col;
+    y_wid = (y_max - y_min - space_y*(n_row-1))/n_row;
+    y_pos = fliplr(y_min:(y_wid+space_y):y_max); 
+    fig_x_wid = NaN(1,length(f_order));
+    fig_row_pos = NaN(1,length(f_order));
+    fig_col_pos = NaN(1,length(f_order));
+    k = 0;
+    for i = 1:n_row
+        x_pos = x_min:(x_wid(i)+space_x):x_max;
+        fig_row_pos((1:n_col(i))+k) = x_pos;
+        fig_col_pos((1:n_col(i))+k) = y_pos(i);
+        fig_x_wid((1:n_col(i))+k) = x_wid(i);
+        k = k+n_col(i);
+    end 
     for i = 1:length(f_order)
-        ha(i) = subplot(3,n_col,i);
-        set(gca,'XColor','none','YColor','none')
-    end
-    for i = 1:length(f_order)
-        axes(ha(i))
-        set(ha(i),'Position',[fig_row_pos(i),fig_col_pos(i),x_wid,y_wid])
-        if mod(i,n_col) > 0
-            annotation('line',(fig_row_pos(i)+x_wid+0.5*space_x)*[1 1],fig_col_pos(i)+[0 y_wid],'LineWidth',1,'LineStyle','--')
-        end
+        ha(i) = subplot(n_row,max(n_col),i);        
         %Load and plot
         b = load([Cyc_Path,filesep,f_order{i}]);
         a = fieldnames(b);
@@ -513,97 +506,65 @@ if any(contains(all_results.Condition,'Autoscan'))
         end
         hold on
         %Now add the fills and standard deviations and means
-        %Plot the intended canal again so that it's in the foreground
-        if contains(f_order{i},'LP') || contains(f_order{i},'RA') %RALP
+        trac = {'l_z','r_z','l_l','r_l','l_r','r_r'};
+        if contains(f_order{i},{'RA','LP'})%RALP
             curr_col = colors.l_r;
-            %LE-LHRH
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s),'Color',colors.l_z)
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s),'Color',colors.l_z)
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s),'Color',colors.l_z,'LineWidth',2);
-            %RE-LHRH
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s) + CycAvg.rz_cycstd(s),'Color',colors.r_z)
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s) - CycAvg.rz_cycstd(s),'Color',colors.r_z)
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s),'Color',colors.r_z,'LineWidth',2);
-            %LE-LARP
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s) + CycAvg.ll_cycstd(s),'Color',colors.l_l)
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s) - CycAvg.ll_cycstd(s),'Color',colors.l_l)
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s),'Color',colors.l_l,'LineWidth',2);
-            %RE-LARP
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s) + CycAvg.rl_cycstd(s),'Color',colors.r_l)
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s) - CycAvg.rl_cycstd(s),'Color',colors.r_l)
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s),'Color',colors.r_l,'LineWidth',2);
-            %LE_RALP
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s) + CycAvg.lr_cycstd(s),'Color',colors.l_r)
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s) - CycAvg.lr_cycstd(s),'Color',colors.l_r)
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s),'Color',colors.l_r,'LineWidth',2);
-            %RE-RALP
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s) + CycAvg.rr_cycstd(s),'Color',colors.r_r)
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s) - CycAvg.rr_cycstd(s),'Color',colors.r_r)
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s),'Color',colors.r_r,'LineWidth',2);
-        elseif contains(f_order{i},'LH') || contains(f_order{i},'RH') %LHRH
+            rel_trac = {'l_r','r_r'};
+        elseif contains(f_order{i},{'LH','RH'})%LHRH
             curr_col = colors.l_z;
-            %LE-LARP
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s) + CycAvg.ll_cycstd(s),'Color',colors.l_l)
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s) - CycAvg.ll_cycstd(s),'Color',colors.l_l)
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s),'Color',colors.l_l,'LineWidth',2);
-            %RE-LARP
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s) + CycAvg.rl_cycstd(s),'Color',colors.r_l)
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s) - CycAvg.rl_cycstd(s),'Color',colors.r_l)
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s),'Color',colors.r_l,'LineWidth',2);
-            %LE_RALP
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s) + CycAvg.lr_cycstd(s),'Color',colors.l_r)
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s) - CycAvg.lr_cycstd(s),'Color',colors.l_r)
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s),'Color',colors.l_r,'LineWidth',2);
-            %RE-RALP
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s) + CycAvg.rr_cycstd(s),'Color',colors.r_r)
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s) - CycAvg.rr_cycstd(s),'Color',colors.r_r)
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s),'Color',colors.r_r,'LineWidth',2);
-            %LE-LHRH
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s),'Color',colors.l_z)
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s),'Color',colors.l_z)
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s),'Color',colors.l_z,'LineWidth',2);
-            %RE-LHRH
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s) + CycAvg.rz_cycstd(s),'Color',colors.r_z)
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s) - CycAvg.rz_cycstd(s),'Color',colors.r_z)
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s),'Color',colors.r_z,'LineWidth',2);
-        elseif contains(f_order{i},'RP') || contains(f_order{i},'LA') %LARP
+            rel_trac = {'l_z','r_z'};
+        elseif contains(f_order{i},{'LA','RP'})%LARP
             curr_col = colors.l_l;
-            %LE-LHRH
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s) + CycAvg.lz_cycstd(s),'Color',colors.l_z)
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s) - CycAvg.lz_cycstd(s),'Color',colors.l_z)
-            plot(CycAvg.t(s),CycAvg.lz_cycavg(s),'Color',colors.l_z,'LineWidth',2);
-            %RE-LHRH
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s) + CycAvg.rz_cycstd(s),'Color',colors.r_z)
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s) - CycAvg.rz_cycstd(s),'Color',colors.r_z)
-            plot(CycAvg.t(s),CycAvg.rz_cycavg(s),'Color',colors.r_z,'LineWidth',2);
-            %LE_RALP
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s) + CycAvg.lr_cycstd(s),'Color',colors.l_r)
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s) - CycAvg.lr_cycstd(s),'Color',colors.l_r)
-            plot(CycAvg.t(s),CycAvg.lr_cycavg(s),'Color',colors.l_r,'LineWidth',2);
-            %RE-RALP
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s) + CycAvg.rr_cycstd(s),'Color',colors.r_r)
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s) - CycAvg.rr_cycstd(s),'Color',colors.r_r)
-            plot(CycAvg.t(s),CycAvg.rr_cycavg(s),'Color',colors.r_r,'LineWidth',2);
-            %LE-LARP
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s) + CycAvg.ll_cycstd(s),'Color',colors.l_l)
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s) - CycAvg.ll_cycstd(s),'Color',colors.l_l)
-            plot(CycAvg.t(s),CycAvg.ll_cycavg(s),'Color',colors.l_l,'LineWidth',2);
-            %RE-LARP
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s) + CycAvg.rl_cycstd(s),'Color',colors.r_l)
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s) - CycAvg.rl_cycstd(s),'Color',colors.r_l)
-            plot(CycAvg.t(s),CycAvg.rl_cycavg(s),'Color',colors.r_l,'LineWidth',2);
+            rel_trac = {'l_l','r_l'};
+        end        
+        for j = 1:length(trac)
+            trace = strrep(trac{j},'_','');
+            plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color',colors.(trac{j}))
+            plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color',colors.(trac{j}))
+            plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s),'Color',colors.(trac{j}),'LineWidth',2);
+        end
+        %Plot the intended canal again so that it's in the foreground
+        for j = 1:length(rel_trac)
+            trace = strrep(rel_trac{j},'_','');
+            plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color',colors.(rel_trac{j}))
+            plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color',colors.(rel_trac{j}))
+            plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s),'Color',colors.(rel_trac{j}),'LineWidth',2);
         end
         hold off
         axis([0 0.5 YLim])
-        text(0.5,YLim(2),curr_lab{i},'Color',curr_col,'HorizontalAlignment','right','VerticalAlignment','top')
-%         if(grid_on)
-%             set(gca,'XGrid','on','YGrid','on','XMinorGrid','on','YMinorGrid','on')
-%         end
-        if mod(i,n_col)==1
-            text(0.5,YLim(1),['n=',num2str(length(CycAvg.cyclist))],'Color','k','HorizontalAlignment','right','VerticalAlignment','bottom')
+        text(0.5,YLim(2)-0.01*diff(YLim),curr_lab{i},'Color',curr_col,'HorizontalAlignment','right','VerticalAlignment','top')
+        text(0.5,YLim(1)+0.01*diff(YLim),cyc_lab{i},'Color','k','HorizontalAlignment','right','VerticalAlignment','bottom')
+    end
+    for i = 1:length(f_order)
+        set(ha(i),'Position',[fig_row_pos(i),fig_col_pos(i),fig_x_wid(i),y_wid])  
+        if ~ismember(i,[rel_ep_s-1,length(f_order)])
+            annotation('line',(fig_row_pos(i)+fig_x_wid(i)+0.5*space_x)*[1 1],fig_col_pos(i)+[0 y_wid],'LineWidth',1,'LineStyle','--')
+        end       
+    end
+    annotation('line',fig_row_pos(end)+[0 x_wid(end)],y_min-0.01*[1 1],'LineWidth',2)
+    annotation('line',(x_max+space_x)*[1 1],y_min+[0 YMax*y_wid/(2*YLim(2))],'LineWidth',2)
+    annotation('textbox','String','0.5s','EdgeColor','none',...
+        'Position',[fig_row_pos(end),0,x_wid(end),y_min-0.01],'HorizontalAlignment','right','VerticalAlignment','middle')
+    annotation('textbox','String',[num2str(YMax),newline,'\circ/s'],'EdgeColor','none',...
+        'Position',[x_max+space_x,y_min,1-(x_max+space_x),YMax*y_wid/(2*YLim(2))],'HorizontalAlignment','center','VerticalAlignment','middle')
+    set(ha,'XColor',[1,1,1],'YColor',[1,1,1])
+    lab_ax2 = axes('Position',[x_min y_min x_min y_max-y_min],'XColor',[1 1 1],'YColor',[1,1,1],...
+     'Color','none','XTick',[],'YTick',[]);
+    ylabel(lab_ax2,unique(rel_results.Subject),'FontSize',30,'FontWeight','bold','Color','k','Position',[-0.6 0.5 0])
+    for i = 1:length(rel_ep_s)
+        if contains(elec_phase(i),{'RA','LP'}) %RALP
+            curr_col = colors.l_r;
+        elseif contains(elec_phase(i),{'LH','RH'}) %LHRH
+            curr_col = colors.l_z;
+        elseif contains(elec_phase(i),{'RP','LA'}) %LARP
+            curr_col = colors.l_l;
         else
-            text(0.5,YLim(1),num2str(length(CycAvg.cyclist)),'Color','k','HorizontalAlignment','right','VerticalAlignment','bottom')
-        end
+            curr_col = 'k';
+        end  
+        ylabel(ha(rel_ep_s(i)),split(elec_phase(rel_ep_s(i)),' '),'Color',curr_col,'FontSize',20,'Position',[-0.05 0 -1]);
+    end
+    if(grid_on)
+        set(ha,'XGrid','on','YGrid','on','XMinorGrid','on','YMinorGrid','on')
     end
     savefig([Path,filesep,'Figures',filesep,strrep(fig_title{:},' ','-'),'.fig'])
 end
