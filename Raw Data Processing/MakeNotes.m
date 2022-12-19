@@ -4,6 +4,7 @@
 % RotaryChair-SumSine-Condition-Axis-Freq1-Freq2-Freq3-Speed
 % aHIT-Sine-Condition-Axis-Freq-Speed
 % aHIT-Impulses-Condition-Axis-Speed
+% aHIT-Gaussian-Condition-Axis-Speed
 % Manual-Impulses-Condition-Axis-Speed
 % eeVOR-Sine-Axis-Freq-Speed
 % eeVOR-PulseTrain-PFM/PAM-Axis-pps-uA
@@ -34,7 +35,7 @@ if isempty(file_names)
     file_date = [];
 end
 Notes_ind = contains(file_names,'-Notes.txt');
-VOG_ind = find(contains(file_names,VOG_fname_pat)&~Notes_ind&~contains(file_names,'Raw')); %Raw = LDVOG calibration file
+VOG_ind = find(contains(file_names,VOG_fname_pat)&~Notes_ind&~contains(file_names,{'Raw','.cal'})); %Raw = LDVOG calibration file
 has_notes = contains(file_names(VOG_ind),strrep(file_names(Notes_ind),'-Notes.txt',''));
 VOG_files = file_names(VOG_ind(~has_notes));
 VOG_files_date = file_date(VOG_ind(~has_notes));
@@ -295,6 +296,14 @@ else %LDVOG and NKI
                 'Experiment RotaryChair-Sine-NoStim-LHRH-0.2Hz-100dps';...
                 'Experiment RotaryChair-Sine-NoStim-LHRH-0.5Hz-100dps';...
                 'Experiment RotaryChair-Sine-NoStim-LHRH-1Hz-100dps';...
+                };
+        elseif contains(Raw_Path,'aHIT') %All the normal experiments
+            w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];...
+                'Experiment aHIT-Gaussian-LightNoStim-LHRH-150dps';...
+                'Experiment aHIT-Sine-LightNoStim-LHRH-0.5Hz-35dps';...
+                'Experiment aHIT-Sine-LightNoStim-LHRH-1Hz-70dps';...
+                'Experiment aHIT-Sine-LightNoStim-LHRH-2Hz-140dps';...
+                'Experiment aHIT-Impulse-LightNoStim-LHRH-150dps';...
                 };
         else
             w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];'Experiment '};

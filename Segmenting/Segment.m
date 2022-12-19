@@ -578,10 +578,16 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
             ends1(isnan(ends1)) = [];
             seg_start = max(round(starts1-20,0),1);
             seg_end = min(round(ends1,0)+20,length(GyroAll));
-            if(length(seg_start) ~= length(seg_end))
+            if length(seg_start)~=length(seg_end)
                 error('Length of start and stop are unequal. Please manually segment')
-            elseif length(seg_start) < length(stim_info)
+            elseif length(seg_start)<length(stim_info)
                 error('Less segments found than in the notes file. Please manually segment')
+            elseif length(seg_start)>length(stim_info)
+                small_seg = seg_end-seg_start < 2*Fs;
+                if (length(seg_start)-sum(small_seg))>=length(stim_info)
+                    seg_start(small_seg) = [];
+                    seg_end(small_seg) = [];
+                end
             end
             if length(seg_start) ~= length(stim_info)
                 plot(NaN,NaN)
@@ -626,20 +632,16 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
             hold off
             pause(1)
         end
-        if any(contains(stim_info,'Impulse'))
+        if any(contains(stim_info,{'Impulse','Gaussian'}))
             %Add a stim_info entry for each canal (LHRH -> LH and RH)
-            rep_ind = sort([(1:length(start))';find(contains(stim_info,'Impulse'))]);
+            rep_ind = sort([(1:length(start))';find(contains(stim_info,{'Impulse','Gaussian'}))]);
             start = start(rep_ind);
             ends = ends(rep_ind); 
             stim_info2 = repmat(stim_info,1,2);
-            stim_info2(~contains(stim_info2(:,2),'Impulse'),2) = {''};
+            stim_info2(~contains(stim_info2(:,2),{'Impulse','Gaussian'}),2) = {''};
             %Make the canals one-sided here
-            stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,1),'LHRH'),1) = strrep(stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,1),'LHRH'),1),'LHRH','LH');
-            stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,2),'LHRH'),2) = strrep(stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,2),'LHRH'),2),'LHRH','RH');
-            stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,1),'LARP'),1) = strrep(stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,1),'LARP'),1),'LARP','RP');
-            stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,2),'LARP'),2) = strrep(stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,2),'LARP'),2),'LARP','LA');
-            stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,1),'RALP'),1) = strrep(stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,1),'RALP'),1),'RALP','RA');
-            stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,2),'RALP'),2) = strrep(stim_info2(contains(stim_info2(:,1),'Impulse')&contains(stim_info2(:,2),'RALP'),2),'RALP','LP');
+            stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),1) = strrep(strrep(strrep(stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),1),'LHRH','LH'),'LARP','RP'),'RALP','RA');
+            stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),2) = strrep(strrep(strrep(stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),2),'LHRH','RH'),'LARP','LA'),'RALP','LP');
             stim_info = reshape(stim_info2',[],1);
             stim_info(cellfun(@isempty,stim_info)) = [];                        
         end 
@@ -773,7 +775,7 @@ if ~isempty(stim_info)
             %Fix this to be more general for pulse trains
             if contains(stim_info{i},'65Vector') %stim vec in the info file
                 info.stim_axis = str2double(info.dataType(strfind(info.dataType,'['):strfind(info.dataType,']')));
-            elseif contains(stim_info{i},'Impulse')
+            elseif contains(stim_info{i},{'Impulse','Gaussian'})
                 %Add code here
                 if contains(stim_info{i},'LH')
                     info.stim_axis = [0,0,1];

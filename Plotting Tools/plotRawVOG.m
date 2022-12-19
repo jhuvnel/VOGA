@@ -17,7 +17,7 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
     else
         VOG_files = extractfield([dir([Raw_Path,filesep,'SESSION*.txt']);dir([Raw_Path,filesep,'*.dat'])...
             dir([Raw_Path,filesep,'*Lateral.txt']);dir([Raw_Path,filesep,'LARP*.txt']);dir([Raw_Path,filesep,'RALP*.txt'])],'name'); 
-        VOG_files(contains(VOG_Files,'-Notes')) = [];
+        VOG_files(contains(VOG_files,'-Notes')) = [];
         [indx,tf] = nmlistdlg('PromptString','Select files to plot:','ListSize',[300 300],'ListString',VOG_files,'SelectionMode','multiple');
         if tf~=1
             return;

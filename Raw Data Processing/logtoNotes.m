@@ -11,7 +11,8 @@ Log_ind = contains(file_names,{'LDHP','LDPC'});
 VOG_ind = find(contains(file_names,{'SESSION','.dat'})&~Notes_ind&~Log_ind);
 has_notes = contains(strrep(strrep(file_names(VOG_ind),'.txt',''),'.dat',''),strrep(file_names(Notes_ind),'-Notes.txt',''));
 VOG_files = file_names(VOG_ind(~has_notes));
-if isempty(VOG_files)||isempty(Log_ind) %No files or log files
+possible_log = file_names(Log_ind);
+if isempty(VOG_files)||isempty(possible_log) %No files or log files
     return;
 end
 %% Find all log/autoscan/VOG files
