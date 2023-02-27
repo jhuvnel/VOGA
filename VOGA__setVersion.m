@@ -13,8 +13,8 @@ if isfile([userpath,filesep,'VOGA_VerInfo.txt'])
     %Set to prompt user to redo if not the right size, missing data, or outdated version
     if length(items)<3||~strcmp(current_ver,items{1})||isempty(items{3}) 
         user_prompt = 1;
-        def_ans = [{current_ver},items{2}];
     end
+    def_ans = [{current_ver},items{2}];
 else
     user_prompt = 1;
     def_ans = {current_ver;''};
