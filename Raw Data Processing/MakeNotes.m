@@ -1,6 +1,6 @@
 %% Make Notes
 % RotaryChair-Sine-Condition-Axis-Freq-Speed
-% RotaryChair-VelStep-Condition-Axis-Speed(n=neg velocity)
+% RotaryChair-VelStep-Condition-Axis-Speed
 % RotaryChair-SumSine-Condition-Axis-Freq1-Freq2-Freq3-Speed
 % aHIT-Sine-Condition-Axis-Freq-Speed
 % aHIT-Impulses-Condition-Axis-Speed
@@ -25,7 +25,7 @@ end
 logtoNotes(Raw_Path)
 %% Find Files to Make Notes
 VOG_fname_pat = {'SESSION','Lateral.txt','LARP.txt','RALP.txt',...
-    '.dat','.mat','EyePositionData'};
+    '.dat','.mat','ImuData'};
 rel_dir = dir(Raw_Path);
 rel_dir(extractfield(rel_dir,'isdir')) = [];
 file_names = extractfield(rel_dir,'name');
@@ -221,17 +221,21 @@ elseif contains(Raw_Path,'ESC') %ESC
 else %LDVOG and NKI
     %% Initialize Figure
     fig = figure(1);
+    set(fig,'Color','w','Units','normalized','Position',[0,0,1,1]);
     clf; %in case there are leftover anotations
-    fig.Units = 'normalized';
-    fig.Position = [0 0 1 1];
     fig.Units = 'inches';
     screen_size = fig.Position;
     fig.Position = screen_size - [0 0 6 0];
-    annotation('textbox',[0 .9 1 .1],'String',strrep(Raw_Path,'_',' '),'FontSize',14,...
-    'HorizontalAlignment','center','EdgeColor','none');
+    ax = subplot(1,1,1);
+    xlabel('Time (s)')
+    ylabel('Velocity (dps)')
+    ax.Position = [0.05 0.1 0.6 0.83];
+    notes = annotation('textbox',[0.7 0.1 0.25 0.83],'String','',...
+        'FontSize',11,'HorizontalAlignment','left','EdgeColor','none');
     %% Check each VOG file
     for i = 1:length(VOG_files)
         fname = VOG_files{i};
+        set(notes,'String','')
         if contains(fname,'SESSION') %LDVOG
             VOG_data = readtable([Raw_Path,filesep,fname]);
             %Make date and other labels
@@ -289,8 +293,8 @@ else %LDVOG and NKI
         end
         if contains(Raw_Path,'Rotary') %All the normal experiments
             w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];...
-                'Experiment RotaryChair-VelStep-NoStim-LHRH-240dps';...
-                'Experiment RotaryChair-VelStep-NoStim-LHRH-n240dps';...
+                'Experiment RotaryChair-VelStep-NoStim-LH-240dps';...
+                'Experiment RotaryChair-VelStep-NoStim-RH-240dps';...
                 'Experiment RotaryChair-Sine-NoStim-LHRH-0.05Hz-100dps';...
                 'Experiment RotaryChair-Sine-NoStim-LHRH-0.1Hz-100dps';...
                 'Experiment RotaryChair-Sine-NoStim-LHRH-0.2Hz-100dps';...
@@ -308,28 +312,17 @@ else %LDVOG and NKI
         else
             w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];'Experiment '};
         end
-        if length(Time_Eye) > 1000000
-            sub_i = floor(linspace(1,length(Time_Eye),1000000));
-        else
-            sub_i = 1:length(Time_Eye);
-        end
+        sub_i = unique(round(linspace(1,length(Time_Eye),1e6)));
+        %Update plots
         plot(Time_Eye(sub_i),GyroX(sub_i),'k:',Time_Eye(sub_i),GyroY(sub_i),'k--',Time_Eye(sub_i),GyroZ(sub_i),'k-',Time_Eye(sub_i),100*Stim(sub_i),'b')
-        title(strrep(fname,'_',' '))
-        xlabel('Time (s)')
-        ylabel('Velocity (dps)')
+        title([{Raw_Path};{fname}],'FontSize',12,'interpreter','none')
         legend('GyroX','GyroY','GyroZ','Trigger')
+        set(notes,'String',w_notes)
         %Action options
-        fig2 = figure(2);
-        fig2.Units = 'inches';
-        fig2.Position = [screen_size(3)-6,0,5,screen_size(4)-5.50]; 
-        annotation('textbox',[0 0 1 1],'String',w_notes,...
-            'FontSize',11,'HorizontalAlignment','left','EdgeColor','none');
         opts = {'Save','Edit Notes','Fix Trigger','Skip'};
         [ind,tf] = nmlistdlg('PromptString','Select an action:',...
-               'SelectionMode','single',...
-               'ListSize',[150 150],...
-               'ListString',opts,...
-               'Position',[screen_size(3)-6,screen_size(4)-3.75,3,3.75]); 
+               'SelectionMode','single','ListSize',[100 70],'ListString',opts,...
+               'Position',[screen_size(3)-6,screen_size(4)-3,1.5,1.75]); 
         if ~tf
             return;
         end
@@ -338,9 +331,7 @@ else %LDVOG and NKI
                 notes_check = inputdlg(['Check Notes: ',newline,'Ex: RotaryChair-Sine-NoStim-LHRH-0.05Hz-100dps'],'Set VOG File Parameters',[length(w_notes),70],{strjoin(w_notes,'\n')}); 
                 if ~isempty(notes_check)
                     w_notes = cellstr(notes_check{1,1});
-                    clf(fig2)
-                    annotation('textbox',[0 0 1 1],'String',strrep(w_notes,'_','-'),...
-                        'FontSize',11,'HorizontalAlignment','left','EdgeColor','none');
+                    set(notes,'String',w_notes)
                 else
                     return;
                 end
@@ -348,10 +339,8 @@ else %LDVOG and NKI
                 updateRawVOGTrigger(Raw_Path,fname);
             end
             [ind,tf] = nmlistdlg('PromptString','Select an action:',...
-               'SelectionMode','single',...
-               'ListSize',[150 150],...
-               'ListString',opts,...
-               'Position',[screen_size(3)-6,screen_size(4)-3.75,3,3.75]);
+               'SelectionMode','single','ListSize',[100 70],'ListString',opts,...
+               'Position',[screen_size(3)-6,screen_size(4)-3,1.5,1.75]); 
             if ~tf
                 return;
             end
@@ -361,8 +350,7 @@ else %LDVOG and NKI
             filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');
             fprintf(filePh,'%s\n',w_notes{:});
             fclose(filePh);
-        end
-        close(fig2)    
+        end  
     end
 end
 end

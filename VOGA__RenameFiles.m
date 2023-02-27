@@ -28,10 +28,7 @@ if nargin < 3
 end
 %% Load .mat files to change the fname/name parameter, otherwise just move the file
 all_files = [dir([Path,filesep,'*',filesep,'*']);dir(Path)];
-all_files(extractfield(all_files,'isdir')) = [];
-if any(contains({all_files.folder},'CRFs'))
-    disp('CRF folder detected. Note that the CRF word document will need to updated with new .png files.')
-end
+all_files(extractfield(all_files,'isdir')|~contains(extractfield(all_files,'name'),{str1,'CycParam.mat','Results.mat','Progress.mat','.txt'})) = []; 
 for i = 1:length(all_files)  
     old_fname = [all_files(i).folder,filesep,all_files(i).name];
     fname = [all_files(i).folder,filesep,strrep(all_files(i).name,str1,str2)];
@@ -74,23 +71,18 @@ for i = 1:length(all_files)
         end
     elseif strcmp(ext,'.fig') 
         fig = openfig(fname);
-        title = findall(fig,'Type','textbox');
-        save_flag = false;
-        for j = 1:length(title)
-            rel_obj = title(j);
-            if any(contains(rel_obj.String,str1)) %Only go through the save process if the title needs to be changed
-                rel_obj.String = strrep(rel_obj.String,str1,str2);
-                save_flag = true;
+        annot = findall(fig,'Type','text','-or','Type','textbox');
+        if ~isempty(annot)&&any(contains(get(annot,'String'),{str1,strrep(str1,'-',' ')}))
+            annot = annot(contains(get(annot,'String'),{str1,strrep(str1,'-',' ')}));            
+            for j = 1:length(annot)
+                annot(j).String = strrep(strrep(annot(j).String,str1,str2),strrep(str1,'-',' '),strrep(str2,'-',' '));
             end
-        end
-        if save_flag
             savefig(fig,fname);
         end
         close all;
     elseif strcmp(ext,'.png')||strcmp(ext,'.xlsx')
         disp('All .png and .xlsx files are being deleted and will need to be regenerated using VOGA.')
         disp(old_fname)
-        delete(fname)
     elseif strcmp(ext,'.txt')&&~contains(fname,'LDHP') %Not a log file
         data = table2cell(readtable(fname,'ReadVariableNames',false,'Delimiter','*')); %The * is a delimieter we never use so that each line goes into one cell.
         if any(contains(reshape(data,[],1),str1))

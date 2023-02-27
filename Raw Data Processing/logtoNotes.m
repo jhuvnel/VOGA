@@ -3,6 +3,7 @@
 function logtoNotes(Raw_Path)
 %Update this line to include more extensions as needed
 file_names = extractfield([dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])],'name');
+file_dates = extractfield([dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])],'date');
 if isempty(file_names)
     file_names = '';
 end
@@ -15,6 +16,7 @@ possible_log = file_names(Log_ind);
 if isempty(VOG_files)||isempty(possible_log) %No files or log files
     return;
 end
+VOG_files_date = file_dates(VOG_ind(~has_notes));
 %% Find all log/autoscan/VOG files
 %Start with log files
 [indx_l,tf1] = nmlistdlg('PromptString','Select log files:','ListSize',[300 300],'ListString',possible_log);
@@ -122,15 +124,6 @@ if tf1 == 1
             vis = '';
         end
         %% Check each VOG file
-        VOG_files = file_names(VOG_ind_num(~has_notes));
-        VOG_files_date = file_date(VOG_ind_num(~has_notes));
-        if all(VOG_ind|Notes_ind)
-            disp(['No log files detected in ',Raw_Path])
-            return;
-        elseif isempty(VOG_files)
-            disp(['All VOG files already have Notes files in ',Raw_Path])
-            return;
-        end
         for i = 1:length(VOG_files)
             fname = VOG_files{i};
             if contains(fname,'.txt') %LDVOG

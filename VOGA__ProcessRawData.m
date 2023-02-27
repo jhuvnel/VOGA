@@ -17,9 +17,14 @@ for i = 1:length(fold_Path)
     elseif contains(lower(fold_Path{i}),'calibration') %ESC and sometimes LDVOG, move the whole folder
         movefile([Path,filesep,fold_Path{i}],[Raw_Path,filesep,fold_Path{i}])
     elseif ~isempty(dir([Path,filesep,fold_Path{i},filesep,'*.dat'])) %Detect NKI/NL folder by the presence of .dat files
-        collapseFolder(Path,fold_Path{i})
+        fnames = extractfield(dir([Path,filesep,fold_Path{i}]),'name',~ismember(extractfield(dir([Path,filesep,fold_Path{i}]),'name'),{'.','..'}));
+        for ii = 1:length(fnames)
+            movefile([Path,filesep,fold_Path{i},filesep,fnames{ii}],[Path,filesep,fold_Path{i},filesep,fold_Path{i},'_',fnames{ii}])
+        end  
+        movefile([Path,filesep,fold_Path{i},filesep,'*'],Raw_Path)
+        rmdir([Path,filesep,fold_Path{i}])
     elseif contains(Path,'ESC') %ESC3 has a lot of folders
-        collapseFolder(Path,fold_Path{i})
+        collapseFolder(Path,fold_Path{i},1)
     else
         disp(['Unclear how to process folder: ',fold_Path{i}])
     end

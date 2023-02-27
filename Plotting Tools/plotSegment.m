@@ -54,6 +54,19 @@ function fig = plotSegment(Data)
         xlabel('Time(s)')
         ylabel('Velocity (dps)')
         legend('Head LARP','Head RALP','Head LHRH','Inv Eye Y','Inv Eye Z')
+    elseif contains(info.goggle_ver,'ESC3') %new version
+        plot(ts,Data.HeadVel_L,'k:')
+        hold on
+        plot(ts,Data.HeadVel_R,'k--')
+        plot(ts,Data.HeadVel_Z,'k-')
+        plot(te,Data.RE_Position_Y,'Color',colors.r_y)
+        plot(te,Data.RE_Position_Z,'Color',colors.r_z)
+        hold off
+        axis([0 te(end) -300 300])
+        title('Angular Velocity')
+        xlabel('Time(s)')
+        ylabel('Velocity (dps)')
+        legend('Head LARP','Head RALP','Head LHRH','Eye Y','Eye Z')
     elseif contains(info.goggle_ver,'ESC')
         plot(ts,Data.HeadVel_L,'k:')
         hold on

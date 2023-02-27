@@ -1,6 +1,6 @@
 function plotSummaryFigures(params)
-opts = {'Rotary Chair (Sine)','vHIT (GNO)',...
-    'Rotary Chair (Sine) + Candidate','vHIT (GNO) + Candidate'};
+opts = {'Rotary Chair/Sine','vHIT/GNO',...
+    'Candidate: Rotary Chair/Sine','Candidate: vHIT/GNO'};
 [ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
     'SelectionMode','multiple',...
     'ListSize',[200 125],...
@@ -8,8 +8,8 @@ opts = {'Rotary Chair (Sine)','vHIT (GNO)',...
 if tf
     sub_mark = 'xdo^ps+hv<';
     sub_info = params.sub_info;
-    all_subs = sub_info.Var1;
-    sub_ears = sub_info.Var2;
+    all_subs = sub_info.Subject;
+    sub_ears = sub_info.Ear;
     results_mat = dir('*Results.mat');
     if isempty(results_mat)
         error('No Results files found in this directory')
@@ -41,9 +41,11 @@ if tf
             end
             % Extract relevant normative values
             load('RotaryChairNormativeData.mat','norm_dat')
-            % Limit to 0.05-1Hz (0.05, 0.1, 0.2, 0.5, 1)
-            remove_phase_with_gain_below = 0.025;
+            all_freqs = unique(all_results.('Frequency(Hz)'));
+            % Limit summary stats to 0.05-1Hz (0.05, 0.1, 0.2, 0.5, 1)
             freqs = [0.05,0.1,0.2,0.5,1];
+            remove_phase_with_gain_below = 0.025;
+            
             % Isolate the half-cycle for the implanted ear
             half_cyc = repmat({'HIGH'},length(sub_ears),1);
             half_cyc(strcmp(sub_ears,'R')) = {'LOW'};
@@ -54,6 +56,7 @@ if tf
                 contains(all_results.Condition,'Motion'),...
                 contains(all_results.Condition,'Constant')];
             %Make the arrays
+            %Summary stats
             for c = 1:length(conds)
                 %Initialize arrays
                 gain.(conds{c}) = NaN(length(all_subs),length(freqs));
@@ -85,12 +88,17 @@ if tf
                 phase_mean.(conds{c}) = mean(phase.(conds{c}),1,'omitnan');
                 phase_std.(conds{c}) = std(phase.(conds{c}),[],1,'omitnan');
             end
+            %Each subject
+            for i = 1:length(all_subs)
+                
+            end
+            
         elseif contains(opts{ind(ii)},'vHIT')
             
         end
         %% Main menu
         switch opts{ind(ii)}
-            case 'Rotary Chair (Sine)'
+            case 'Rotary Chair/Sine'
                 %% Over Freq
                 spread = 0.05;
                 mark_size = 7;
@@ -99,10 +107,6 @@ if tf
                 fig1 = figure;
                 set(fig1,'Units','inches','Position',[1 1 6 4],'Color',[1 1 1])
                 ha(1) = subplot(2,1,1);
-                ha(2) = subplot(2,1,2);
-                ha(1).Position = [0.09,0.56,0.98-0.09,0.425];
-                ha(2).Position = [0.09,0.12,0.98-0.09,0.425];
-                axes(ha(1))
                 plot(NaN,NaN)
                 hold on
                 h1(6) = fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.gain-norm_dat.gain_std,fliplr(norm_dat.gain+norm_dat.gain_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
@@ -121,10 +125,10 @@ if tf
                 set(gca,'xscale','log','xminortick','off','XTick',freqs,'XTickLabel',[],'box','on','Layer','top')
                 axis([0.041 1.2 -0.025 0.79])
                 ylabel('Horizontal VOR Gain')
-                leg1 = legend(h1,{'Pre-Op','Post-Op','MVI OFF','MVI ON','Normal Mean','Normal±SD'},'Location','north','NumColumns',3);
+                leg1 = legend(h1,{'Pre-op','Post-op','MVI OFF','MVI ON','Norm Mean','Norm±SD'},'Location','north','NumColumns',3);
                 title(leg1,'Condition')
                 leg1.ItemTokenSize(1) = 15;
-                axes(ha(2))
+                ha(2) = subplot(2,1,2);
                 plot(NaN,NaN)
                 hold on
                 fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.phase-norm_dat.phase_std,fliplr(norm_dat.phase+norm_dat.phase_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
@@ -148,6 +152,8 @@ if tf
                 leg2 = legend(h2,split(cellstr(num2str(1:length(all_subs)))),'Location','north','NumColumns',ceil(length(all_subs)/1));
                 leg2.ItemTokenSize(1) = 8;
                 title(leg2,'Subjects')
+                ha(1).Position = [0.09,0.56,0.98-0.09,0.425];
+                ha(2).Position = [0.09,0.12,0.98-0.09,0.425];
                 %Figure letter labels
                 annot_wid_x = 0.04;
                 annot_wid_y = 0.06;
@@ -163,7 +169,7 @@ if tf
                 fname1 = ['Summary Figures',filesep,datestr(now,'yyyymmdd'),'_SummaryRotaryChairGainPhase_AllSub.fig'];
                 savefig(fig1,fname1)
                 saveas(fig1,strrep(fname1,'.fig','.png'))
-                %% Over Freq Per Sub (Change groupings of subjects as needed)
+                %% Over Freq Grouped Sub (Change groupings of subjects as needed)
                 each_unique_fig_text = {'MVI1-5','MVI6-10'};
                 each_sub_num = [{1:5},{6:10}];
                 for f = 1:length(each_unique_fig_text)
@@ -183,22 +189,14 @@ if tf
                     N = length(sub_num);
                     ha = gobjects(N,2);
                     h1 = gobjects(6,1);
-                    for i = 1:N
-                    ha(i,1) = subplot(N,2,2*i-1);
-                    ha(i,2) = subplot(N,2,2*i);
-                    end
                     %Set positions
                     xwid = (xmax-xmin-xspc)/2; %set for 2 cols
                     x = xmin:(xwid+xspc):xmax;
                     ywid = (ymax-ymin-(N-1)*yspc)/N;
                     y = ymin:(ywid+yspc):ymax;
-                    for i = 1:N
-                        ha(i,1).Position = [x(1),y(N+1-i),xwid,ywid];
-                        ha(i,2).Position = [x(2),y(N+1-i),xwid,ywid];
-                    end
                     %Plot
                     for i = 1:N
-                        axes(ha(i,1))
+                        ha(i,1) = subplot(N,2,2*i-1);
                         plot(NaN,NaN)
                         hold on
                         h1(6) = fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.gain-norm_dat.gain_std,fliplr(norm_dat.gain+norm_dat.gain_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
@@ -224,7 +222,7 @@ if tf
                         if i == 1
                             title('Horizontal VOR Gain')
                         end    
-                        axes(ha(i,2))
+                        ha(i,2) = subplot(N,2,2*i);
                         plot(NaN,NaN)
                         hold on
                         fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.phase-norm_dat.phase_std,fliplr(norm_dat.phase+norm_dat.phase_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
@@ -245,16 +243,14 @@ if tf
                             title('Phase Lead (deg)')
                         end
                     end
-                    %Add legend
-                    leg = legend(ha(1,2),h1,{'Pre-Op','Post-Op','MVI OFF','MVI ON','Normal Mean','Normal±SD'},'NumColumns',2,'Location','northeast');
-                    leg.ItemTokenSize(1) = 15;
-                    title(leg,'Condition')
-                    %Figure letter labels
+                    %Sizing figure and figure letter labels
                     annot_wid_x = 0.047;
                     annot_wid_y = 0.035;
                     annot_pos_x = x+0.009;
-                    annot_pos_y = fliplr(y)+ywid-0.04;
+                    annot_pos_y = fliplr(y)+ywid-0.04;                     
                     for i = 1:N
+                        ha(i,1).Position = [x(1),y(N+1-i),xwid,ywid];
+                        ha(i,2).Position = [x(2),y(N+1-i),xwid,ywid];
                         annotation('textbox',[annot_pos_x(1),annot_pos_y(i),annot_wid_x,annot_wid_y],...
                             'String',char(i+64),'HorizontalAlignment','center',...
                             'VerticalAlignment','middle','FontWeight','bold','FontSize',20,...
@@ -263,12 +259,19 @@ if tf
                             'String',char((N+i)+64),'HorizontalAlignment','center',...
                             'VerticalAlignment','middle','FontWeight','bold','FontSize',20,...
                             'Fitboxtotext','off','BackgroundColor',[1,1,1]);
-                    end 
+                    end
+                    %Add legend
+                    leg = legend(ha(1,2),h1,{'Pre-op','Post-op','MVI OFF','MVI ON','Norm Mean','Norm±SD'},'NumColumns',2,'Location','northeast');
+                    leg.ItemTokenSize(1) = 15;
+                    title(leg,'Condition')                    
                     fname2 = ['Summary Figures',filesep,datestr(now,'yyyymmdd'),'_SummaryRotaryChairGainPhase_EachSub_',unique_fig_text,'.fig'];
                     savefig(fig2,fname2)
                     saveas(fig2,strrep(fname2,'fig','png'))
                 end
-            case 'Rotary Chair (Sine) + Candidate'
+                %% Each Sub, All Parameters Over Time
+                
+                
+            case 'Candidate: Rotary Chair/Sine'
                 results_mat = dir([candidate,filesep,'Visit 0',filesep,'Rotary Chair',filesep,'*Results.mat']);
                 if isempty(results_mat)
                     error('No Results files found in the candidate Rotary Chair directory')
@@ -307,10 +310,6 @@ if tf
                 fig1 = figure;
                 set(fig1,'Units','inches','Position',[1 1 6 4],'Color',[1 1 1])
                 ha(1) = subplot(2,1,1);
-                ha(2) = subplot(2,1,2);
-                ha(1).Position = [0.09,0.56,0.98-0.09,0.425];
-                ha(2).Position = [0.09,0.12,0.98-0.09,0.425];
-                axes(ha(1))
                 plot(NaN,NaN)
                 hold on
                 h1(6) = fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.gain-norm_dat.gain_std,fliplr(norm_dat.gain+norm_dat.gain_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
@@ -334,7 +333,7 @@ if tf
                 leg1 = legend(h1,{'Pre-Op','Post-Op','MVI OFF','MVI ON','Normal Mean','Normal±SD'},'Location','north','NumColumns',3);
                 title(leg1,'Condition')
                 leg1.ItemTokenSize(1) = 15;
-                axes(ha(2))
+                ha(2) = subplot(2,1,2);
                 plot(NaN,NaN)
                 hold on
                 fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.phase-norm_dat.phase_std,fliplr(norm_dat.phase+norm_dat.phase_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
@@ -354,6 +353,8 @@ if tf
                 h2(i+2) = plot(NaN,NaN,'m*','MarkerSize',mark_size,'LineWidth',1);
                 plot((1-3*spread)*freqs,cand_phase,'b*','MarkerSize',2*mark_size,'MarkerFaceColor','b')
                 hold off
+                ha(1).Position = [0.09,0.56,0.98-0.09,0.425];
+                ha(2).Position = [0.09,0.12,0.98-0.09,0.425];
                 set(gca,'xscale','log','xminortick','off','XTick',freqs,'box','on','Layer','top')
                 axis([0.041 1.2 -25 135])
                 xlabel('Frequency (Hz)')
@@ -376,9 +377,9 @@ if tf
                 fname1 = [candidate,filesep,'Visit 0',filesep,candidate,'_',datestr(now,'yyyymmdd'),'_SummaryRotaryChairGainPhase_AllMVISub.fig'];
                 savefig(fig1,fname1)
                 saveas(fig1,strrep(fname1,'.fig','.png'))
-            case 'vHIT (GNO)'
+            case 'vHIT/GNO'
                 
-            case 'vHIT (GNO) + Candidate'
+            case 'Candidate: vHIT/GNO'
                 
         end
     end

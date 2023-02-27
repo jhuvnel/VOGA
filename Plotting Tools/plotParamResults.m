@@ -1,29 +1,24 @@
 %% Plot Param Results.m
-% This function makes figures from the Results.mat tables.
+% This function makes figures for an experiment folder once it has been
+% analyzed and the Results.mat table exists.
+% Updated to make GroupCycAvg Figures too
+% There should be only one subject in the table. Else it returns the
+% function.
 
 function plotParamResults(params)
-Path = params.Path;
-Cyc_Path = [Path,filesep,'Cycle Average'];
-version = params.version;
-Experimenter = params.Experimenter;
-sub_info = params.sub_info;
-Subs = sub_info{:,1};
-Ears = sub_info{:,2};
-if isfield(params,'annot')
-    annot = params.annot;
-else
-    annot = 1;
-end
-if isfield(params,'YMax')
-    YMax = params.YMax;
-    YMax(isnan(YMax)) = [];
-else
-    YMax = [];
-end
 % Initialize
 close all;
 load('VNELcolors.mat','colors')
-code_name = ['Plotting Scripts',filesep,'plotParamResults.m'];
+all_canals = {'LA';'RP';'LP';'RA';'LH';'RH';'-X';'+X';'-Y';'+Y'};
+all_canals(:,2) = reshape(repmat({'LARP','RALP','LHRH','X','Y'},2,1),[],1);
+all_canals(:,3) = reshape(repmat({'l','r','z','x','y'},2,1),[],1);
+all_markers = split('o d ^ p > h < s v _ * | .');
+%Process arguements from params input
+Path = params.Path;
+Cyc_Path = params.Cyc_Path;
+sub_info = params.sub_info;
+Subs = sub_info.Subject;
+Ears = sub_info.Ear;
 % Load table in question
 res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 if isempty(res_file)
@@ -33,693 +28,742 @@ if isempty(res_file)
     res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 end
 load([Path,filesep,res_file{end}],'all_results')
+% Confirm there is only one subject (can be mulitple visits)
+if length(unique(all_results.Subject))>1
+    disp('More than one subject detected from the table on the path provided. Run a different plotting script.')
+    return;
+end
+%Find the implanted canals for this subject
+imp_canals = strcat(Ears{ismember(unique(all_results.Subject),Subs)},{'A','P','H'});
+all_results.ImpCanal = contains(all_results.AxisName,imp_canals);
+all_results.DateStr = cellstr(datestr(all_results.Date,'yyyymmdd'));
+%Set up the plot tables
+exp_types = {'Sine','HIT','Exp','PulseTrain'};
+plot_types = {'CycAvg','MaxVel','Param'};
+all_plot_tabs = cell2table(cell(length(exp_types),length(plot_types)),'VariableNames',plot_types,'RowNames',exp_types);
+%% Sinusoids
 if any(contains(all_results.Type,'Sine'))
-    %% Sinusoids
-    all_canals = {'LARP','RALP','LHRH','Y','X'}; %Preferred order
-    ear_canals = {'LARP','RALP','LHRH'};
-    all_results = all_results(contains(all_results.Type,'Sine')&contains(all_results.AxisName,all_canals),:);
-%     if any(contains(all_results.Experiment,'RotaryChair'))
-%         load('RotaryChairNormativeData.mat','norm_dat');
-%         freq = norm_dat.freq;
-%         norm_gain_m = norm_dat.gain;
-%         norm_gain_std = norm_dat.gain_std;
-%         norm_phase_m = norm_dat.phase;
-%         norm_phase_std = norm_dat.phase_std;
-%     end
-    fn = size(all_results,1);
-    % Plot Group Cycle Average Results
-    canals = all_canals(ismember(all_canals,unique(all_results.AxisName)));
-    cnum = length(canals);
-    canal_let = lower(strrep(strrep(strrep(canals,'LARP','L'),'RALP','R'),'LHRH','Z'));
-    freqs = unique(all_results.('Frequency(Hz)'));
+    %Isolate relevant table entries and put them in order for plotting by amplitude and frequency
+    tab = sortrows(sortrows(all_results(contains(all_results.Type,'Sine')&contains(all_results.AxisName,all_canals(:,1)),:),'Amplitude','ascend'),'Frequency','ascend');
+    fn = size(tab,1);
+    YMax = 5*ceil(max(tab.MaxVel+tab.MaxVel_sd)/5);
+    GainMax = 0.1*ceil(max(tab.Gain+tab.Gain_sd)/0.1);
+    %Make one figure for each group of cycle averages (same subject, visit,
+    %date, condition, goggle, axis, across frequency, and/or amplitude)
+    %Make one figure per for frequency and/or amplitude sweep with MaxVel
+    %of each each component for each condition and one figure with Gain and
+    %Phase
+    YVar = {'Gain';'Phase'};
+    YLabs = {'Gain';'Phase Lead (deg)'};
+    rel_labs = {'Subject','Visit','DateStr','Condition','Goggle'};
+    [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
+    file_parts = table2cell(tab(:,rel_col));
+    %Parts applicable to each file
+    common_cond_i = all(strcmp(file_parts,repmat(file_parts(1,:),fn,1)),1);
+    common_cond = strjoin(file_parts(1,common_cond_i));
+    common_cond_i(contains(rel_labs,'Condition')) = 0;
+    rel_file_parts = join(file_parts(:,~common_cond_i),2);
+    [conds,~,IC] = unique(rel_file_parts,'stable');
+    enum = length(conds);
+    [~,Ic] = ismember(tab.AxisName,all_canals(:,1));
+    [freqs,~,IF] = unique(tab.Frequency);
+    IF(isnan(freqs)) = 0;
+    freqs(isnan(freqs)) = [];
     fnum = length(freqs);
-    amps = unique(all_results.('Amplitude(dps)'));
+    str_freqs = strcat(strrep(cellstr(num2str(freqs)),' ',''),'Hz');
+    [amps,~,IA] = unique(tab.Amplitude);
+    IA(isnan(amps)) = 0;
+    amps(isnan(amps)) = [];
     anum = length(amps);
-    exps = zeros(fnum,anum);
-    maxvel_poscyc = NaN(1,fn);
-    maxvel_poscyc_sd = NaN(1,fn);
-    maxvel_negcyc = NaN(1,fn);
-    maxvel_negcyc_sd = NaN(1,fn);
-    phase = NaN(1,fn);
-    phase_sd = NaN(1,fn);
-    align_poscyc = NaN(1,fn);
-    align_poscyc_sd = NaN(1,fn);
-    align_negcyc = NaN(1,fn);
-    align_negcyc_sd = NaN(1,fn);
-    for i = 1:fn
-        exps(ismember(freqs,all_results.('Frequency(Hz)')(i)),ismember(amps,all_results.('Amplitude(dps)')(i))) = 1;
-        rel_col = strrep(strrep(strrep(all_results.AxisName{i},'LARP','L'),'RALP','R'),'LHRH','Z');
-        [~,eye] = max(abs([all_results.(['MaxVel_L',rel_col,'_HIGH'])(i),all_results.(['MaxVel_R',rel_col,'_HIGH'])(i),all_results.(['MaxVel_L',rel_col,'_LOW'])(i),all_results.(['MaxVel_R',rel_col,'_LOW'])(i)]));
-        if mod(eye,2)==1 %Left
-            eye_s = 'L';
-        else %Right
-            eye_s = 'R';
-        end
-        maxvel_poscyc(i) = all_results.(['MaxVel_',eye_s,rel_col,'_HIGH'])(i);
-        maxvel_poscyc_sd(i) = all_results.(['MaxVel_',eye_s,rel_col,'_HIGH_sd'])(i);
-        maxvel_negcyc(i) =  all_results.(['MaxVel_',eye_s,rel_col,'_LOW'])(i);
-        maxvel_negcyc_sd(i) = all_results.(['MaxVel_',eye_s,rel_col,'_LOW_sd'])(i);
-        phase(i) = all_results.(['Phase_',eye_s])(i);
-        phase_sd(i) = all_results.(['Phase_',eye_s,'_sd'])(i);
-        align_poscyc(i) = all_results.(['Align_',eye_s,'_HIGH'])(i);
-        align_poscyc_sd(i) = all_results.(['Align_',eye_s,'_HIGH_sd'])(i);
-        align_negcyc(i) =  all_results.(['Align_',eye_s,'_LOW'])(i);
-        align_negcyc_sd(i) = all_results.(['Align_',eye_s,'_LOW_sd'])(i);
+    str_amps = strcat(strrep(cellstr(num2str(amps)),' ',''),'dps');
+    [freq_amps,~,IFA] = unique([tab.Frequency,tab.Amplitude],'rows','stable');
+    fanum = length(freq_amps);
+    str_freq_amps = join([strcat(strrep(cellstr(num2str(freq_amps(:,1))),' ',''),'Hz'),...
+        strcat(strrep(cellstr(num2str(freq_amps(:,2))),' ',''),'dps')]);
+    tab.IFA = IFA;
+    %Make a table with all frequency and amplitude sweeps for plotting
+    %Find indecies for frequency sweeps with more than 1 file
+    [fa_n_mat,~,fa_n_inds] = unique([[IC,Ic,IF,0*IA];[IC,Ic,0*IF,IA]],'rows');
+    GC_fa = groupcounts(fa_n_inds);
+    fa_n_mat(GC_fa<2,:) = [];
+    %Combo of freq and amp like on aHIT
+    if isempty(fa_n_mat)
+        [fa_n_mat,~,fa_n_inds] = unique([IC,Ic,0*IF,0*IA],'rows');
+        GC_fa = groupcounts(fa_n_inds);
+        fa_n_mat(GC_fa<2,:) = [];
     end
-    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),...
-        all_results.Condition,all_results.Goggle,strcat(strrep(cellstr(num2str(all_results.('Frequency(Hz)'))),' ',''),'Hz'),...
-        strcat(strrep(cellstr(num2str(all_results.('Amplitude(dps)'))),' ',''),'dps')];
-    rel_file_parts = file_parts(:,1:5); %everything but freq/amp
-    common_cond = cell(1,5);
-    for i = 1:5
-        if length(unique(file_parts(:,i)))==1
-            common_cond(i) = unique(file_parts(:,i));
-        end
-    end
-    rel_file_parts(:,~cellfun(@isempty,common_cond)) = [];
-    common_cond(cellfun(@isempty,common_cond)) = [];
-    common_cond = strjoin(common_cond); 
-    if isempty(rel_file_parts) %only one condition
-        conds = all_results.Condition(1);
-        IC = ones(fn,1);
-    elseif size(rel_file_parts,2)==1
-        [conds,~,IC] = unique(rel_file_parts,'stable');
+    if isempty(fa_n_mat)
+        cycavg_plots = [];
+        maxvel_plots = [];
+        param_plots = [];
     else
-        [conds,~,IC] = unique(join(rel_file_parts),'stable');
-    end
-    enum = length(conds);
-    %Position information for the graph types
-    max_y = 0.80;
-    min_y = 0.15;
-    %spac_y = 0.01;
-    min_x = 0.08;
-    max_x = 0.90;
-    spac_x = 0.01;
-    wid_x = (max_x-min_x-2*spac_x)/3;
-    x_pos = min_x:(wid_x+spac_x):max_x-wid_x; 
-    wid_y = max_y-min_y;
-    y_pos = min_y;    
-    if isempty(YMax)
-        YMax = 5*ceil(max([maxvel_poscyc+maxvel_poscyc_sd,maxvel_negcyc+maxvel_negcyc_sd])/5);
-    end
-    all_markers = 'o*.sd^v><ph_|';
-    if any(sum(exps,1)>1) %Frequency Sweep
-        rel_amps = amps(sum(exps,1)>1);
-        for a = 1:length(rel_amps)            
-            fig_name = [common_cond,' ',num2str(rel_amps(a)),'dps Sine Frequency Sweep'];
-            figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
-            annotation('textbox',[0 0 1 1],'String',[Path,newline,'plotParamResults.m',newline,...
-            'VOGA',version,newline,Experimenter],'FontSize',5,...
-            'EdgeColor','none','interpreter','none','Color',[0.5,0.5,0.5]);
-            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
-                    'HorizontalAlignment','center','EdgeColor','none');
-            ha = gobjects(1,3);
-            h1 = gobjects(1,cnum);
-            h2 = gobjects(1,enum);
-            ha(1) = subplot(1,3,1);
-            ha(1).Position = [x_pos(1),y_pos,wid_x,wid_y];
-            ha(2) = subplot(1,3,2);
-            ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
-            ha(3) = subplot(1,3,3);
-            ha(3).Position = [x_pos(3),y_pos,wid_x,wid_y];
-            c_bool = false(1,cnum);
-            e_bool = false(1,enum);
-            for c = 1:cnum
-                for i = 1:enum
-                    rel_i = find(all_results.('Amplitude(dps)')==rel_amps(a)&contains(all_results.AxisName,canals{c})&IC==i);
-                    if length(rel_i)>1
-                        [f_ax,f_i] = sort(all_results.('Frequency(Hz)')(rel_i)); 
-                        rel_i = rel_i(f_i);
-                        axes(ha(1))
-                        hold on
-                        errorbar(f_ax,maxvel_poscyc(rel_i),maxvel_poscyc_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
-                        hold off
-                        axes(ha(2))
-                        hold on
-                        errorbar(f_ax,maxvel_negcyc(rel_i),maxvel_negcyc_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
-                        h1(c) = plot(NaN,NaN,'LineWidth',2,'Color',colors.(['l_',canal_let{c}]));
-                        hold off
-                        axes(ha(3))
-                        hold on
-                        errorbar(f_ax,phase(rel_i),phase_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
-                        h2(i) = plot(NaN,NaN,['k',all_markers(i)]);
-                        hold off
-                        c_bool(c) = true;
-                        e_bool(i) = true;
+        dat = array2table(fa_n_mat,'VariableNames',{'Cond_i','Canal_i','Freq_i','Amp_i'});
+        for i = 1:size(dat,1)
+            inds = find(IC==dat.Cond_i(i)&Ic==dat.Canal_i(i)&...
+                (IF==dat.Freq_i(i)|0*IF==dat.Freq_i(i))&...
+                (IA==dat.Amp_i(i)|0*IA==dat.Amp_i(i)));
+            %Remove duplicate experiments by choosing the one with the
+            %closest time stamp to the others
+            [gc,gr] = groupcounts(IFA(inds));
+            dup = gr(gc>1);
+            for ii = 1:length(dup)
+                sub_i = find(IFA(inds)==dup(ii));
+                [~,k_i] = min(abs(tab.Date(inds(sub_i))-median(tab.Date(inds))));
+                sub_i(k_i) = []; %Keep this one
+                inds(sub_i) = []; %Delete the others
+            end
+            if length(inds)>1
+                if dat.Freq_i(i)==0&&dat.Amp_i(i)==0 %Freq/Amp
+                    freq = '';
+                    amp = '';
+                    name = [common_cond,' ',conds{dat.Cond_i(i)},...
+                        ' ',all_canals{dat.Canal_i(i),2},' Sine'];
+                    x_val = IFA(inds);
+                    x_var = 'IFA';
+                    x_tick = 1:fanum;
+                    x_tlab = strrep(str_amps,'dps','');
+                    x_lab = 'Amplitude (dps)';
+                    x_scale = 'linear';
+                    sub_names = str_freq_amps;
+                    files = cell(fanum,1);
+                elseif dat.Freq_i(i)==0 %Amp
+                    freq = '';
+                    amp = [str_amps{dat.Amp_i(i)},' Sine'];
+                    name = [common_cond,' ',conds{dat.Cond_i(i)},...
+                        ' ',all_canals{dat.Canal_i(i),2},' ',str_amps{dat.Amp_i(i)},' Sine'];
+                    x_val = IF(inds);
+                    x_var = 'Frequency';
+                    x_tick = freqs;
+                    x_tlab = strrep(str_freqs,'Hz','');
+                    x_lab = 'Frequency (Hz)';
+                    x_scale = 'log';
+                    sub_names = str_freqs;
+                    files = cell(fnum,1);
+                elseif dat.Amp_i(i)==0 %Freq
+                    freq = [str_freqs{dat.Freq_i(i)},' Sine'];
+                    amp = '';
+                    name = [common_cond,' ',conds{dat.Cond_i(i)},...
+                        ' ',all_canals{dat.Canal_i(i),2},' ',str_freqs{dat.Freq_i(i)},' Sine'];
+                    x_val = IA(inds);
+                    x_var = 'Amplitude';
+                    x_tick = amps;
+                    x_tlab = strrep(str_amps,'dps','');
+                    %Remove labels because of crowding
+                    if ismember(200:100:500,amps)
+                        x_tlab(contains(x_tlab,{'300','400'})) = {''};
+                    elseif ismember(200:100:400,amps)
+                        x_tlab(contains(x_tlab,{'300'})) = {''};
                     end
+                    x_lab = 'Amplitude (dps)';
+                    x_scale = 'log';
+                    sub_names = str_amps;
+                    files = cell(anum,1);
                 end
-            end            
-            linkaxes(ha,'x')
-            linkaxes(ha(1:2),'y')
-            set(ha,'xscale','log','XTick',freqs,'XTickLabelRotation',0,'XMinorTick','off','XLim',[min(freqs)*0.8 max(freqs)*1.2])
-            set(ha(1:2),'YLim',[0 YMax])
-            set(ha(2),'YTickLabel',[])
-            set(ha(3),'YAxisLocation','right','YLim',[-180 360])
-            title(ha(1),'Positive Half-Cycle')
-            title(ha(2),'Negative Half-Cycle')
-            title(ha(3),'Phase Lead')
-            ylabel(ha(1),'Maxmimum Eye Velocity (dps)')
-            ylabel(ha(3),'Phase (deg)')
-            xlabel(ha(2),'Frequency (Hz)')
-            %Make legends
-            axes(ha(2))
-            hold on
-            for c = 1:cnum
-                h1(c) = plot(NaN,NaN,'LineWidth',2,'Color',colors.(['l_',canal_let{c}]));
+                files(x_val) = tab.File(inds);
+                dat.Cond{i} = conds{dat.Cond_i(i)};
+                dat.Canal{i} = all_canals{dat.Canal_i(i),1};
+                dat.Freq{i} = freq;
+                dat.Amp{i} = amp;
+                dat.Name{i} = name;
+                dat.Files{i} = files;
+                dat.Tab{i} = tab(inds,:);
+                dat.SubNames{i} = sub_names;
+                dat.YLim{i} = YMax*[-1 1];
+                dat.XVar{i} = x_var;
+                dat.XTick{i} = x_tick;
+                dat.XTickLab{i} = x_tlab;
+                dat.XLabel{i} = x_lab;
+                dat.XScale{i} = x_scale;
+                dat.X{i} = tab.(x_var)(inds);
+                for ii = 1:length(YVar)
+                    dat.(YVar{ii}){i} = tab.(YVar{ii})(inds);
+                    dat.([YVar{ii},'_sd']){i} = tab.([YVar{ii},'_sd'])(inds);
+                end
             end
-            hold off
-            leg1 = legend(h1(c_bool),upper(canal_let(c_bool)),'NumColumns',sum(c_bool),'Location','northwest');
-            leg1.ItemTokenSize(1) = 5;
-            title(leg1,'Axis')
-            axes(ha(3))
-            hold on
-            for i = 1:enum
-                h2(i) = plot(NaN,NaN,['k',all_markers(i)]);
-            end
-            hold off
-            leg2 = legend(h2(e_bool),conds(e_bool),'NumColumns',1,'Location','northwest');
-            leg2.ItemTokenSize(1) = 5;
-            title(leg2,'Conditions')
-            savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])
-            close;
         end
-    end  
-    if any(sum(exps,2)>1) %Amplitude Sweep
-        rel_freqs = freqs(sum(exps,2)>1);      
-        for f = 1:length(rel_freqs)
-            fig_name = [common_cond,' ',num2str(rel_freqs(f)),'Hz Sine Amplitude Sweep'];
-            figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
-            annotation('textbox',[0 0 1 1],'String',[Path,newline,'plotParamResults.m',newline,...
-            'VOGA',version,newline,Experimenter],'FontSize',5,...
-            'EdgeColor','none','interpreter','none','Color',[0.5,0.5,0.5]);
-            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
-                    'HorizontalAlignment','center','EdgeColor','none');
-            ha = gobjects(1,3);
-            h1 = gobjects(1,cnum);
-            h2 = gobjects(1,enum);
-            ha(1) = subplot(1,3,1);
-            ha(1).Position = [x_pos(1),y_pos,wid_x,wid_y];
-            ha(2) = subplot(1,3,2);
-            ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
-            ha(3) = subplot(1,3,3);
-            ha(3).Position = [x_pos(3),y_pos,wid_x,wid_y];
-            c_bool = false(1,cnum);
-            e_bool = false(1,enum);
-            for c = 1:cnum
-                for i = 1:enum
-                    rel_i = find(all_results.('Frequency(Hz)')==rel_freqs(f)&contains(all_results.AxisName,canals{c})&IC==i);
-                    if length(rel_i)>1
-                        [a_ax,a_i] = sort(all_results.('Amplitude(dps)')(rel_i));
-                        rel_i = rel_i(a_i);
-                        axes(ha(1))
-                        hold on
-                        errorbar(a_ax,maxvel_poscyc(rel_i),maxvel_poscyc_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
-                        hold off
-                        axes(ha(2))
-                        hold on
-                        errorbar(a_ax,maxvel_negcyc(rel_i),maxvel_negcyc_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
-                        hold off
-                        axes(ha(3))
-                        hold on
-                        errorbar(a_ax,phase(rel_i),phase_sd(rel_i),[all_markers(i),'-'],'Color',colors.(['l_',canal_let{c}]));
-                        hold off
-                        c_bool(c) = true;
-                        e_bool(i) = true;
-                    end
-                end
-            end            
-            linkaxes(ha,'x')
-            linkaxes(ha(1:2),'y')
-            set(ha,'XTick',amps,'XTickLabelRotation',0,'XMinorTick','off','XLim',[0 max(amps)*1.05])
-            set(ha(1:2),'YLim',[0 YMax])
-            set(ha(2),'YTickLabel',[])
-            set(ha(3),'YAxisLocation','right','YLim',[-180 360])
-            title(ha(1),'Positive Half-Cycle')
-            title(ha(2),'Negative Half-Cycle')
-            title(ha(3),'Phase Lead')
-            ylabel(ha(1),'Maxmimum Eye Velocity (dps)')
-            ylabel(ha(3),'Phase (deg)')
-            xlabel(ha(2),'Head Velocity (dps)')
-            XTickLab = get(ha(1),'XTickLabel');
-            XTickLab(amps<100) = {''};
-            set(ha,'XTickLabel',XTickLab)
-            %Make legends
-            axes(ha(2))
-            hold on
-            for c = 1:cnum
-                h1(c) = plot(NaN,NaN,'LineWidth',2,'Color',colors.(['l_',canal_let{c}]));
-            end
-            hold off
-            leg1 = legend(h1(c_bool),upper(canal_let(c_bool)),'NumColumns',sum(c_bool),'Location','northwest');
-            leg1.ItemTokenSize(1) = 5;
-            title(leg1,'Axis')
-            axes(ha(3))
-            hold on
-            for i = 1:enum
-                h2(i) = plot(NaN,NaN,['k',all_markers(i)]);
-            end
-            hold off
-            leg2 = legend(h2(e_bool),conds(e_bool),'NumColumns',1,'Location','northwest');
-            leg2.ItemTokenSize(1) = 5;
-            title(leg2,'Conditions')
-            savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])
-            close;
-            %% Just the canals
-            figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
-            annotation('textbox',[0 0 1 1],'String',[Path,newline,'plotParamResults.m',newline,...
-            'VOGA',version,newline,Experimenter],'FontSize',5,...
-            'EdgeColor','none','interpreter','none','Color',[0.5,0.5,0.5]);
-            annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
-                    'HorizontalAlignment','center','EdgeColor','none');
-            ha = gobjects(1,3);
-            h1 = gobjects(1,cnum);
-            h2 = gobjects(1,enum);
-            ha(1) = subplot(1,3,1);
-            ha(1).Position = [x_pos(1),y_pos,wid_x,wid_y];
-            ha(2) = subplot(1,3,2);
-            ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
-            ha(3) = subplot(1,3,3);
-            ha(3).Position = [x_pos(3),y_pos,wid_x,wid_y];
-            e_bool = false(1,enum);
-            for i = 1:enum
-                rel_i = find(all_results.('Frequency(Hz)')==rel_freqs(f)&contains(all_results.AxisName,{'LHRH','LARP','RALP'})&IC==i);
-                if length(rel_i)>1
-                    [a_ax,a_i] = sort(all_results.('Amplitude(dps)')(rel_i));
-                    rel_i = rel_i(a_i);
-                    ind_L = contains(all_results.AxisName(rel_i),'LARP');
-                    ind_R = contains(all_results.AxisName(rel_i),'RALP');
-                    ind_Z = contains(all_results.AxisName(rel_i),'LHRH');
-                    sub_ind = false(1,length(Subs));
-                    for s = 1:length(Subs)
-                        sub_ind(s) = contains([fig_name,' ',conds{i}],Subs{s});
-                    end
-                    ear = Ears{sub_ind};
-                    axes(ha(2))
-                    hold on
-                    errorbar(a_ax(ind_L),phase(rel_i(ind_L)),phase_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
-                    errorbar(a_ax(ind_R),phase(rel_i(ind_R)),phase_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
-                    errorbar(a_ax(ind_Z),phase(rel_i(ind_Z)),phase_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
-                    hold off
-                    if strcmp(ear,'L') % +Z, -L and -R
-                        axes(ha(1))
-                        hold on
-                        errorbar(a_ax(ind_L),maxvel_negcyc(rel_i(ind_L)),maxvel_negcyc_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
-                        errorbar(a_ax(ind_R),maxvel_negcyc(rel_i(ind_R)),maxvel_negcyc_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
-                        errorbar(a_ax(ind_Z),maxvel_poscyc(rel_i(ind_Z)),maxvel_poscyc_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
-                        hold off
-                        axes(ha(3))
-                        hold on
-                        errorbar(a_ax(ind_L),align_negcyc(rel_i(ind_L)),align_negcyc_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
-                        errorbar(a_ax(ind_R),align_negcyc(rel_i(ind_R)),align_negcyc_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
-                        errorbar(a_ax(ind_Z),align_poscyc(rel_i(ind_Z)),align_poscyc_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
-                        hold off
-                    elseif strcmp(ear,'R') % -Z, +L and +R
-                        axes(ha(1))
-                        hold on
-                        errorbar(a_ax(ind_L),maxvel_poscyc(rel_i(ind_L)),maxvel_poscyc_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
-                        errorbar(a_ax(ind_R),maxvel_poscyc(rel_i(ind_R)),maxvel_poscyc_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
-                        errorbar(a_ax(ind_Z),maxvel_negcyc(rel_i(ind_Z)),maxvel_negcyc_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
-                        hold off
-                        axes(ha(3))
-                        hold on
-                        errorbar(a_ax(ind_L),align_poscyc(rel_i(ind_L)),align_poscyc_sd(rel_i(ind_L)),[all_markers(i),'-'],'Color',colors.l_l);
-                        errorbar(a_ax(ind_R),align_poscyc(rel_i(ind_R)),align_poscyc_sd(rel_i(ind_R)),[all_markers(i),'-'],'Color',colors.l_r);
-                        errorbar(a_ax(ind_Z),align_negcyc(rel_i(ind_Z)),align_negcyc_sd(rel_i(ind_Z)),[all_markers(i),'-'],'Color',colors.l_z);
-                        hold off
-                    end
-                    e_bool(i) = true;
-                end
-            end           
-            linkaxes(ha,'x')
-            linkaxes(ha(2:3),'y')
-            set(ha,'XTick',amps,'XTickLabelRotation',0,'XMinorTick','off','XLim',[0 max(amps)*1.05])
-            set(ha(1),'YLim',[0 YMax])
-            set(ha(2:3),'YLim',[-180 360])
-            set(ha(2),'YTickLabel',[])
-            set(ha(2:3),'YAxisLocation','right')
-            title(ha(1),'Maximum Eye Velocity')
-            title(ha(2),'Phase Lead')
-            title(ha(3),'Misalignment')
-            ylabel(ha(1),'Velocity (dps)')
-            ylabel(ha(3),'Degrees')
-            xlabel(ha(2),'Head Velocity (dps)')
-            XTickLab = get(ha(1),'XTickLabel');
-            XTickLab(amps<100) = {''};
-            set(ha,'XTickLabel',XTickLab)
-            %Make legends
-            h1 = [];
-            axes(ha(2))
-            hold on
-            h1(1) = plot(NaN,NaN,'LineWidth',2,'Color',colors.l_l);
-            h1(2) = plot(NaN,NaN,'LineWidth',2,'Color',colors.l_r);
-            h1(3) = plot(NaN,NaN,'LineWidth',2,'Color',colors.l_z);
-            hold off
-            leg1 = legend(h1,{'LARP','RALP','LHRH'},'NumColumns',3,'Location','northwest');
-            leg1.ItemTokenSize(1) = 5;
-            title(leg1,'Axis')
-            axes(ha(3))
-            hold on
-            for i = 1:enum
-                h2(i) = plot(NaN,NaN,['k',all_markers(i)]);
-            end
-            hold off
-            leg2 = legend(h2(e_bool),conds(e_bool),'NumColumns',1,'Location','northwest');
-            leg2.ItemTokenSize(1) = 5;
-            title(leg2,'Conditions')
-            savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'-CanalElectrodesOnly.fig'])
-            close;
+        dat(cellfun(@isempty,dat.Cond),:) = [];
+        [~,ind] = unique(dat.Name,'stable');
+        cycavg_plots = dat(ind,{'Name','Files','SubNames','YLim'}); %Figure name and cyc avg file names for all
+        %Initialize the table for MaxVel plots
+        [~,mp_i2,maxvel_plot_i] = unique(dat(:,{'Cond_i','Freq_i','Amp_i'}),'rows','stable');
+        maxvel_plots = table();
+        maxvel_plots.Name = strrep(strcat({[common_cond,' ']},dat.Cond(mp_i2),...
+            {' '},dat.Freq(mp_i2),dat.Amp(mp_i2),{' Velocity'}),'  ',' ');
+        for i=1:size(maxvel_plots,1)
+            sub_tab = dat(maxvel_plot_i==i,:);
+            rel_tab = cell(2,5);
+            sub_t = cell(2,5);
+            sub_t(sub_tab.Canal_i) = sub_tab.Canal;
+            rel_tab(sub_tab.Canal_i) = sub_tab.Tab;
+            rel_tab(:,all(cellfun(@isempty,sub_t),1)) = [];
+            sub_t(:,all(cellfun(@isempty,sub_t),1)) = [];
+            maxvel_plots.SubNames{i} = sub_t;
+            maxvel_plots.Tables{i} = rel_tab;
+            maxvel_plots.YLim{i} = [0 YMax];
         end
-    end                
-elseif(any(contains(all_results.Condition,'Autoscan')))
-    %% Make Figure like Boutros 2019 Figure 4 but Magnitude and Misalignment
-    %Now figure out which files to plot
-    if ~ismember(all_results.Properties.VariableNames,'PulseFreq(pps)') 
-        all_exps = all_results.Condition;
-        parts = split(all_exps{1},' ');
-        exp_name = [all_results.Subject{1},' ',all_results.Visit{1},' ',datestr(all_results.Date(1),'yyyymmdd'),' Autoscan ',parts{contains(parts,'us')},' ',parts{contains(parts,'pps')},' ',all_results.Goggle{1}];
-    else
-        all_exps = strcat(cellstr(datestr(all_results.Date,'yyyymmdd')),{' '},all_results.Electrode,{' '},cellstr(num2str(all_results.('PhaseDur(us)'))),{'us '},cellstr(num2str(all_results.('PulseFreq(pps)'))),{'pps '},cellstr(num2str(all_results.('CurrentAmp(uA)'))),{'uA '},all_results.Goggle);
-        exp_name = [all_results.Subject{1},' ',all_results.Visit{1},' ',datestr(all_results.Date(1),'yyyymmdd'),' Autoscan ',num2str(all_results.('PhaseDur(us)')(1)),'us ',num2str(all_results.('PulseFreq(pps)')(1)),'pps ',all_results.Goggle{1}];
-    end
-    E_inds = false(length(all_exps),9);
-    if isfield(params,'which_files')
-        which_files = params.which_files;
-    else    
-        which_files = questdlg('Plot all the files in this directory or manually select them?','','All','Select','Select');
-    end
-    for i = 1:9
-        E_sub_i = find(contains(all_exps,['E',num2str(i+2)]));
-        if ~isempty(E_sub_i)
-            if strcmp(which_files,'Select')
-                indx = listdlg('ListString',all_exps(E_sub_i),'PromptString',['Pick the files for E',num2str(i+2)],'ListSize',[400 300]);
-                E_inds(E_sub_i(indx),i) = true;
+        maxvel_plots(:,{'XVar','XTick','XTickLab','XLabel','XScale'}) = dat(mp_i2,{'XVar','XTick','XTickLab','XLabel','XScale'});
+        %Initialize the table for TabParam plots. For Sine, this is Gain/Phase
+        %Legends true for them all
+        leg_tab = cell2table([all_canals(:,1);conds],'VariableNames',{'Name'});
+        leg_tab.Marker(:) = {'none'};
+        leg_tab.Marker(11:end) = all_markers(1:enum);
+        leg_tab.LineStyle(1:2:9) = {'-'};
+        leg_tab.LineStyle(2:2:10) = {':'};
+        leg_tab.LineStyle(11:end) = {'none'};
+        leg_tab.Color(:) = {[0,0,0]};
+        for ii = 1:10
+            leg_tab.Color{ii} = colors.(['l_',all_canals{ii,3}]);
+        end
+        [~,mp_i2,param_plot_i] = unique(dat(:,{'Freq_i','Amp_i'}),'rows','stable');
+        param_plots = table();
+        param_plots.Name = strrep(strcat({[common_cond,' ']},dat.Freq(mp_i2),dat.Amp(mp_i2),{' Gain'}),'  ',' ');
+        for i=1:size(param_plots,1)
+            sub_tab = dat(param_plot_i==i,:);
+            [sub_t,~,indC] = unique(all_canals(sub_tab.Canal_i,2),'stable');
+            rel_tab = cell(length(YVar),length(sub_t));
+            rel_leg = cell(length(YVar),length(sub_t));
+            for ii = 1:length(sub_t)
+                for j = 1:length(YVar)
+                    n_tab = table();
+                    n_tab.Marker = leg_tab.Marker(sub_tab.Cond_i(indC==ii)+10);
+                    n_tab.LineStyle = leg_tab.LineStyle(sub_tab.Canal_i(indC==ii));
+                    n_tab.Color = leg_tab.Color(sub_tab.Canal_i(indC==ii));
+                    n_tab.X = sub_tab.X(indC==ii);
+                    n_tab.Y = sub_tab.(YVar{j})(indC==ii);
+                    n_tab.Y_sd = sub_tab.([YVar{j},'_sd'])(indC==ii);
+                    rel_tab{j,ii} = n_tab;
+                end
+                rel_leg{1,ii} = leg_tab(unique(sub_tab.Canal_i(indC==ii)),:);
+            end
+            %Add legend with conditions
+            if size(rel_leg,1)==1 %Only one row
+                rel_leg{1,1} = [rel_leg{1,1};leg_tab(11:end,:)];
             else
-                E_inds(E_sub_i,i) = true;
+                rel_leg{end,1} = leg_tab(11:end,:);
             end
-        else
-            disp(['No files found for E',num2str(i+2)])
+            param_plots.SubNames{i} = sub_t;
+            param_plots.YLim{i} = [0,GainMax;-180,180];
+            param_plots.YLabel{i} = YLabs;
+            param_plots.Tables{i} = rel_tab;
+            param_plots.Legend{i} = rel_leg;
         end
+        param_plots(:,{'XTick','XTickLab','XLabel','XScale'}) = dat(mp_i2,{'XTick','XTickLab','XLabel','XScale'});
     end
-    %Find the cycle numbers for each column
-    N = [min(all_results.Cycles(any(E_inds(:,1:3),2))),...
-        min(all_results.Cycles(any(E_inds(:,4:6),2))),...
-        min(all_results.Cycles(any(E_inds(:,7:9),2)))];
-    %Make some bold (if you know which one was activated on)
-    E_bold = false(1,9);
-    indx = listdlg('ListString',strcat('E',cellfun(@num2str,num2cell(3:11),'UniformOutput',false)),...
-        'PromptString','Pick the electrodes to bold. Press Cancel for none.','ListSize',[400 300],'SelectionMode','multiple');
-    E_bold(indx) = true;
-    %Make the figure
-    ha = gobjects(1,6);
-    %markerbig=5;
-    %markersmall=4;
-    %linethick=2;
-    %linethin=1;
-    errorbarcapsize=1;
-    figsizeinches=[7,6];
-    XLim = [-5 105];
-    YLim_align = [0 80];
-    %figsizeinchesBoxplot=[2.3,4];
-    figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);%CDS083119a
-    if annot
-        annotation('textbox',[0 0 1 1],'String',[Path,newline,code_name,newline,...
-            'VOGA',version,newline,Experimenter],'FontSize',5,...
-            'EdgeColor','none','interpreter','none');
-    end
-    annotation('textbox',[0 .9 1 .1],'String',strrep(exp_name,'us','\mus'),'FontSize',14,...
-        'HorizontalAlignment','center','EdgeColor','none');
-    ha(1) = subplot(2,3,1);
-    ha(2) = subplot(2,3,2);
-    ha(3) = subplot(2,3,3);
-    ha(4) = subplot(2,3,4);
-    ha(5) = subplot(2,3,5);
-    ha(6) = subplot(2,3,6);
-    x_min = 0.1;
-    x_max = 0.99;
-    x_space = 0.01;
-    y_min = 0.08;
-    y_max = 0.93;
-    y_space = 0.03;
-    x_wid = (x_max-x_min-2*x_space)/3;
-    y_wid = (y_max-y_min-y_space)/2;
-    x_pos = x_min:x_wid+x_space:x_max;
-    y_pos = y_min:y_wid+y_space:y_max;
-    ha(1).Position = [x_pos(1),y_pos(2),x_wid,y_wid];
-    ha(2).Position = [x_pos(2),y_pos(2),x_wid,y_wid];
-    ha(3).Position = [x_pos(3),y_pos(2),x_wid,y_wid];
-    ha(4).Position = [x_pos(1),y_pos(1),x_wid,y_wid];
-    ha(5).Position = [x_pos(2),y_pos(1),x_wid,y_wid];
-    ha(6).Position = [x_pos(3),y_pos(1),x_wid,y_wid];
-    markers = {'x','o','d'};
-    %Set colors (faded vs normal)
-    if any(contains(all_exps,{'LP';'LH';'LA'})) %Left sided
-        color_s = [repmat(colors.l_r_s,3,1);repmat(colors.l_z_s,3,1);repmat(colors.l_l_s,3,1)];
-        color = [repmat(colors.l_r,3,1);repmat(colors.l_z,3,1);repmat(colors.l_l,3,1)];
-        color(~E_bold,:) = color_s(~E_bold,:);
-    else %Right Sided
-        color_s = [repmat(colors.l_l_s,3,1);repmat(colors.l_z_s,3,1);repmat(colors.l_r_s,3,1)];
-        color = [repmat(colors.l_l,3,1);repmat(colors.l_z,3,1);repmat(colors.l_r,3,1)];
-        color(~E_bold,:) = color_s(~E_bold,:);
-    end
-    %Plot each canal
-    for i = 1:3
-        rel_tab.E1 = all_results(E_inds(:,3*i-2),:);
-        rel_tab.E2 = all_results(E_inds(:,3*i-1),:);
-        rel_tab.E3 = all_results(E_inds(:,3*i),:);
-        rel_bold = E_bold(3*i-2:3*i);
-        i_ord = [find(~rel_bold),find(rel_bold)]; %order of plotting so bold in front
-        h = gobjects(1,length(markers));
-        labs = cell(1,3);
-        %Plot legend
-        axes(ha(i))
-        hold on
-        for j = 1:3
-            %Make the fake plots for the labels first
-            h(j) = plot(NaN,NaN,'Marker',markers{j},'Color',color(3*i-3+j,:),'LineWidth',1);
-            %Make the labels
-            if ~isempty(rel_tab.(['E',num2str(j)])) %Something in this one
-                %Old way
-                %exp = strsplit(rel_tab.(['E',num2str(j)]).Condition{1});
-                %labs{1,j} = strrep([exp{contains(exp,'E')},', ',exp{contains(exp,'us')},'/phase'],'u','\mu');
-                % New way w/ table
-                labs{1,j} = [rel_tab.(['E',num2str(j)]).Electrode{1},', ',num2str(rel_tab.(['E',num2str(j)]).('PhaseDur(us)')(1)),'\mus/phase'];
-            else %Remove from the plotting order
-                i_ord(i_ord==j) = [];
-            end
-        end
-        h(cellfun(@isempty,labs)) = []; %Take out an electrode with no files
-        labs(cellfun(@isempty,labs)) = [];
-        hold off
-        %Actually plot when values are present
-        for j = 1:length(i_ord)
-% OLD WAY            
-%             exps = rel_tab.(['E',num2str(i_ord(j))]).Condition;
-%             curr = NaN(1,length(exps));
-%             for q = 1:length(curr)
-%                 exp = strsplit(exps{q});
-%                 curr(q) = str2double(strrep(exp{contains(exp,'uA')},'uA',''));
-%             end
-            % New way with table
-            exp = rel_tab.(['E',num2str(i_ord(j))]).Electrode(1);
-            curr = rel_tab.(['E',num2str(i_ord(j))]).('CurrentAmp(uA)');
-            
-            [curr_norm,curr_i] = sort(100*(curr-min(curr))/(max(curr)-min(curr)));
-            %Determine canal
-            if any(contains(exp,{'LP','RA'})) %RALP
-                canal = 'R';
-            elseif any(contains(exp,{'LH','RH'})) %LHRH
-                canal = 'Z';
-            else %LARP
-                canal = 'L';
-            end
-            %Extract the relevant vectors
-            L_Vel = abs(rel_tab.(['E',num2str(i_ord(j))]).(['MaxVel_L',canal,'_HIGH'])(curr_i));
-            L_Vel_sd = rel_tab.(['E',num2str(i_ord(j))]).(['MaxVel_L',canal,'_HIGH_sd'])(curr_i);
-            R_Vel = abs(rel_tab.(['E',num2str(i_ord(j))]).(['MaxVel_R',canal,'_HIGH'])(curr_i));
-            R_Vel_sd = rel_tab.(['E',num2str(i_ord(j))]).(['MaxVel_R',canal,'_HIGH_sd'])(curr_i);
-            L_Align = rel_tab.(['E',num2str(i_ord(j))]).Align_L_HIGH(curr_i);
-            L_Align_sd = rel_tab.(['E',num2str(i_ord(j))]).Align_L_HIGH_sd(curr_i);
-            R_Align = rel_tab.(['E',num2str(i_ord(j))]).Align_R_HIGH(curr_i);
-            R_Align_sd = rel_tab.(['E',num2str(i_ord(j))]).Align_R_HIGH_sd(curr_i);
-            %Choose the larger eye for each current
-            [~,eye] = max([L_Vel,R_Vel],[],2);
-            Vel = L_Vel;
-            Vel(eye==2) = R_Vel(eye==2);
-            Vel_sd = L_Vel_sd;
-            Vel_sd(eye==2) = R_Vel_sd(eye==2);
-            Align = L_Align;
-            Align(eye==2) = R_Align(eye==2);
-            Align_sd = L_Align_sd;
-            Align_sd(eye==2) = R_Align_sd(eye==2);
-            %Plot velocity
-            axes(ha(i))
-            hold on
-            errorbar(curr_norm,Vel,Vel_sd,'Color',color(3*i-3+i_ord(j),:),'LineStyle','none','LineWidth',1,'CapSize',errorbarcapsize)
-            plot(curr_norm,Vel,'Marker',markers{i_ord(j)},'Color',color(3*i-3+i_ord(j),:),'LineWidth',1)
-            hold off
-            %Plot alignment
-            axes(ha(i+3))
-            hold on
-            errorbar(curr_norm,Align,Align_sd,'Color',color(3*i-3+i_ord(j),:),'LineStyle','none','LineWidth',1,'CapSize',errorbarcapsize)
-            plot(curr_norm,Align,'Marker',markers{i_ord(j)},'Color',color(3*i-3+i_ord(j),:),'LineWidth',1)
-            hold off
-        end
-        axes(ha(i))
-        leg = legend(h,labs,'box','off','Location','northwest','FontSize',7);
-        leg.ItemTokenSize(1) = 12;
-        set(gca,'box','off')
-        if i == 1
-            ylabel({'Eye Velocity';'Magnitude (\circ/s)'})
-        else
-            set(gca,'YColor','none')
-        end
-        set(gca,'XLim',XLim,'XColor','none')
-        axes(ha(i+3))
-        set(gca,'YLim',YLim_align)
-        if i == 1
-            set(gca,'YTick',10:10:max(YLim_align))
-            ylabel({'Misalignment';'Angle (\circ)'})
-        else
-            set(gca,'YColor','none')
-        end
-        set(gca,'XLim',XLim,'XTick',0:20:100)
-        if i==2
-            xlabel('% of Current Range')
-        end
-    end
-    if isempty(YMax)
-       YMax = max(reshape(cell2mat(get(ha(1:3),'Ylim')),[],1));
-    end    
-    set(ha(1:3),'YLim',[0,YMax])
-    set(ha(1),'YTick',20:20:YMax)    
-    fig_name = inputdlg('Name this figure','',1,{[strrep(exp_name,' ','-'),'.fig']});
-    if ~isempty(fig_name)
-        savefig([Path,filesep,'Figures',filesep,fig_name{:}])
-    end
-    close;
-elseif(any(contains(all_results.Type,'Impulse')))
-    %% Impulse
-    all_canals = {'LA','LP','LH','RP','RA','RH'}; %Preferred order
-    all_results = all_results(contains(all_results.Type,'Impulse'),:);
-    fn = size(all_results,1);
-    file_parts = [all_results.Subject,all_results.Visit,cellstr(datestr(all_results.Date,'yyyymmdd')),...
-        all_results.Experiment,all_results.Condition,all_results.Goggle];
-    rel_file_parts = file_parts; %everything but freq/amp
-    common_cond = cell(1,size(file_parts,2));
-    for i = 1:size(file_parts,2)
-        if length(unique(file_parts(:,i)))==1
-            common_cond(i) = unique(file_parts(:,i));
-        end
-    end
-    rel_file_parts(:,~cellfun(@isempty,common_cond)) = [];
-    common_cond(cellfun(@isempty,common_cond)) = [];
-    common_cond = strjoin(common_cond); 
-    if isempty(rel_file_parts) %only one condition
-        conds = all_results.Condition(1);
-        IC = ones(fn,1);
-    elseif size(rel_file_parts,2)==1
-        [conds,~,IC] = unique(rel_file_parts,'stable');
-    else
-        [conds,~,IC] = unique(join(rel_file_parts),'stable');
-    end
+    all_plot_tabs.CycAvg{'Sine'} = cycavg_plots;
+    all_plot_tabs.MaxVel{'Sine'} = maxvel_plots;
+    all_plot_tabs.Param{'Sine'} = param_plots;
+end
+%% Impulse
+if any(contains(all_results.Type,'Impulse'))
+    can_lab = {'LA','LP','LH','RA','RP','RH'};
+    [~,canal_ord] = ismember(can_lab,all_canals(:,1));
+    canals = all_canals(canal_ord,:);
+    tab = all_results(contains(all_results.Type,'Impulse'),:);
+    [~,Ic] = ismember(tab.AxisName,canals(:,1));
+    tab.Ic = Ic;
+    tab = sortrows(tab,'Ic','ascend');
+    Ic = tab.Ic;
+    fn = size(tab,1);
+    GainMax = 0.1*ceil(max(tab.Gain+tab.Gain_sd)/0.1);
+    %Make one figure for each group of cycle averages (same subject, visit,
+    %date, goggle, canal across conditions
+    %Make one figure with Gain and Lantecy across canals for each condition
+    YVar = {'Gain';'Latency'};
+    YLabs = {'Gain';'Latency (ms)'};
+    rel_labs = {'Subject','Visit','DateStr','Condition','Goggle'};
+    [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
+    file_parts = table2cell(tab(:,rel_col));
+    %Parts applicable to each file
+    common_cond_i = all(strcmp(file_parts,repmat(file_parts(1,:),fn,1)),1);
+    common_cond = strjoin(file_parts(1,common_cond_i));
+    common_cond_i(contains(rel_labs,'Condition')) = 0;
+    rel_file_parts = join(file_parts(:,~common_cond_i),2);
+    [conds,~,IC] = unique(rel_file_parts,'stable');
     enum = length(conds);
-    %Organize the gains and latencies
-    gain = NaN(enum,length(all_canals));
-    gain_sd = NaN(enum,length(all_canals));
-    lat = NaN(enum,length(all_canals));
-    lat_sd = NaN(enum,length(all_canals));
-    for i = 1:fn
-        if all(all_results.StimAxis{i}==[0,0,1])
-             rel_col = 'Z';
-             c = 3;
-        elseif all(all_results.StimAxis{i}==[0,0,-1])
-             rel_col = 'Z';
-             c = 6;
-        elseif all(all_results.StimAxis{i}==[1,0,0])
-             rel_col = 'L';
-             c = 4;
-        elseif all(all_results.StimAxis{i}==[-1,0,0])
-             rel_col = 'L';
-             c = 1;
-        elseif all(all_results.StimAxis{i}==[0,-1,0])
-             rel_col = 'R';
-             c = 2;
-        elseif all(all_results.StimAxis{i}==[0,1,0])
-             rel_col = 'R';
-             c = 5;
+    [~,~,IFA] = unique([IC,Ic],'rows','stable');
+    dat = array2table([1:enum,zeros(1,length(unique(Ic)));zeros(1,enum),reshape(unique(Ic),1,[])]','VariableNames',{'Cond_i','Canal_i'});
+    for i = 1:size(dat,1)
+        inds = find((IC==dat.Cond_i(i)|0*IC==dat.Cond_i(i))&...
+            (Ic==dat.Canal_i(i)|0*Ic==dat.Canal_i(i)));
+        %Remove duplicate experiments by choosing the one with the
+        %closest time stamp to the others
+        [gc,gr] = groupcounts(IFA(inds));
+        dup = gr(gc>1);
+        for ii = 1:length(dup)
+            sub_i = find(IFA(inds)==dup(ii));
+            [~,k_i] = min(abs(tab.Date(inds(sub_i))-median(tab.Date(inds))));
+            sub_i(k_i) = []; %Keep this one
+            inds(sub_i) = []; %Delete the others
         end
-        [~,eye] = max(abs([all_results.(['Gain_L',rel_col,'_HIGH'])(i),all_results.(['Gain_R',rel_col,'_HIGH'])(i)]));
-        if mod(eye,2)==1 %Left
-            eye_s = 'L';
-        else %Right
-            eye_s = 'R';
+        if dat.Cond_i(i)==0 % All conditions in this canal
+            cond = '';
+            canal = canals{dat.Canal_i(i),1};
+            name = [common_cond,' ',canal,' Impulse'];
+        elseif dat.Canal_i(i)==0 % All canals in this condition (for param plots)
+            cond = conds{dat.Cond_i(i)};
+            canal = '';
+            name = '';
         end
-        gain(IC(i),c) = all_results.(['Gain_',eye_s,rel_col,'_HIGH'])(i);
-        gain_sd(IC(i),c) = all_results.(['Gain_',eye_s,rel_col,'_HIGH_sd'])(i);
-        lat(IC(i),c) = all_results.(['Latency_',eye_s,rel_col,])(i);
-        lat_sd(IC(i),c) = all_results.(['Latency_',eye_s,rel_col,'_sd'])(i);
-    end            
-    %Position information for the graph types
-    max_y = 0.80;
-    min_y = 0.15;
-    %spac_y = 0.01;
-    min_x = 0.08;
-    max_x = 0.90;
-    spac_x = 0.01;
-    wid_x = (max_x-min_x-spac_x)/2;
-    x_pos = min_x:(wid_x+spac_x):max_x-wid_x; 
-    wid_y = max_y-min_y;
-    y_pos = min_y;    
-    all_markers = 'o*.sd^v><ph_|';
-    fig_name = [common_cond,' Head Impulse Test'];
-    figure('Units','inch','Position',[2 2 7 3],'Color',[1,1,1]);
-    annotation('textbox',[0 0 1 1],'String',[Path,newline,'plotParamResults.m',newline,...
-    'VOGA',version,newline,Experimenter],'FontSize',5,...
-    'EdgeColor','none','interpreter','none','Color',[0.5,0.5,0.5]);
-    annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
-            'HorizontalAlignment','center','EdgeColor','none');
-    ha = gobjects(1,2);
-    h1 = gobjects(1,enum);
-    ha(1) = subplot(1,2,1);
-    ha(1).Position = [x_pos(1),y_pos,wid_x,wid_y];
-    ha(2) = subplot(1,2,2);
-    ha(2).Position = [x_pos(2),y_pos,wid_x,wid_y];
-    for i = 1:enum
-        val = ~isnan(gain(i,:));
-        x_ax = 1:6;
-        x_ax(~val) = []; 
-        axes(ha(1))
-        hold on
-        errorbar(x_ax,gain(i,val),gain_sd(i,val),[all_markers(i),'-'],'Color','k');
-        hold off
-        axes(ha(2))
-        hold on
-        errorbar(x_ax,lat(i,val),lat_sd(i,val),[all_markers(i),'-'],'Color','k');
-        hold off
-    end           
-    linkaxes(ha,'x')
-    set(ha(2),'YAxisLocation','right')
-    title(ha(1),'Gain')
-    title(ha(2),'Latency (ms)')
-    ylabel(ha(1),'Eye Position/Head Position')
-    ylabel(ha(2),'Time Between Head and Eye Motion')
-    xlabel(ha(1),'Canal')
-    xlabel(ha(2),'Canal')
-    set(ha,'XTick',1:6,'XTickLabel',all_canals,'XTickLabelRotation',0,'XMinorTick','off')
-    set(ha,'XLim',[0.5 6.5])
-    ymax = get(ha(1),'YLim');
-    set(ha(1),'YLim',[0 max(ymax(2),1.1)])
-    set(ha(2),'YLim',[-7 200])
-    %Make legends
-    axes(ha(2))
-    hold on
-    for i = 1:enum
-        h1(i) = plot(NaN,NaN,['k',all_markers(i)]);
+        dat.Cond{i} = cond;
+        dat.Canal{i} = canal;
+        dat.Name{i} = name;
+        dat.Files{i} = tab.File(inds);
+        dat.Tab{i} = tab(inds,:);
+        dat.SubNames{i} = conds;
+        dat.YLim{i} = [-50 250];
+        dat.XVar{i} = 'Ic';
+        dat.XTick{i} = 1:6;
+        dat.XTickLab{i} = can_lab;
+        dat.XLabel{i} = 'Canal';
+        dat.XScale{i} = 'linear';
+        dat.X{i} = Ic(inds);
+        for ii = 1:length(YVar)
+            dat.(YVar{ii}){i} = tab.(YVar{ii})(inds);
+            dat.([YVar{ii},'_sd']){i} = tab.([YVar{ii},'_sd'])(inds);
+        end
     end
-    hold off
-    leg = legend(h1,conds,'NumColumns',1,'Location','northwest');
-    leg.ItemTokenSize(1) = 5;
-    title(leg,'Conditions')
-    savefig([Path,filesep,'Figures',filesep,strrep(fig_name,' ','-'),'.fig'])   
+    cycavg_plots = dat(~ismember(dat.Name,{''}),{'Name','Files','SubNames','YLim'}); %Figure name and cyc avg file names for all
+    maxvel_plots = [];
+    %Make the table for TabParam plots. For impulses, this is Gain/Latency (set above)
+    %Legends with condition(s)
+    leg_tab = cell2table([conds,all_markers(1:enum)],'VariableNames',{'Name','Marker'});
+    leg_tab.LineStyle(:) = {'none'};
+    leg_tab.Color(:) = {[0,0,0]};
+    param_plots = cell2table({[common_cond,' Impulse Gain']},'VariableNames',{'Name'});
+    sub_tab = dat(ismember(dat.Name,{''}),:);
+    rel_tab = cell(length(YVar),1);
+    rel_leg = cell(length(YVar),1);
+    for j = 1:length(YVar)
+        n_tab = table();
+        n_tab.Marker = leg_tab.Marker(sub_tab.Cond_i);
+        n_tab.LineStyle(:) = {'-'};
+        n_tab.Color(:) = {[0,0,0]};
+        n_tab.X = sub_tab.X;
+        n_tab.Y = sub_tab.(YVar{j});
+        n_tab.Y_sd = sub_tab.([YVar{j},'_sd']);
+        rel_tab{j,1} = n_tab;
+    end
+    %Add legend with conditions
+    rel_leg{end,1} = leg_tab;
+    param_plots.SubNames{1} = {' '};
+    param_plots.YLim{1} = [-0.1,GainMax;0,100];
+    param_plots.YLabel{1} = YLabs;
+    param_plots.Tables{1} = rel_tab;
+    param_plots.Legend{1} = rel_leg;
+    param_plots(1,{'XTick','XTickLab','XLabel','XScale'}) = sub_tab(1,{'XTick','XTickLab','XLabel','XScale'});
+    all_plot_tabs.CycAvg{'HIT'} = cycavg_plots;
+    all_plot_tabs.MaxVel{'HIT'} = maxvel_plots;
+    all_plot_tabs.Param{'HIT'} = param_plots;
+end
+%% Velocity Step
+if any(contains(all_results.Type,'Exponential'))
+    %Isolate relevant table entries and put them in order for plotting by amplitude and frequency
+    tab = sortrows(all_results(contains(all_results.Type,'Exponential'),:),'Amplitude','ascend');
+    tab.AmpStr = strcat(strrep(cellstr(num2str(tab.Amplitude)),' ',''),'dps');
+    fn = size(tab,1);
+    YMax = 10*ceil(max(tab.MaxVel)/10);
+    %Make one figure for each group of cycle averages (same subject, visit,
+    %date, goggle, axis, and amplitude across condition)
+    rel_labs = {'Subject','Visit','DateStr','Condition','Goggle','AmpStr'};
+    [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
+    file_parts = table2cell(tab(:,rel_col));
+    %Parts applicable to each file
+    common_cond_i = all(strcmp(file_parts,repmat(file_parts(1,:),fn,1)),1);
+    common_cond = strjoin(file_parts(1,common_cond_i));
+    common_cond_i(contains(rel_labs,'Condition')) = 0;
+    rel_file_parts = join(file_parts(:,~common_cond_i),2);
+    [conds,~,IC] = unique(rel_file_parts,'stable');
+    [~,Ic] = ismember(tab.AxisName,all_canals(:,1));
+    [~,~,IFA] = unique([IC,Ic],'rows','stable');
+    dat = array2table(reshape(unique(Ic),[],1),'VariableNames',{'Canal_i'});
+    for i = 1:size(dat,1)
+        inds = find(Ic==dat.Canal_i(i)|0*Ic==dat.Canal_i(i));
+        %Remove duplicate experiments by choosing the one with the
+        %closest time stamp to the others
+        [gc,gr] = groupcounts(IFA(inds));
+        dup = gr(gc>1);
+        for ii = 1:length(dup)
+            sub_i = find(IFA(inds)==dup(ii));
+            [~,k_i] = min(abs(tab.Date(inds(sub_i))-median(tab.Date(inds))));
+            sub_i(k_i) = []; %Keep this one
+            inds(sub_i) = []; %Delete the others
+        end
+        dat.Name{i} = [common_cond,' ',all_canals{dat.Canal_i(i),1},' Exponential'];
+        dat.Files{i} = tab.File(inds);
+        dat.SubNames{i} = conds;
+        dat.YLim{i} = YMax*[-1 1];
+    end
+    cycavg_plots = dat(:,2:end); %Figure name and cyc avg file names for all
+    maxvel_plots = [];
+    param_plots = [];
+    all_plot_tabs.CycAvg{'Exp'} = cycavg_plots;
+    all_plot_tabs.MaxVel{'Exp'} = maxvel_plots;
+    all_plot_tabs.Param{'Exp'} = param_plots;
+end
+%% Autoscan - STILL NEED TO FIX
+if any(contains(all_results.Condition,'Autoscan'))
+    %     %Sorted to already be in the correct order
+    %     all_results = all_results(contains(all_results.Condition,'Autoscan'),:);
+    %     temp_e = split(all_results.Electrode,'E');
+    %     all_results.Enum = str2double(temp_e(:,2));
+    %     all_results = sortrows(sortrows(sortrows(all_results,'CurrentAmp(uA)','ascend'),'PhaseDur(us)','ascend'),'Enum','ascend');
+    %     elec_phase = strcat(all_results.Electrode,{' '},num2str(all_results.('PhaseDur(us)')),'us');
+    %     elec_opts = unique(elec_phase,'stable');
+    %     %Select Files to Plot
+    %     canal = listdlg('PromptString','Plot which electrodes and phase durations?',...
+    %         'ListString',elec_opts,'SelectionMode','multiple');
+    %     if isempty(canal)
+    %         return;
+    %     end
+    %     rel_results = all_results(ismember(elec_phase,elec_opts(canal)),:);
+    %     % Make the figure name
+    %     file_parts = [rel_results.Subject,rel_results.Visit,cellstr(datestr(rel_results.Date,'yyyymmdd')),...
+    %         rel_results.Condition,rel_results.Goggle,strcat(strrep(cellstr(num2str(rel_results.('PulseFreq(pps)'))),' ',''),'pps')];
+    %     fig_title = {strjoin([join(unique(file_parts,'stable')),strjoin(elec_opts(canal),'_')])};
+    %     elec_phase = strcat(rel_results.Electrode,{' '},num2str(rel_results.('PhaseDur(us)')),'us');
+    %     rel_ep = unique(elec_phase,'stable');
+    %     n_row = length(rel_ep);
+    %     rel_ep_inds = false(size(rel_results,1),n_row);
+    %     rel_ep_s  = NaN(1,n_row);
+    %     for i = 1:n_row
+    %         rel_ep_inds(:,i) = contains(elec_phase,rel_ep{i});
+    %         rel_ep_s(i) = find(rel_ep_inds(:,i)==1,1,'first');
+    %     end
+    %     n_col = sum(rel_ep_inds);
+    %     f_order = rel_results.File;
+    %     curr_lab = cellstr(num2str(rel_results.('CurrentAmp(uA)')));
+    %     curr_lab(rel_ep_s) = strcat(curr_lab(rel_ep_s),'\muA');
+    %     cyc_lab = cellstr(num2str(rel_results.Cycles));
+    %     cyc_lab(rel_ep_s) = strcat('n=',cyc_lab(rel_ep_s));
+    %     % Plot Current Levels
+    %     fig = figure;
+    %     fig.Color = [1,1,1];
+    %     fig.Units = 'inches';
+    %     fig.Position = [1 1 8 4];
+    %     if annot
+    %         annotation('textbox',[0 0 1 1],'String',['VOGA',version,...
+    %             newline,Experimenter],'FontSize',5,...
+    %             'EdgeColor','none','interpreter','none');
+    %         annotation('textbox',[0 0 1 1],'String',[Cyc_Path,newline,code_name],'FontSize',5,...
+    %             'EdgeColor','none','interpreter','none','VerticalAlignment','bottom');
+    %     end
+    %     ha = gobjects(1,length(f_order));
+    %     %Set params
+    %     grid_on = false;
+    %     if isempty(YMax)
+    %         YMax = 100;
+    %     end
+    %     YLim = YMax*[-1 1];
+    %     x_min = 0.15;
+    %     x_max = 0.95;
+    %     space_x = 0.01;
+    %     y_min = 0.08;
+    %     y_max = 0.98;
+    %     space_y = 0.03;
+    %     %Calculate
+    %     x_wid = (x_max - x_min - space_x*(n_col-1))./n_col;
+    %     y_wid = (y_max - y_min - space_y*(n_row-1))/n_row;
+    %     y_pos = fliplr(y_min:(y_wid+space_y):y_max);
+    %     fig_x_wid = NaN(1,length(f_order));
+    %     fig_row_pos = NaN(1,length(f_order));
+    %     fig_col_pos = NaN(1,length(f_order));
+    %     k = 0;
+    %     for i = 1:n_row
+    %         x_pos = x_min:(x_wid(i)+space_x):x_max;
+    %         fig_row_pos((1:n_col(i))+k) = x_pos;
+    %         fig_col_pos((1:n_col(i))+k) = y_pos(i);
+    %         fig_x_wid((1:n_col(i))+k) = x_wid(i);
+    %         k = k+n_col(i);
+    %     end
+    %     for i = 1:length(f_order)
+    %         ha(i) = subplot(n_row,max(n_col),i);
+    %         %Load and plot
+    %         b = load([Cyc_Path,filesep,f_order{i}]);
+    %         a = fieldnames(b);
+    %         CycAvg = b.(a{1});
+    %         fields = fieldnames(CycAvg);
+    %         if ~ismember('t',fields)
+    %             CycAvg.t = (0:1/CycAvg.Fs:(length(CycAvg.ll_cycavg)-1)/CycAvg.Fs)';
+    %         end
+    %         if length(CycAvg.t) > 1000
+    %             s = round(linspace(1,length(CycAvg.t),1000));
+    %         else
+    %             s = 1:length(CycAvg.t);
+    %         end
+    %         hold on
+    %         %Now add the fills and standard deviations and means
+    %         trac = {'l_z','r_z','l_l','r_l','l_r','r_r'};
+    %         if contains(f_order{i},{'RA','LP'})%RALP
+    %             curr_col = colors.l_r;
+    %             rel_trac = {'l_r','r_r'};
+    %         elseif contains(f_order{i},{'LH','RH'})%LHRH
+    %             curr_col = colors.l_z;
+    %             rel_trac = {'l_z','r_z'};
+    %         elseif contains(f_order{i},{'LA','RP'})%LARP
+    %             curr_col = colors.l_l;
+    %             rel_trac = {'l_l','r_l'};
+    %         end
+    %         for j = 1:length(trac)
+    %             trace = strrep(trac{j},'_','');
+    %             plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color',colors.(trac{j}))
+    %             plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color',colors.(trac{j}))
+    %             plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s),'Color',colors.(trac{j}),'LineWidth',2);
+    %         end
+    %         %Plot the intended canal again so that it's in the foreground
+    %         for j = 1:length(rel_trac)
+    %             trace = strrep(rel_trac{j},'_','');
+    %             plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) + CycAvg.([trace,'_cycstd'])(s),'Color',colors.(rel_trac{j}))
+    %             plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s) - CycAvg.([trace,'_cycstd'])(s),'Color',colors.(rel_trac{j}))
+    %             plot(CycAvg.t(s),CycAvg.([trace,'_cycavg'])(s),'Color',colors.(rel_trac{j}),'LineWidth',2);
+    %         end
+    %         hold off
+    %         axis([0 0.5 YLim])
+    %         text(0.5,YLim(2)-0.01*diff(YLim),curr_lab{i},'Color',curr_col,'HorizontalAlignment','right','VerticalAlignment','top')
+    %         text(0.5,YLim(1)+0.01*diff(YLim),cyc_lab{i},'Color','k','HorizontalAlignment','right','VerticalAlignment','bottom')
+    %     end
+    %     for i = 1:length(f_order)
+    %         set(ha(i),'Position',[fig_row_pos(i),fig_col_pos(i),fig_x_wid(i),y_wid])
+    %         if ~ismember(i,[rel_ep_s-1,length(f_order)])
+    %             annotation('line',(fig_row_pos(i)+fig_x_wid(i)+0.5*space_x)*[1 1],fig_col_pos(i)+[0 y_wid],'LineWidth',1,'LineStyle','--')
+    %         end
+    %     end
+    %     annotation('line',fig_row_pos(end)+[0 x_wid(end)],y_min-0.01*[1 1],'LineWidth',2)
+    %     annotation('line',(x_max+space_x)*[1 1],y_min+[0 YMax*y_wid/(2*YLim(2))],'LineWidth',2)
+    %     annotation('textbox','String','0.5s','EdgeColor','none',...
+    %         'Position',[fig_row_pos(end),0,x_wid(end),y_min-0.01],'HorizontalAlignment','right','VerticalAlignment','middle')
+    %     annotation('textbox','String',[num2str(YMax),newline,'\circ/s'],'EdgeColor','none',...
+    %         'Position',[x_max+space_x,y_min,1-(x_max+space_x),YMax*y_wid/(2*YLim(2))],'HorizontalAlignment','center','VerticalAlignment','middle')
+    %     set(ha,'XColor',[1,1,1],'YColor',[1,1,1])
+    %     lab_ax2 = axes('Position',[x_min y_min x_min y_max-y_min],'XColor',[1 1 1],'YColor',[1,1,1],...
+    %      'Color','none','XTick',[],'YTick',[]);
+    %     ylabel(lab_ax2,unique(rel_results.Subject),'FontSize',30,'FontWeight','bold','Color','k','Position',[-0.6 0.5 0])
+    %     for i = 1:length(rel_ep_s)
+    %         if contains(elec_phase(i),{'RA','LP'}) %RALP
+    %             curr_col = colors.l_r;
+    %         elseif contains(elec_phase(i),{'LH','RH'}) %LHRH
+    %             curr_col = colors.l_z;
+    %         elseif contains(elec_phase(i),{'RP','LA'}) %LARP
+    %             curr_col = colors.l_l;
+    %         else
+    %             curr_col = 'k';
+    %         end
+    %         ylabel(ha(rel_ep_s(i)),split(elec_phase(rel_ep_s(i)),' '),'Color',curr_col,'FontSize',20,'Position',[-0.05 0 -1]);
+    %     end
+    %     if(grid_on)
+    %         set(ha,'XGrid','on','YGrid','on','XMinorGrid','on','YMinorGrid','on')
+    %     end
+    %     savefig([Path,filesep,'Figures',filesep,strrep(fig_title{:},' ','-'),'.fig'])
+    %
+    %     %Make Figure like Boutros 2019 Figure 4 but Magnitude and Misalignment
+    %     tab = all_results(contains(all_results.Condition,'Autoscan'),:);
+    %     tab.Enum = str2double(extract(tab.Electrode,digitsPattern(2)|digitsPattern(1)));
+    %     %Sort to be in phase dur, pulse freq, electrode, and then current order
+    %     tab = sortrows(sortrows(sortrows(sortrows(tab,'CurrentAmp','ascend'),'Enum','ascend'),'PulseFreq','ascend'),'PhaseDur','ascend');
+    %     fn = size(tab,1);
+    %     file_parts = [tab.Subject,cellstr(datestr(tab.Date,'yyyymmdd')),...
+    %         tab.Goggle,tab.Electrode,strcat(strrep(cellstr(num2str(tab.PhaseDur)),' ',''),'us'),...
+    %         strcat(strrep(cellstr(num2str(tab.PulseFreq)),' ',''),'pps'),...
+    %         strcat(strrep(cellstr(num2str(tab.CurrentAmp)),' ',''),'uA')];
+    %     common_cond_i = all(strcmp(file_parts(:,1:end-1),repmat(file_parts(1,1:end-1),fn,1)),1); %everything but amp
+    %     rel_file_parts = file_parts(:,[~common_cond_i,false]);
+    %     common_cond = strjoin(file_parts(1,[common_cond_i,false]));
+    %     if isempty(rel_file_parts) %only one condition
+    %         conds = common_cond;
+    %         IC = ones(fn,1);
+    %     else
+    %         [all_conds,~,IC] = unique(join(rel_file_parts,2),'stable');
+    %         %Let the user pick which items to plot
+    %         [indx,tf] = listdlg('ListString',all_conds,...
+    %             'PromptString',['Pick the experiments to plot from ',common_cond],'ListSize',[400 300],'InitialValue',1:length(all_conds));
+    %         if ~tf
+    %             return;
+    %         end
+    %         rel_file_parts = rel_file_parts(ismember(IC,indx),:);
+    %         tab = tab(ismember(IC,indx),:);
+    %         fn = size(tab,1);
+    %         [conds,ic,IC] = unique(join(rel_file_parts,2),'stable');
+    %     end
+    %     [~,can_col_i] = ismember(tab.AxisName,all_canals(:,1));
+    %     can_col = all_canals(can_col_i,2);
+    %     maxvel = NaN(2,fn);
+    %     align = NaN(2,fn);
+    %     for i = 1:fn
+    %         [maxvel(1,i),eye] = max(abs([tab.(['MaxVel_L',can_col{i}])(i),tab.(['MaxVel_R',can_col{i}])(i)]));
+    %         maxvel(2,i) = tab.(['MaxVel_',eyes{eye},can_col{i},'_sd'])(i);
+    %         align(:,i) = [tab.(['Align_',eyes{eye}])(i);tab.(['Align_',eyes{eye},'_sd'])(i)];
+    %     end
+    %     %Make some bold (if you know which one was activated on)
+    %     E_num = strcat('E',cellfun(@num2str,num2cell(3:11),'UniformOutput',false));
+    %     indx = listdlg('ListString',E_num,...
+    %         'PromptString','Pick the electrodes to bold. Press Cancel for none.','ListSize',[400 300],'SelectionMode','multiple');
+    %     E_bold = E_num(indx);
+    %     %Make the figure
+    %     ha = gobjects(1,6);
+    %     errorbarcapsize=1;
+    %     figsizeinches=[7,6];
+    %     XLim = [-5 105];
+    %     YLim_align = [0 80];
+    %     figure('Units','inch','Position',[2 2 figsizeinches],'Color',[1,1,1]);
+    %     if annot
+    %         annotation('textbox',[0 0 1 1],'String',[Path,newline,code_name,newline,...
+    %             'VOGA',version,newline,Experimenter],'FontSize',5,...
+    %             'EdgeColor','none','interpreter','none');
+    %     end
+    %     annotation('textbox',[0 .9 1 .1],'String',strrep(common_cond,'us','\mus'),'FontSize',14,...
+    %         'HorizontalAlignment','center','EdgeColor','none');
+    %     color = NaN(length(conds),3);
+    %     for i = 1:length(conds)
+    %         if contains(conds{i},E_bold)
+    %             color(i,:) = colors.(['l_',lower(can_col{ic(i)})]);
+    %         else
+    %             color(i,:) = colors.(['l_',lower(can_col{ic(i)}),'_s']);
+    %         end
+    %     end
+    %     markers = {'x','o','d','s','v','p','^','+','<'};
+    %     % Posterior Plots
+    %     rel_cond = find(contains(conds,{'E3','E4','E5'}));
+    %     rel_pnum = [1,4];
+    %     ha(rel_pnum(1)) = subplot(2,3,rel_pnum(1));
+    %     hold on
+    %     plot(NaN,NaN)
+    %     h3 = gobjects(length(rel_cond),1);
+    %     for i = 1:length(rel_cond)
+    %         curr_ax = tab.CurrentAmp(IC==rel_cond(i));
+    %         curr_norm = 100*(curr_ax - curr_ax(1))/(curr_ax(end)-curr_ax(1));
+    %         h3(i) = errorbar(curr_norm,maxvel(1,IC==rel_cond(i)),maxvel(2,IC==rel_cond(i)),'Marker',markers{i},'Color',color(rel_cond(i),:),'LineStyle','-','LineWidth',1,'CapSize',errorbarcapsize);
+    %     end
+    %     hold off
+    %     if ~isempty(rel_cond)
+    %         leg = legend(ha(rel_pnum(1)),h3,conds(rel_cond),'location','northwest','box','off','FontSize',7);
+    %         leg.ItemTokenSize(1) = 12;
+    %     end
+    %     ha(rel_pnum(2)) = subplot(2,3,rel_pnum(2));
+    %     hold on
+    %     plot(NaN,NaN)
+    %     for i = 1:length(rel_cond)
+    %         curr_ax = tab.CurrentAmp(IC==rel_cond(i));
+    %         curr_norm = 100*(curr_ax - curr_ax(1))/(curr_ax(end)-curr_ax(1));
+    %         errorbar(curr_norm,align(1,IC==rel_cond(i)),align(2,IC==rel_cond(i)),'Marker',markers{i},'Color',color(rel_cond(i),:),'LineStyle','-','LineWidth',1,'CapSize',errorbarcapsize)
+    %     end
+    %     hold off
+    %     % Horizontal Plots
+    %     rel_cond = find(contains(conds,{'E6','E7','E8'}));
+    %     rel_pnum = [2,5];
+    %     ha(rel_pnum(1)) = subplot(2,3,rel_pnum(1));
+    %     hold on
+    %     plot(NaN,NaN)
+    %     h3 = gobjects(length(rel_cond),1);
+    %     for i = 1:length(rel_cond)
+    %         curr_ax = tab.CurrentAmp(IC==rel_cond(i));
+    %         curr_norm = 100*(curr_ax - curr_ax(1))/(curr_ax(end)-curr_ax(1));
+    %         h3(i) = errorbar(curr_norm,maxvel(1,IC==rel_cond(i)),maxvel(2,IC==rel_cond(i)),'Marker',markers{i},'Color',color(rel_cond(i),:),'LineStyle','-','LineWidth',1,'CapSize',errorbarcapsize);
+    %     end
+    %     hold off
+    %     if ~isempty(rel_cond)
+    %         leg = legend(ha(rel_pnum(1)),h3,conds(rel_cond),'location','northwest','box','off','FontSize',7);
+    %         leg.ItemTokenSize(1) = 12;
+    %     end
+    %     ha(rel_pnum(2)) = subplot(2,3,rel_pnum(2));
+    %     hold on
+    %     plot(NaN,NaN)
+    %     for i = 1:length(rel_cond)
+    %         curr_ax = tab.CurrentAmp(IC==rel_cond(i));
+    %         curr_norm = 100*(curr_ax - curr_ax(1))/(curr_ax(end)-curr_ax(1));
+    %         errorbar(curr_norm,align(1,IC==rel_cond(i)),align(2,IC==rel_cond(i)),'Marker',markers{i},'Color',color(rel_cond(i),:),'LineStyle','-','LineWidth',1,'CapSize',errorbarcapsize)
+    %     end
+    %     hold off
+    %     % Anterior Plots
+    %     rel_cond = find(contains(conds,{'E9','E10','E11'}));
+    %     rel_pnum = [3,6];
+    %     ha(rel_pnum(1)) = subplot(2,3,rel_pnum(1));
+    %     hold on
+    %     plot(NaN,NaN)
+    %     h3 = gobjects(length(rel_cond),1);
+    %     for i = 1:length(rel_cond)
+    %         curr_ax = tab.CurrentAmp(IC==rel_cond(i));
+    %         curr_norm = 100*(curr_ax - curr_ax(1))/(curr_ax(end)-curr_ax(1));
+    %         h3(i) = errorbar(curr_norm,maxvel(1,IC==rel_cond(i)),maxvel(2,IC==rel_cond(i)),'Marker',markers{i},'Color',color(rel_cond(i),:),'LineStyle','-','LineWidth',1,'CapSize',errorbarcapsize);
+    %     end
+    %     hold off
+    %     if ~isempty(rel_cond)
+    %         leg = legend(ha(rel_pnum(1)),h3,conds(rel_cond),'location','northwest','box','off','FontSize',7);
+    %         leg.ItemTokenSize(1) = 12;
+    %     end
+    %     ha(rel_pnum(2)) = subplot(2,3,rel_pnum(2));
+    %     hold on
+    %     plot(NaN,NaN)
+    %     for i = 1:length(rel_cond)
+    %         curr_ax = tab.CurrentAmp(IC==rel_cond(i));
+    %         curr_norm = 100*(curr_ax - curr_ax(1))/(curr_ax(end)-curr_ax(1));
+    %         errorbar(curr_norm,align(1,IC==rel_cond(i)),align(2,IC==rel_cond(i)),'Marker',markers{i},'Color',color(rel_cond(i),:),'LineStyle','-','LineWidth',1,'CapSize',errorbarcapsize)
+    %     end
+    %     hold off
+    %     x_min = 0.1;
+    %     x_max = 0.99;
+    %     x_spac = 0.01;
+    %     y_min = 0.08;
+    %     y_max = 0.93;
+    %     y_space = 0.03;
+    %     x_wid = (x_max-x_min-2*x_spac)/3;
+    %     y_wid = (y_max-y_min-y_space)/2;
+    %     x_pos = x_min:x_wid+x_spac:x_max;
+    %     y_pos = y_min:y_wid+y_space:y_max;
+    %     ha(1).Position = [x_pos(1),y_pos(2),x_wid,y_wid];
+    %     ha(2).Position = [x_pos(2),y_pos(2),x_wid,y_wid];
+    %     ha(3).Position = [x_pos(3),y_pos(2),x_wid,y_wid];
+    %     ha(4).Position = [x_pos(1),y_pos(1),x_wid,y_wid];
+    %     ha(5).Position = [x_pos(2),y_pos(1),x_wid,y_wid];
+    %     ha(6).Position = [x_pos(3),y_pos(1),x_wid,y_wid];
+    %     if isempty(YMax)
+    %         YMax = max(reshape(cell2mat(get(ha(1:3),'Ylim')),[],1));
+    %     end
+    %     set(ha,'box','off','XLim',XLim)
+    %     ylabel(ha(1),{'Eye Velocity';'Magnitude (\circ/s)'})
+    %     ylabel(ha(4),{'Misalignment';'Angle (\circ)'})
+    %     xlabel(ha(5),'% of Current Range')
+    %     set(ha(1:3),'YLim',[0,YMax],'XColor','none')
+    %     set(ha(4:6),'YLim',YLim_align,'XTick',0:20:100)
+    %     set(ha(1),'YTick',20:20:YMax)
+    %     set(ha(4),'YTick',10:10:max(YLim_align))
+    %     set(ha([2,3,5,6]),'YColor','none')
+    %     fig_name = inputdlg('Name this figure','',1,{[strrep(common_cond,' ','-'),'.fig']});
+    %     if ~isempty(fig_name)
+    %         savefig([Path,filesep,'Figures',filesep,fig_name{:}])
+    %     end
+    %     close;
+    
+    all_plot_tabs.CycAvg{'PulseTrain'} = cycavg_plots;
+    all_plot_tabs.MaxVel{'PulseTrain'} = maxvel_plots;
+    all_plot_tabs.Param{'PulseTrain'} = param_plots;
+end
+%% Make all plots
+all_cycavg_plots = vertcat(all_plot_tabs.CycAvg{:});
+all_maxvel_plots = vertcat(all_plot_tabs.MaxVel{:});
+all_param_plots = vertcat(all_plot_tabs.Param{:});
+% Group Cyc Avg
+if isfolder(Cyc_Path) %Otherwise, skip these and go to the parameterized versions
+    for k = 1:size(all_cycavg_plots,1)
+        plot_info = all_cycavg_plots(k,:);
+        fig = plotGroupCycAvg(plot_info,params);
+        savefig(fig,[Path,filesep,'Figures',filesep,strrep(plot_info.Name{1},' ','-'),'.fig'])
+        saveas(fig,[Path,filesep,'CRFs',filesep,strrep(plot_info.Name{1},' ','-'),'.png'])
+        close;
+    end
+end
+% MaxVel Parameterized
+for k = 1:size(all_maxvel_plots,1)
+    plot_info = all_maxvel_plots(k,:);
+    fig = plotMaxVelAllEyeComp(plot_info,params);
+    savefig(fig,[Path,filesep,'Figures',filesep,strrep(plot_info.Name{1},' ','-'),'.fig'])
+    saveas(fig,[Path,filesep,'CRFs',filesep,strrep(plot_info.Name{1},' ','-'),'.png'])
+    close;
+end
+% Parameterized Figures
+for k = 1:size(all_param_plots,1)
+    plot_info = all_param_plots(k,:);
+    fig = plotTabParam(plot_info,params);
+    savefig(fig,[Path,filesep,'Figures',filesep,strrep(plot_info.Name{1},' ','-'),'.fig'])
+    saveas(fig,[Path,filesep,'CRFs',filesep,strrep(plot_info.Name{1},' ','-'),'.png'])
+    close;
 end
 end

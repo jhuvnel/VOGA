@@ -41,16 +41,17 @@ switch type
         if nargin < 4 || length(param)~=1 || isnan(param) || all(isnan(trace_in))
             trace_out = trace_in;
         else
-            %Find parts of the traces above/below the threshold and linearly
-            %interpolate over that
             trace_out = trace_in;
-            over_thresh = [abs(diff(reshape(trace_in,[],1))/median(diff(t_in)))>abs(param);false]&[false;abs(diff(reshape(trace_in,[],1))/median(diff(t_in)))>abs(param)];
-            trace_out(over_thresh) = NaN;
-            nan_locs = find(isnan(trace_out));
-            small_gaps = find(diff(nan_locs)>1&diff(nan_locs)<10);
-            for i = 1:length(small_gaps)
-                trace_out(nan_locs(small_gaps(i)):nan_locs(small_gaps(i)+1)) = NaN;
+            vel_thresh = 30; %Set threshold for saccade
+            Fs = 1/median(diff(t_in));
+            g_trac = gradient(reshape(trace_in,[],1))*Fs;
+            over_thresh = abs(g_trac)>abs(param)&abs(trace_out)>vel_thresh; 
+            under_thresh = abs(g_trac)<abs(param)&abs(trace_out)<2*vel_thresh;
+            o_start = find(diff(over_thresh)>0);
+            for i = 1:length(o_start)
+                over_thresh(find(under_thresh(1:o_start(i)),1,'last'):find(under_thresh(o_start(i):end),1,'first')-1+o_start(i)) = true;
             end
+            trace_out(over_thresh) = NaN;
             t_nonan = t_in(~isnan(trace_out));
             if ~isempty(t_nonan)
                 trace_out = interp1(t_nonan,trace_out(~isnan(trace_out)),t_in);

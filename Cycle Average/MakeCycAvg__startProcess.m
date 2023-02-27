@@ -1,4 +1,4 @@
-function [Data,info,Fs,te,ts,stim1,type,detec_head,filt1,traces_vel1] = MakeCycAvg__startProcess(Data,info,filt1,all_traces)
+function [Data,info,Fs,te,ts,stim1,type,detec_head,filt1,traces_vel1] = MakeCycAvg__startProcess(Data,info,filt1)
 info.TriggerShift2 = 0; %Shifting done manually in this file
 Fs = Data.Fs;
 if contains(info.goggle_ver,'GNO') %No raw position, just velocity
@@ -79,19 +79,19 @@ else
     end
 end
 % Assign Type and set detected traces
-if contains(info.goggle_ver,{'GNO','ESC'}) %No raw pos traces
-    type = 3;
-    if isfield(Data,'DetectedTraces_HeadVel')
-        detec_head = Data.DetectedTraces_HeadVel;
-    else
-        detec_head = [];
-    end
+if isfield(Data,'DetectedTraces_HeadVel')
+    detec_head = Data.DetectedTraces_HeadVel;
+else
+    detec_head = [];
+end
+if contains(info.goggle_ver,'ESC3')||(contains(info.dataType,'Impulse')&&~contains(info.goggle_ver,{'GNO','ESC'}))
+    type = 4; %Raw pos traces but show only cycles and no in between time
+elseif contains(info.goggle_ver,{'GNO','ESC'}) %No raw pos traces
+    type = 3;    
 elseif contains(info.dataType,{'Activation','Step'}) %No cycle averaging
     type = 2;
-    detec_head = [];
 else
     type = 1;
-    detec_head = [];
 end
 % Set some defaults
 % Cycle Align
@@ -99,21 +99,25 @@ end
 if type == 1
     filt1.vel.irlssmooth(end) = round(length(t_snip)*0.16); %heuristic
 end
-if contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'LH','RH'})
-    traces_vel1 = {'RZ'};
-elseif contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'LA','RP'})
-    traces_vel1 = {'RLARP'};
-elseif contains(info.goggle_ver,'GNO')&&contains(info.dataType,{'RA','LP'})
-    traces_vel1 = {'RRALP'};
-elseif contains(info.goggle_ver,'ESC')&&contains(info.dataType,{'LH','RH'})
-    traces_vel1 = {'LZ'};
-elseif contains(info.goggle_ver,'ESC')&&contains(info.dataType,{'LA','RP'})
-    traces_vel1 = {'LLARP'};
-elseif contains(info.goggle_ver,'ESC')&&contains(info.dataType,{'RA','LP'})
-    traces_vel1 = {'LRALP'};
+if contains(info.goggle_ver,{'GNO','ESC3'})
+    if contains(info.dataType,{'LH','RH'})
+        traces_vel1 = {'RZ'};
+    elseif contains(info.dataType,{'LA','RP'})
+        traces_vel1 = {'RLARP'};
+    elseif contains(info.dataType,{'RA','LP'})
+        traces_vel1 = {'RRALP'};
+    end
+elseif contains(info.goggle_ver,'ESC')
+    if contains(info.dataType,{'LH','RH'})
+        traces_vel1 = {'LZ'};
+    elseif contains(info.dataType,{'LA','RP'})
+        traces_vel1 = {'LLARP'};
+    elseif contains(info.dataType,{'RA','LP'})
+        traces_vel1 = {'LRALP'};
+    end
 elseif contains(info.dataType,{'X','Y'})
-    traces_vel1 = all_traces(1:6); %LRZ vel
+    traces_vel1 = {'LX','RX','LY','RY','LZ','RZ'};
 else
-    traces_vel1 = all_traces(5:10); %LRZ vel
+    traces_vel1 = {'LLARP','RLARP','LRALP','RRALP','LZ','RZ'};
 end
 end

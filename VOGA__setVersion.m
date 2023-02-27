@@ -8,20 +8,26 @@ end
 prompt = {['Set VOGA parameters.',newline,newline,'Version: '];...
 'Experimenter: '};
 if isfile([userpath,filesep,'VOGA_VerInfo.txt'])
-    data = readtable([userpath,filesep,'VOGA_VerInfo.txt'],'ReadVariableNames',false);
-    if ~strcmp(current_ver,data{1,2})||user_prompt 
-        %Prompt the user if the version has changed it or the user has
-        %flagged that they want to make a change throught the "user_prompt"
-        %argument
-        items = inputdlg(prompt,'Set VOGA Parameters',1,[{current_ver},data{2,2}]);
-    else %User not notified if already up to date
-        items = data{:,2};
+    data = table2cell(readtable([userpath,filesep,'VOGA_VerInfo.txt'],'ReadVariableNames',false));
+    items = data(:,2);
+    %Set to prompt user to redo if not the right size, missing data, or outdated version
+    if length(items)<3||~strcmp(current_ver,items{1})||isempty(items{3}) 
+        user_prompt = 1;
+        def_ans = [{current_ver},items{2}];
     end
-else %First time running
-    %Use the inputed curr_ver if available 
-    items = inputdlg(prompt,'Set VOGA Parameters',1,{current_ver;''}); 
+else
+    user_prompt = 1;
+    def_ans = {current_ver;''};
 end
-info = strcat({'Version';'Experimenter'},repmat({' '},2,1),items);    
+if user_prompt
+    items = inputdlg(prompt,'Set VOGA Parameters',1,def_ans);
+    disp('Select the MVI Study Subject Folder')
+    items{3} = uigetdir('Select the MVI Study Subject Folder','Select the MVI Study Subject Folder');    
+end
+if any(cellfun(@isempty,items))
+    return;
+end
+info = strcat({'Version,';'Experimenter,';'Path,'},items);    
 filePh = fopen([userpath,filesep,'VOGA_VerInfo.txt'],'w');
 fprintf(filePh,'%s\n',info{:});
 fclose(filePh);

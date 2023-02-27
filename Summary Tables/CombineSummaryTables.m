@@ -4,18 +4,14 @@
 % 'Load'
 % 'Rerun' (Will let you pick what to rerun and will load the rest)
 
-function all_results = CombineSummaryTables(type,MVI_path)
+function all_results = CombineSummaryTables(VOGA_VerInfo,type)
 %% Set defaults
-if nargin < 2 || isempty(MVI_path)
-    prompt = 'Select the MVI Study subject root folder.';
-    MVI_path = uigetdir(prompt,prompt);
-    if ~contains(MVI_path,'MVI')
-        disp(['The selected path does not contain the text "MVI", so it may be wrong: ',MVI_path])
-    end
-end
-if nargin < 1
+if nargin < 2 || ~contains(type,{'Load','Rerun'})
     type = 'Load'; %Make aggregate MVI table from existing tables
 end
+MVI_path = VOGA_VerInfo.Path{:};
+params.version = VOGA_VerInfo.Version{:};
+params.Experimenter = VOGA_VerInfo.Experimenter{:};
 %% Remake VOGResults.mat
 %Run for each subject so that it's feasible to save the cyc_params file
 %(too big to save for all subejcts at once).
@@ -25,10 +21,7 @@ MVI_subs = extractfield(dir([MVI_path,filesep,'MVI*_R*']),'name');
 subjects = strrep(MVI_subs,'_','');
 all_sub_tab = cell(length(subjects),1);
 if contains(type,'Rerun') %Will want to remake figures
-    data = readtable([userpath,filesep,'VOGA_VerInfo.txt'],'ReadVariableNames',false);
-    params.version = data{1,2}{:};
-    params.Experimenter = data{2,2}{:};
-    sub_info = readtable('SubjectInfo.xlsx');
+    sub_info = readtable([MVI_path,filesep,'MVI_Information.xlsx']);
     params.sub_info = sub_info;
     [exp_indx,tf] = listdlg('PromptString','Select experiment typs to redo.',...
         'ListString',exps,'SelectionMode','multiple','ListSize',[200 300],'InitialValue',1:length(exps));
@@ -66,12 +59,11 @@ for i = 1:length(subjects)
         disp([num2str(j),'/',num2str(length(VOG_fnames)),': ',VOG_fnames(j).folder])
         cyc_param_fname = extractfield(dir([VOG_fnames(j).folder,filesep,'*CycParam.mat']),'name');
         if redo_folder(j)
-            VOGA__makeFolders(VOG_fnames(j).folder);
+            VOGA__makeFolders(VOG_fnames(j).folder,1,0);
             [all_results,cyc_params] = MakeCycleSummaryTable(VOG_fnames(j).folder,[VOG_fnames(j).folder,filesep,'Cycle Averages'],1);
             params.Path = VOG_fnames(j).folder;
-            plotGroupCycAvg(params);
+            params.Cyc_Path = [VOG_fnames(j).folder,filesep,'Cycle Averages'];
             plotParamResults(params);
-            close all;
         elseif isempty(cyc_param_fname) %Will make the cyc_params struct if missing
             [all_results,cyc_params] = MakeCycleSummaryTable(VOG_fnames(j).folder,[VOG_fnames(j).folder,filesep,'Cycle Averages'],1);
         else %Load

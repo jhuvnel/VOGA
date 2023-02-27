@@ -5,8 +5,8 @@ code_Path = params.code_Path;
 version = params.version;
 Experimenter = params.Experimenter;
 sub_info = params.sub_info;
-Subs = sub_info{:,1};
-Ears = sub_info{:,2};
+Subs = sub_info.Subject;
+Ears = sub_info.Ear;
 if isfield(params,'annot')
     annot = params.annot;
 else

@@ -22,8 +22,11 @@ function CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_i
             else
                 CycAvg.([trac,'_cyc']) = Data_cyc.(var_n)';
             end
-            if (contains(Data.info.goggle_ver,'GNO')&&isfield(Data_vel,var_n))||contains(fname,{'Activation','VelStep'})
-                CycAvg.([trac,'_cyc_prefilt']) = Data_vel.(var_n)(Data_cyc.keep_inds(:,keep_tr));              
+            if (contains(fname,'Impulse')&&isfield(Data_vel,var_n))||contains(fname,{'Activation','VelStep'})
+                CycAvg.([trac,'_cyc_prefilt']) = Data_vel.(var_n)(Data_cyc.keep_inds(:,keep_tr));      
+                CycAvg.([trac,'_cyc_QP']) = Data_cyc.([var_n,'_smooth'])(:,keep_tr); 
+                long_t = repmat(Data_cyc.t,1,sum(keep_tr));
+                CycAvg.([trac,'_saccade_time']) = long_t(logical(reshape(Data_cyc.([var_n,'_saccade'])(:,keep_tr),[],1))); 
             end
         end
     end         

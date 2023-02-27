@@ -81,53 +81,26 @@ if contains(info.goggle_ver,{'NKI','NL'})
     Vertical_RE_Position = -data.RightVert;
     Torsion_RE_Position = data.RightTorsion;
     %Remove repeated values in torsion
-    X1 = unique(diff(find(diff(Torsion_LE_Position)~=0)))';
-    [~,max_L] = max(hist(diff(find(diff(Torsion_LE_Position)~=0)),X1).*X1);
-    X2 = unique(diff(find(diff(Torsion_RE_Position)~=0)))';
-    [~,max_R] = max(hist(diff(find(diff(Torsion_RE_Position)~=0)),X2).*X2);
-    reps = max([X1(max_L),X2(max_R)]);
-    %reps = max([median(diff(find(diff(Torsion_LE_Position)==0))),median(diff(find(diff(Torsion_RE_Position)==0)))]);
+    [GC,GR] = groupcounts([diff(find(Torsion_LE_Position(2:end)~=Torsion_LE_Position(1:end-1)));diff(find(Torsion_RE_Position(2:end)~=Torsion_RE_Position(1:end-1)))]);
+    reps = GR(GC==max(GC));
     if reps > 1
-        %Loop through left array and delete duplicates
-        i = 1;
-        while(i<=length(Torsion_LE_Position))
-            if ~isnan(Torsion_LE_Position(i))
-                check_i = i+1:i+reps-1;
-                check_i(check_i>length(Torsion_LE_Position)) = []; %don't check index bigger than the array
-                comp = Torsion_LE_Position(i)==Torsion_LE_Position(check_i);
-                if all(comp)
-                    Torsion_LE_Position(check_i) = NaN;
-                    i = i+reps;
-                elseif any(comp)
-                    Torsion_LE_Position(check_i(1:find(~comp,1,'first')-1)) = NaN;
-                    i = i+find(~comp,1,'first');
-                else
-                    i = i+1;
-                end
-            else
-                i = i+find(~isnan(Torsion_LE_Position(i+1:end)),1,'first');
-            end
+        %Add back in real repeated numbers with repeats more than normal
+        %(Ex: if data points repeat three times, six repeated points means
+        %two real measurements at that level)
+        LX_uniq = [true;Torsion_LE_Position(2:end)~=Torsion_LE_Position(1:end-1)];        
+        LX_inds = reshape(1:floor(length(Torsion_LE_Position)/reps)*reps,reps,[]);
+        long_str = LX_inds(1,~any(LX_uniq(LX_inds),1));
+        for i = 1:length(long_str)
+            LX_uniq(find(LX_uniq(1:long_str(i)),1,'last')+reps) = true;
         end
-        %Loop through right array and delete duplicates
-        i = 1;
-        while(i<=length(Torsion_RE_Position))
-            if ~isnan(Torsion_RE_Position(i))
-                check_i = i+1:i+reps-1;
-                check_i(check_i>length(Torsion_RE_Position)) = []; %don't check index bigger than the array
-                comp = Torsion_RE_Position(i)==Torsion_RE_Position(check_i);
-                if all(comp)
-                    Torsion_RE_Position(check_i) = NaN;
-                    i = i+reps;
-                elseif any(comp)
-                    Torsion_RE_Position(check_i(1:find(~comp,1,'first')-1)) = NaN;
-                    i = i+find(~comp,1,'first');
-                else
-                    i = i+1;
-                end
-            else
-                i = i+find(~isnan(Torsion_RE_Position(i+1:end)),1,'first');
-            end
+        Torsion_LE_Position(~LX_uniq) = NaN;
+        RX_uniq = [true;Torsion_RE_Position(2:end)~=Torsion_RE_Position(1:end-1)];
+        RX_inds = reshape(1:floor(length(Torsion_RE_Position)/reps)*reps,reps,[]);
+        long_str = RX_inds(1,~any(RX_uniq(RX_inds),1));
+        for i = 1:length(long_str)
+            RX_uniq(find(RX_uniq(1:long_str(i)),1,'last')+reps) = true;
         end
+        Torsion_RE_Position(~RX_uniq) = NaN;
     end
     GyroX = reshape(XAxisVelHead,[],1);
     GyroY = reshape(YAxisVelHead,[],1);
@@ -281,50 +254,27 @@ elseif contains(info.goggle_ver,'GNO') % GNO File
     Vertical_RE_Velocity = data(:,6);  
     info.TriggerShift = 0;
     % Find the accepted traces
-    if isfile(strrep(In_Path,'.txt','.csv'))       
-        GNO_CSV = table2cell(readtable(strrep(In_Path,'.txt','.csv'),'ReadVariableNames',false));
-        is_text = cellfun(@ischar,GNO_CSV(1,:));        
-        head_ind = find(any(contains(GNO_CSV(:,is_text),'Head'),2));
-        left_ind = find(any(contains(GNO_CSV(:,is_text),'Left')&contains(GNO_CSV(:,is_text),'Direction'),2));
-        right_ind = find(any(contains(GNO_CSV(:,is_text),'Right')&contains(GNO_CSV(:,is_text),'Direction'),2));
-        %Turn numbers that were accidentally converted to chars back into numbers
-        GNO_CSV(~isnan(str2double(GNO_CSV))) = num2cell(str2double(GNO_CSV(~isnan(str2double(GNO_CSV))))); 
-        %Find Left and Right Impulses
-        dir_ind = [left_ind;right_ind];
-        dir_ind_key = [repmat({'L'},length(left_ind),1);repmat({'R'},length(right_ind),1)];
-        impulse_side = repmat({''},length(head_ind),1);
-        for i = 1:length(head_ind)
-            temp = head_ind(i)-dir_ind;
-            temp(temp<0) = NaN;
-            if any(~isnan(temp)) %Otherwise a "Head" label with no associated impulse direction
-                [~,m_ind] = min(temp);
-                impulse_side(i) = dir_ind_key(m_ind);
+    if isfile(strrep(In_Path,'.txt','.csv'))  
+        opts = detectImportOptions(strrep(In_Path,'.txt','.csv'),'ReadVariableNames',false);
+        GNO_CSV = table2cell(readtable(strrep(In_Path,'.txt','.csv'),setvartype(opts,'char')));
+        if size(GNO_CSV,2)>1
+            GNO_CSV = join(GNO_CSV,',');
+        end
+        imp_ind = find(contains(GNO_CSV,{'Direction,L','Direction,R'}));
+        i_end = [imp_ind(2:end)-1;length(GNO_CSV)];
+        imp_dat = cell(length(imp_ind),2);
+        for i = 1:length(imp_ind)
+            head_ind = find(contains(GNO_CSV(imp_ind(i):i_end(i)),'Head'));
+            if length(head_ind)==1
+                imp_dat(i,1) = extract(GNO_CSV{imp_ind(i)},"L"|"R");
+                vec = str2double(split(strrep(GNO_CSV(imp_ind(i)-1+head_ind),'Head',''),','));
+                imp_dat{i,2} = vec(~isnan(vec));
             end
         end
-        if any(contains(impulse_side,{'L','R'}))
-            left_ind = head_ind(contains(impulse_side,'L'));
-            right_ind = head_ind(contains(impulse_side,'R'));
-            %Take only the numeric columns
-            col_num = ~cellfun(@ischar,GNO_CSV(head_ind(find(contains(impulse_side,{'L','R'}),1,'first')),:));
-            %Now find the head traces and save them
-            if all(~col_num) %All in one cell as text
-                detected_left = str2double(split(join(GNO_CSV(left_ind,:),','),','))';
-                detected_left(all(isnan(detected_left),2),:) = [];
-                detected_right = str2double(split(join(GNO_CSV(right_ind,:),','),','))';
-                detected_right(all(isnan(detected_right),2),:) = [];
-            else %Numbers in cells           
-                detected_left = cell2mat(GNO_CSV(left_ind,col_num))';
-                detected_right = cell2mat(GNO_CSV(right_ind,col_num))'; 
-            end
-            if contains(In_Path,'Lateral')
-                DetectedTraces_HeadVel = [detected_left,-detected_right];
-            elseif contains(In_Path,'LARP')
-                DetectedTraces_HeadVel = [-detected_left,detected_right];
-            elseif contains(In_Path,'RALP')
-                DetectedTraces_HeadVel = [-detected_left,detected_right];
-            end
-        else
-            DetectedTraces_HeadVel=[];
+        if contains(In_Path,'Lateral')
+            DetectedTraces_HeadVel = [horzcat(imp_dat{contains(imp_dat(:,1),'L'),2}),-horzcat(imp_dat{contains(imp_dat(:,1),'R'),2})];
+        elseif contains(In_Path,{'LARP','RALP'})
+            DetectedTraces_HeadVel = [-horzcat(imp_dat{contains(imp_dat(:,1),'L'),2}),horzcat(imp_dat{contains(imp_dat(:,1),'R'),2})];
         end
     else
         GNO_CSV = [];
@@ -357,25 +307,28 @@ elseif contains(info.goggle_ver,{'ESC1','ESC2'}) % ESC File with .mat
     end 
     EyeTimeIndex = find(contains(labs,'SystemTime'));
     if ~isempty(EyeTimeIndex) % Most cases
-        HeadTimeIndex = find(contains(labs,'InertialTime'));
-        XvelHeadIndex = find(contains(labs,'InertialVelX'));
-        YvelHeadIndex = find(contains(labs,'InertialVelY'));
-        ZvelHeadIndex = find(contains(labs,'InertialVelZ'));
-        XaccelHeadIndex = find(contains(labs,'InertialAccelX'));
-        YaccelHeadIndex = find(contains(labs,'InertialAccelY'));
-        ZaccelHeadIndex = find(contains(labs,'InertialAccelZ'));
-        Time_Eye = data(:,EyeTimeIndex) - data(1,EyeTimeIndex);
-        Time_Stim = data(:,HeadTimeIndex) - data(1,HeadTimeIndex);
-        Horizontal_LE_Velocity = data(:,contains(labs,'EyeVelZ'));
-        Vertical_LE_Velocity = data(:,contains(labs,'EyeVelY'));
-        Torsion_LE_Velocity = data(:,contains(labs,'EyeVelX'));  
-        A = eye_cal_gyro*data(:,[XvelHeadIndex,YvelHeadIndex,ZvelHeadIndex])';
+        old_Time_Eye = data(:,EyeTimeIndex) - data(1,EyeTimeIndex);
+        keep_eye = [true;diff(old_Time_Eye)>0];
+        Fs = 1/median(diff(old_Time_Eye(keep_eye))); 
+        Time_Eye = 0:(1/Fs):old_Time_Eye(end);
+        Time_Stim = Time_Eye;
+        warning('off')
+        Horizontal_LE_Velocity = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'EyeVelZ')),Time_Eye);
+        Vertical_LE_Velocity = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'EyeVelY')),Time_Eye);
+        Torsion_LE_Velocity = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'EyeVelX')),Time_Eye); 
+        GyroX = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'InertialVelX')),Time_Eye); 
+        GyroY = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'InertialVelY')),Time_Eye); 
+        GyroZ = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'InertialVelZ')),Time_Eye); 
+        A = eye_cal_gyro*[GyroX;GyroY;GyroZ];
         GyroX = A(1,:);
         GyroY = A(2,:);
         GyroZ = A(3,:);
         GyroLARP = (GyroX - GyroY)/sqrt(2);
         GyroRALP = (GyroX + GyroY)/sqrt(2); 
-        B = eye_cal_accel*data(:,[XaccelHeadIndex,YaccelHeadIndex,ZaccelHeadIndex])';
+        AccelX = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'InertialAccelX')),Time_Eye); 
+        AccelY = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'InertialAccelY')),Time_Eye); 
+        AccelZ = spline(old_Time_Eye(keep_eye),data(keep_eye,contains(labs,'InertialAccelZ')),Time_Eye); 
+        B = eye_cal_accel*[AccelX;AccelY;AccelZ];
         AccelX = B(1,:);
         AccelY = B(2,:);
         AccelZ = B(3,:);
@@ -412,7 +365,7 @@ elseif contains(info.goggle_ver,{'ESC1','ESC2'}) % ESC File with .mat
         disp(['Not segmented: ',In_Path])
         return;
     end
-    Fs = round(1/median(diff(Time_Eye))); 
+    Fs = 1/median(diff(Time_Eye)); 
     info.TriggerShift = 0;
     if isfile(strrep(strrep(In_Path,'_export',''),'.mat','.xls'))
         fname = strrep(strrep(In_Path,'_export',''),'.mat','.xls');
@@ -426,20 +379,37 @@ elseif contains(info.goggle_ver,{'ESC1','ESC2'}) % ESC File with .mat
     end    
     %plot(Time_Eye,GyroZ,'k-',Time_Eye,GyroY,'g-',Time_Eye,GyroX,'b-')
 elseif contains(info.goggle_ver,'ESC3') % ESC File with .csv data
-    % NEEDS MORE WORK
-    disp('New ESC system not yet supported')
-    return;
-%     data = readtable(In_Path); %Time Stamp??
-%     gyro_data = readtable([In_Path(1:strfind(In_Path,'_EyePosition')),'ImuData.csv']);
-%     if contains(In_Path,'Right')
-%         Horizontal_RE_Position = data.Horizontal;
-%         Vertical_RE_Position = data.Vertical;
-%         Torsion_RE_Position = data.Torsion;
-%     else
-%         Horizontal_LE_Position = data.Horizontal;
-%         Vertical_LE_Position = data.Vertical;
-%         Torsion_LE_Position = data.Torsion;
-%     end
+    ESC_CSV = cellstr(readlines(strrep(In_Path,'ImuData','Numerical')));
+    ESC_CSV(cellfun(@isempty,ESC_CSV)) = [];
+    max_comma = max(count(ESC_CSV,','));
+    comma_cnt = count(ESC_CSV,',');
+    while any(comma_cnt~=max_comma)
+        ESC_CSV(comma_cnt~=max_comma) = strcat(ESC_CSV(comma_cnt~=max_comma),',');        
+        comma_cnt = count(ESC_CSV,',');
+    end
+    ESC_CSV = split(ESC_CSV,',');
+    info.TriggerShift = 0;
+    data = readtable(In_Path);
+    data1 = data;
+    Time_Eye = data.LeftTime - data.LeftTime(1);
+    Time_Stim = Time_Eye; %Update later as needed
+    Stim = zeros(length(Time_Eye),1); %No external trigger yet
+    % Load Gyroscope and accelerometer readings
+    % Load raw eye position data in Fick coordinates [degrees] with no torsion.
+    % Gyros appear to be properly aligned with +XYZ. This is shown here:
+    % https://docs.google.com/document/d/1euk4V0fbnbhg_paUZOaO32s_FEhStmtCbrHJV6WQLu8/edit
+    GyroX = data.HeadInertialVelX;
+    GyroY = data.HeadInertialVelY;
+    GyroZ  = data.HeadInertialVelZ;
+    GyroLARP = (GyroX - GyroY)/sqrt(2);
+    GyroRALP = (GyroX + GyroY)/sqrt(2); 
+    AccelX = data.HeadInertialAccelX;
+    AccelY = data.HeadInertialAccelY;
+    AccelZ = data.HeadInertialAccelZ;
+    Fs = 1/median(abs(diff(Time_Eye)));
+    Horizontal_RE_Position = data.LeftPupilCol;
+    Vertical_RE_Position = data.LeftPupilRow;
+    Torsion_RE_Position = 0*Time_Eye; %NO TORSION TRACKING 
 end
 %% Figure out how many experiments there are
 if size(fileinfo,2)==2 %New way w/ 2 columns
@@ -454,39 +424,14 @@ end
 %% Segment
 if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fit on motion trace
     stim_info = strrep(stim_info,'manual','Manual'); %in case I forgot to capitalize
-    %Check to make sure the right canal is in the notes
-    canals = {'LARP','RALP','LHRH'};
-    [~,canal_i] = max(max([reshape(GyroLARP,[],1),reshape(GyroRALP,[],1),reshape(GyroZ,[],1)]));
-    notes_canal = find([any(contains(stim_info,'LARP')),any(contains(stim_info,'RALP')),any(contains(stim_info,'LHRH')),any(contains(stim_info,'trash'))]);
-    if canal_i~=notes_canal && contains(info.goggle_ver,'GNO') %Trust the file name
-        canal = find([contains(info.rawfile,'LARP.txt'),contains(info.rawfile,'RALP.txt'),contains(info.rawfile,'Lateral.txt')]);    
-    elseif notes_canal==4 %trash
-        canal = 1;
-    elseif canal_i~=notes_canal %Mismatch
-        figure(1)
-        plot(GyroLARP,'Color','g')
-        hold on
-        plot(GyroRALP,'Color','b')
-        plot(GyroZ,'Color','r')
-        hold off
-        prompt = [In_Path,newline,'Notes file says ',canals{notes_canal},' but the motion traces appear to be in the ',canals{canal_i},' canal.',newline,'Which do you want to use for segmenting?'];
-        canal_choice = questdlg(prompt,'',canals{notes_canal},canals{canal_i},'Stop process','Stop process');
-        if strcmp(canal_choice,'Stop process')
-            error(['Mismatch in canal for file: ',In_Path])
-        else
-            [~,canal] = ismember(canal_choice,canals);
-        end
-    else
-        canal = notes_canal;
-    end
-    if canal==1
+    if any(contains(stim_info,{'LARP','LA','RP'}))
         GyroAll = GyroLARP;
-    elseif canal==2
+    elseif any(contains(stim_info,{'RALP','RA','LP'}))
         GyroAll = GyroRALP;
     else
         GyroAll = GyroZ;
     end
-    if any(contains(stim_info,'VelStep')) % Velstep
+    if any(contains(stim_info,'VelStep'))
         thresh = 50; %Adjust as needed
         thresh2 = 1; %Counts as 0.
         approx0 = find(abs(GyroAll)< thresh2);
@@ -498,154 +443,91 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
         seg_end = [seg_start(2:end)-1;length(Time_Eye)];
         too_long = (seg_end-seg_start)>130*Fs;
         seg_end(too_long) = seg_start(too_long)+130*Fs; %make sure segment is not longer than 2.5 min
-        if length(seg_start) ~= length(stim_info)
-            plot(NaN,NaN)
-            hold on
-            %Now plot all fills
-            for j = 1:length(seg_start)
-                fill([Time_Eye(seg_start(j)),Time_Eye(seg_end(j)),Time_Eye(seg_end(j)),Time_Eye(seg_start(j))]',300*[1,1,-1,-1]',[.85, .85, .85]);
-            end
-            plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
-            hold off
-            uiwait(msgbox('Select all valid segments.'))
-            keep = false(1,length(seg_start));
-            [x,~] = ginput(length(stim_info));
-            for i = 1:length(x)
-                t1 = Time_Eye(seg_start) - x(i);
-                i1 = find(t1 < 0);
-                keep(i1(end)) = true;
-            end
-            start = seg_start(keep);
-            ends = seg_end(keep);
-        else
-            start = seg_start;
-            ends = seg_end;
+    elseif any(contains(stim_info,{'Sine','Impulse'}))&&length(stim_info) > 1 %multiple sine stimuli
+        %Segment and allow user to select which segments are "real"
+        thresh = 20; %change as needed but works for 0.01Hz - 2Hz
+        abov_thresh = find(abs(GyroAll) > thresh);
+        zero_cross = [1;find(GyroAll(2:end).*GyroAll(1:end-1)<0);length(GyroAll)];
+        starts1 = abov_thresh([true;diff(abov_thresh)>1]);
+        ends1 = abov_thresh([diff(abov_thresh)>1;true]);
+        for i = 1:length(starts1)
+            starts1(i) = max([zero_cross(find(zero_cross<starts1(i),1,'last'))-10,1]);
+            ends1(i) = min([zero_cross(find(zero_cross>ends1(i),1,'first'))+10,length(GyroAll)]);
         end
+        starts1 = unique(starts1);
+        ends1 = unique(ends1);
+        % Combine segments with only a few samples between them
+        for i = 1:length(starts1)-1
+            if starts1(i+1)-ends1(i) < 2*Fs
+                starts1(i+1) = NaN;
+                ends1(i) = NaN;
+            end
+        end
+        starts1(isnan(starts1)) = [];
+        ends1(isnan(ends1)) = [];
+        seg_start = starts1;
+        seg_end = ends1;
+        if length(seg_start)~=length(seg_end)
+            error('Length of start and stop are unequal. Please manually segment')
+        elseif length(seg_start)<length(stim_info)
+            error('Less segments found than in the notes file. Please manually segment')
+        elseif length(seg_start)>length(stim_info)
+            small_seg = seg_end-seg_start < 2*Fs;
+            if (length(seg_start)-sum(small_seg))>=length(stim_info)
+                seg_start(small_seg) = [];
+                seg_end(small_seg) = [];
+            end
+        end
+    else %Only one segment
+        seg_start = 1;
+        seg_end = length(Time_Eye);
+    end   
+    if length(seg_start) ~= length(stim_info)
+        keep = false(1,length(seg_start));
         plot(NaN,NaN)
         hold on
-        %Now plot all fills
-        for j = 1:length(start)
-            fill([Time_Eye(start(j)),Time_Eye(ends(j)),Time_Eye(ends(j)),Time_Eye(start(j))]',[500,500,-500,-500]','g');
+        for j = 1:length(seg_start) %Now plot all fills
+            fill(Time_Eye([seg_start(j),seg_end(j),seg_end(j),seg_start(j)])',500*[1,1,-1,-1]',0.85*[1,1,1]);
         end
         plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
         hold off
-        pause(1)
-    else %Sine or Impulses
-        if length(stim_info) > 1 %multiple sine stimuli
-            %Segment and allow user to select which segments are "real"
-            thresh = 20; %change as needed but works for 0.01Hz - 2Hz
-            abov_thresh = find(abs(GyroAll) > thresh);
-            starts1 = abov_thresh([true;diff(abov_thresh)>1]);
-            ends1 = abov_thresh([diff(abov_thresh)>1;true]);
-            pos = find(GyroAll >= 0);
-            neg = find(GyroAll <= 0);
-            for i = 1:length(starts1)
-                if GyroAll(starts1(i)) > 0
-                    ind1 = neg(find(neg<starts1(i),1,'last'));
-                else
-                    ind1 = pos(find(pos<starts1(i),1,'last'));
-                end
-                if GyroAll(ends1(i)) > 0
-                    ind2 = neg(find(neg>ends1(i),1,'first'));
-                else
-                    ind2 = pos(find(pos>ends1(i),1,'first'));
-                end
-                if isempty(ind1)
-                    ind1 = 1;
-                end
-                if isempty(ind2)
-                    ind2 = length(GyroAll);
-                end
-                if ismember(ind1,starts1)
-                    starts1(i) = NaN;
-                    ends1(i) = NaN;
-                else
-                    starts1(i) = ind1;
-                    ends1(i) = ind2;
-                end
-            end
-            starts1(isnan(starts1)) = [];
-            ends1(isnan(ends1)) = [];
-            % Combine segments with only a few samples between them
-            for i = 2:length(starts1)
-                if abs(ends1(i-1)-starts1(i)) < 2*Fs %number of samples between segments for them to still be counted together. change as needed.
-                    starts1(i) = starts1(i-1);
-                    starts1(i-1) = NaN;
-                    ends1(i-1) = NaN;
-                end
-            end
-            starts1(isnan(starts1)) = [];
-            ends1(isnan(ends1)) = [];
-            seg_start = max(round(starts1-20,0),1);
-            seg_end = min(round(ends1,0)+20,length(GyroAll));
-            if length(seg_start)~=length(seg_end)
-                error('Length of start and stop are unequal. Please manually segment')
-            elseif length(seg_start)<length(stim_info)
-                error('Less segments found than in the notes file. Please manually segment')
-            elseif length(seg_start)>length(stim_info)
-                small_seg = seg_end-seg_start < 2*Fs;
-                if (length(seg_start)-sum(small_seg))>=length(stim_info)
-                    seg_start(small_seg) = [];
-                    seg_end(small_seg) = [];
-                end
-            end
-            if length(seg_start) ~= length(stim_info)
-                plot(NaN,NaN)
-                hold on
-                %Now plot all fills
-                for j = 1:length(seg_start)
-                    fill([Time_Eye(seg_start(j)),Time_Eye(seg_end(j)),Time_Eye(seg_end(j)),Time_Eye(seg_start(j))]',[500,500,-500,-500]',[.85, .85, .85]);
-                end
-                plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
-                hold off
-                uiwait(msgbox('Select all valid segments.'))
-                keep = false(1,length(seg_start));
-                [x,~] = ginput(length(stim_info));
-                for i = 1:length(x)
-                    t1 = Time_Eye(seg_start) - x(i);
-                    i1 = find(t1 < 0);
-                    keep(i1(end)) = true;
-                end
-                start = round(seg_start(keep));
-                ends = round(seg_end(keep));
-            else
-                start = round(seg_start);
-                ends = round(seg_end);
-            end
-            plot(NaN,NaN)
+        uiwait(msgbox('Click on all valid segments on the figure.'))
+        for i = 1:length(stim_info)
+            [x,~] = ginput(1);
+            j = find(Time_Eye(seg_start)-x<0,1,'last');
+            keep(j) = true;
             hold on
-            %Now plot all fills
-            for j = 1:length(start)
-                fill([Time_Eye(start(j)),Time_Eye(ends(j)),Time_Eye(ends(j)),Time_Eye(start(j))]',[500,500,-500,-500]','g');
-            end
+            fill(Time_Eye([seg_start(j),seg_end(j),seg_end(j),seg_start(j)])',500*[1,1,-1,-1]','g');
             plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
             hold off
-            pause(1)
-        else % low freq sine
-            %Just take the whole thing as a segment
-            start = 1;
-            ends = length(Time_Eye);
-            plot(NaN,NaN)
-            hold on
-            fill([Time_Eye(start),Time_Eye(ends),Time_Eye(ends),Time_Eye(start)]',[500,500,-500,-500]','g');
-            plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
-            hold off
-            pause(1)
         end
-        if any(contains(stim_info,{'Impulse','Gaussian'}))
-            %Add a stim_info entry for each canal (LHRH -> LH and RH)
-            rep_ind = sort([(1:length(start))';find(contains(stim_info,{'Impulse','Gaussian'}))]);
-            start = start(rep_ind);
-            ends = ends(rep_ind); 
-            stim_info2 = repmat(stim_info,1,2);
-            stim_info2(~contains(stim_info2(:,2),{'Impulse','Gaussian'}),2) = {''};
-            %Make the canals one-sided here
-            stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),1) = strrep(strrep(strrep(stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),1),'LHRH','LH'),'LARP','RP'),'RALP','RA');
-            stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),2) = strrep(strrep(strrep(stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),2),'LHRH','RH'),'LARP','LA'),'RALP','LP');
-            stim_info = reshape(stim_info2',[],1);
-            stim_info(cellfun(@isempty,stim_info)) = [];                        
-        end 
+        seg_start = seg_start(keep);
+        seg_end = seg_end(keep);
     end
+    start = round(seg_start,0);
+    ends = round(seg_end,0);
+    plot(NaN,NaN)
+    hold on
+    %Now plot all fills
+    for j = 1:length(start)
+        fill([Time_Eye(start(j)),Time_Eye(ends(j)),Time_Eye(ends(j)),Time_Eye(start(j))]',[500,500,-500,-500]','g');
+    end
+    plot(Time_Eye,GyroLARP,'k:',Time_Eye,GyroRALP,'k--',Time_Eye,GyroZ,'k-')
+    hold off
+    pause(1)    
+    if any(contains(stim_info,{'Impulse','Gaussian'}))
+        %Add a stim_info entry for each canal (LHRH -> LH and RH)
+        rep_ind = sort([(1:length(start))';find(contains(stim_info,{'Impulse','Gaussian'}))]);
+        start = start(rep_ind);
+        ends = ends(rep_ind); 
+        stim_info2 = repmat(stim_info,1,2);
+        stim_info2(~contains(stim_info2(:,2),{'Impulse','Gaussian'}),2) = {''};
+        %Make the canals one-sided here
+        stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),1) = strrep(strrep(strrep(stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),1),'LHRH','LH'),'LARP','RP'),'RALP','RA');
+        stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),2) = strrep(strrep(strrep(stim_info2(contains(stim_info2(:,1),{'Impulse','Gaussian'}),2),'LHRH','RH'),'LARP','LA'),'RALP','LP');
+        stim_info = reshape(stim_info2',[],1);
+        stim_info(cellfun(@isempty,stim_info)) = [];                        
+    end 
 elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally triggered stimuli for now
     if all(contains(stim_info,'Activation'))
         %Use this to make sure the segments don't start or end on a
@@ -857,9 +739,15 @@ if ~isempty(stim_info)
                 Data.CSVData = GNO_CSV;
                 Data.XMLData = GNO_XML;
             elseif contains(info.goggle_ver,'ESC')
-                Data.LE_Vel_Y = Vertical_LE_Velocity(i1:i2);
-                Data.LE_Vel_Z = Horizontal_LE_Velocity(i1:i2);
-                Data.LE_Vel_X = Torsion_LE_Velocity(i1:i2);
+                if contains(info.goggle_ver,{'ESC3'})
+                    Data.RE_Position_Y = Vertical_RE_Position(i1:i2);
+                    Data.RE_Position_Z = Horizontal_RE_Position(i1:i2);
+                    Data.RE_Position_X = Torsion_RE_Position(i1:i2);
+                else
+                    Data.LE_Vel_Y = Vertical_LE_Velocity(i1:i2);
+                    Data.LE_Vel_Z = Horizontal_LE_Velocity(i1:i2);
+                    Data.LE_Vel_X = Torsion_LE_Velocity(i1:i2);
+                end
                 Data.HeadVel_X = GyroX(i1:i2);
                 Data.HeadVel_Y = GyroY(i1:i2);
                 Data.HeadVel_Z = GyroZ(i1:i2);

@@ -8,7 +8,7 @@
 % and Cycle Average folders and then run "VOGA." Click cancel to end the
 % loop.
 %Current version of VOGA - Changed with each GitHub committ
-current_ver = 'v4.15.0';
+current_ver = 'v5.0.0';
 %VOGA Menu Options
 opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average',...
     'Summary Table','Generate Figures','CRF','Advanced'};
@@ -23,7 +23,7 @@ VOGA__saveLastUsedParams;
 while tf1
     switch resp1
         case 'Generate Folders'
-            VOGA__makeFolders;
+            VOGA__makeFolders(cd,1,0);
         case 'Process Raw Data'
             VOGA__ProcessRawData;
         case 'Segment'

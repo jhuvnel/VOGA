@@ -53,8 +53,8 @@ function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,F
         %plot(ts,stim,ts(spike_i),stim(spike_i),'g*')
         %Consisitent with GNO's csv, take a 175 sample trace with max at
         %sample 48
-        starts = spike_i-47; 
-        ends = starts+174;
+        starts = spike_i-floor(0.195*Fs); 
+        ends = starts+floor(0.71*Fs);
         %plot(ts,stim,ts(starts),stim(starts),'g*',ts(ends),stim(ends),'b*')
         inv_i = starts<1|ends>length(stim);
         starts(inv_i)= [];

@@ -46,7 +46,7 @@ function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,scr
                 traces_vel1{i} = ['RE_Vel_',traces_vel{i}(2:end)];
             end
         end
-        eye_fields = fields(contains(fields,traces_vel1));
+        eye_fields = fields(contains(fields,traces_vel1)&~contains(fields,{'saccade','smooth'}));
         all_trac = NaN(length(Data_cyc.t),length(keep_tr),length(eye_fields)+1);
         for i = 1:length(eye_fields)
             all_trac(:,:,i) = Data_cyc.(eye_fields{i}); 
@@ -60,12 +60,7 @@ function [keep_tr,ha,tf] = MakeCycAvg__selectCycles(ha,type,keep_tr,Data_cyc,scr
         traces(:,~keep_tr) = NaN;
         [~,trace_i] = sort(min(abs(traces-y)));
         ind = 1;
-        if type == 1
-            cyc_ax = ha(4);
-        elseif type == 3
-            cyc_ax = ha(3);
-        end
-        axes(cyc_ax)
+        axes(ha(4))
         hold on
         h = plot(Data_cyc.t,reshape(all_trac(:,trace_i(ind),:),length(Data_cyc.t),[]),'c','LineWidth',2);
         clc;

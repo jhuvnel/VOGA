@@ -15,9 +15,10 @@ load('VNELcolors.mat','colors')
 colors.cyc_keep = [0.85 0.85 0.85];
 colors.cyc_rm = [1 1 1];
 % Set Experimentor/version
-data = readtable([userpath,filesep,'VOGA_VerInfo.txt'],'ReadVariableNames',false);
-version = data{1,2}{:};
-Experimenter = data{2,2}{:};
+%Load in VOGA info, including the MVI "Study Subject" Folder Path
+VOGA_VerInfo = rows2vars(readtable([userpath,filesep,'VOGA_VerInfo.txt'],'ReadVariableNames',false,'ReadRowNames',true));
+version = VOGA_VerInfo.Version{:};
+Experimenter = VOGA_VerInfo.Experimenter{:};
 info = Data.info;
 info.Analyzer = Experimenter;
 info.ver = version;
@@ -33,13 +34,11 @@ load([userpath,filesep,'VOGA_LastUsedFilterParams.mat'],'filt_params')
 filt1 = filt_params.filt1;
 YLim = filt_params.YLim;
 % Initialize Figure
+close all;
 fig = figure(1);
-clf; %in case there are leftover anotations
-fig.Units = 'normalized';
-fig.Position = [0 0 1 1];
-fig.Units = 'inches';
+set(fig,'Units','normalized','Position',[0 0 1 1],'Units','inches');
 screen_size = fig.Position;
-fig.Position = screen_size - [0 0 4 0];
+fig.Position = screen_size - [-0.5 -0.5 4.5 1.5];
 %Title
 if contains(fname,'[')&&contains(fname,']')
     fig_title = strrep(strrep(strrep(fname,'_',' '),'-',' '),'.mat','');
@@ -54,7 +53,7 @@ annotation('textbox',[0 .9 1 .1],'String',fig_title,'FontSize',14,...
 line_wid.norm = 0.5;
 line_wid.bold = 2;
 %% Identify relevant traces
-[Data,info,Fs,te,ts,stim1,type,detec_head,filt1,traces_vel1] = MakeCycAvg__startProcess(Data,info,filt1,all_traces);
+[Data,info,Fs,te,ts,stim1,type,detec_head,filt1,traces_vel1] = MakeCycAvg__startProcess(Data,info,filt1);
 %% Reanalyze file with existing params
 if strcmp(from_file,'Auto')
     %ADD CODE FOR Automated Analysis--Right now for autoscan
@@ -255,7 +254,8 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             prompt = reshape(prompt,[],1)';
             dlgtitle = 'Filter position';
             definput = strrep(cellfun(@(x) num2str(x,10),table2cell(filt.pos),'UniformOutput',false),'NaN','');
-            temp_filt_params_p = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],definput,'on',length(prompt)/length(traces),[screen_size(3)-3.5 screen_size(4)-7 3.5 7]));
+            temp_filt_params_p = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 7],...
+                definput,'on',length(prompt)/length(traces),[screen_size(3)-5 screen_size(4)-7 3.0 6.5]));
             if ~isempty(temp_filt_params_p) %Didn't hit cancel
                 filt.pos{:,:} = reshape(temp_filt_params_p,11,[]);
                 [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp);
@@ -273,7 +273,8 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                 prompt = reshape(prompt,[],1)';
                 dlgtitle = 'Filter velocity';
                 definput = strrep(cellfun(@(x) num2str(x,10),table2cell(filt.vel),'UniformOutput',false),'NaN','');
-                temp_filt_params_v = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],definput,'on',length(prompt)/length(traces),[screen_size(3)-5 screen_size(4)-7 5 7]));
+                temp_filt_params_v = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 10],...
+                    definput,'on',length(prompt)/length(traces),[screen_size(3)-5 screen_size(4)-7 4.5 6.5]));
                 if ~isempty(temp_filt_params_v)
                     filt.vel{:,:} = reshape(temp_filt_params_v,11,[]);
                     [filt,Data_pos,Data_pos_filt,Data_vel,Data_vel_filt,Data_cyc] = MakeCycAvg__filterTraces(filt,keep_inds,te,ts,t_snip,stim,stims,Data,t_interp);
@@ -285,16 +286,9 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             clc;
             disp('Select the start and end time point to linearly interpolate over on the cycle average graph.')
             good_rng = 'Redo';
-            if type == 1
-                cyc_ax = ha(4);
-            elseif type == 2
-                cyc_ax = ha(2);
-            elseif type == 3
-                cyc_ax = ha(3);
-            end
             while strcmp(good_rng,'Redo')
                 [t_spline,~] = ginput(2);
-                axes(cyc_ax)
+                axes(ha(4))
                 hold on
                 h1 = xline(t_spline(1),'LineWidth',10);
                 h2 = xline(t_spline(2),'LineWidth',10);
@@ -420,11 +414,4 @@ filt_params.filt1 = filt;
 filt_params.YLim = YLim;
 VOGA__saveLastUsedParams(filt_params)
 analyzed = 1;
-% catch e %If you hit an error, mark it as unanalyzeable
-%     disp(['Error found in file ',fname])
-%     fprintf(1,'The identifier was:\n%s',e.identifier);
-%     fprintf(1,'There was an error! The message was:\n%s',e.message);
-%     CycAvg = Data;
-%     analyzed = 0;
-% end
 end
