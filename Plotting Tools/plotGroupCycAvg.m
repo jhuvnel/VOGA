@@ -14,7 +14,7 @@ Experimenter = params.Experimenter;
 %Plot either LRX or XYZ and put the relevant axis last so it's on top
 canal_ax = {{'LA','RP'},{'RA','LP'},{'LH','RH'},'X','Y'};
 canal_tr = {{'lr';'rr';'lz';'rz';'ll';'rl'};...
-            {'l1';'r1';'lz';'rz';'lr';'rr'};...
+            {'ll';'r1';'lz';'rz';'lr';'rr'};...
             {'lr';'rr';'ll';'rl';'lz';'rz'};...
             {'ly';'ry';'lz';'rz';'lx';'rx'};...
             {'lx';'rx';'lz';'rz';'ly';'ry'}};
@@ -39,6 +39,7 @@ annotation('textbox',[0 0 1 1],'String',[Path,newline,code_name,newline,...
     'VOGA',version,newline,Experimenter],'FontSize',5,...
     'EdgeColor','none','interpreter','none');
 ha = gobjects(1,fnum);
+p_tr_bool = false(1,length(p_tr));
 for i = 1:fnum
     ha(i) = subplot(1,fnum,i);
     hold on
@@ -65,7 +66,7 @@ for i = 1:fnum
                     plot(CycAvg.t(s),CycAvg.([tr,'_cycavg'])(s) - CycAvg.([tr,'_cycstd'])(s),'Color',colors.([tr(1),'_',tr(2)]))
                     plot(CycAvg.t(s),CycAvg.([tr,'_cycavg'])(s),'Color',colors.([tr(1),'_',tr(2)]),'LineWidth',2);
                 else
-                    p_tr{ii} = '';
+                    p_tr_bool(ii) = true;
                 end
             end
             text_num = [CycAvg.parameterized.AxisName,cellstr(num2str(round(CycAvg.parameterized.MaxVel,2),2)),cellstr(num2str(round(CycAvg.parameterized.Phase,0),3))];
@@ -85,7 +86,7 @@ for i = 1:fnum
                     plot(CycAvg.t,n*CycAvg.([tr,'_cyc_prefilt']),'Color',[colors.([tr(1),'_',tr(2),'_s']),0.5])
                     plot(CycAvg.t,n*CycAvg.([tr,'_cyc']),'Color',colors.([tr(1),'_',tr(2)]))
                 else
-                    p_tr{ii} = '';
+                    p_tr_bool(ii) = true;
                 end
             end
             disp_text = ['Gain: ',num2str(round(CycAvg.parameterized.Gain,2)),newline,...
@@ -98,7 +99,7 @@ for i = 1:fnum
                     plot(CycAvg.t(s),CycAvg.([tr,'_cyc_prefilt'])(s),'.','Color',colors.([tr(1),'_',tr(2),'_s']))
                     plot(CycAvg.t(s),CycAvg.([tr,'_cycavg_fit'])(s),'Color',colors.([tr(1),'_',tr(2)]),'LineWidth',2)
                 else
-                    p_tr{ii} = '';
+                    p_tr_bool(ii) = true;
                 end
             end
             disp_text = ['MaxVel(dps): ',num2str(round(CycAvg.parameterized.MaxVel(1),2),2),newline,...
@@ -111,7 +112,7 @@ for i = 1:fnum
     hold off
     title(sub_t{i})
 end
-p_tr(cellfun(@isempty,p_tr)) = [];
+p_tr(p_tr_bool) = [];
 hold on
 h1 = gobjects(1,length(p_tr)+1);
 h1(1) = plot(NaN,NaN,'k');

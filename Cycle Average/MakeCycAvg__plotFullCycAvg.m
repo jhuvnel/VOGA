@@ -153,6 +153,10 @@ if get(ha(3),'Visible')
     for i = 1:length(traces_vel)
         if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
             plot(t_s,CycAvg.Data_rawvel.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])(CycAvg.Data_allcyc.keep_inds),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']),'LineWidth',line_wid.norm)
+        end
+    end
+    for i = 1:length(traces_vel)
+        if isfield(CycAvg.Data_allcyc,[traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)])
             plot(t_s,CycAvg.Data_allcyc.([traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)]),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
         end
     end
@@ -163,7 +167,11 @@ axes(ha(4))
 cla;
 if get(ha(4),'Visible')
     hold on
-    plot(t_s,CycAvg.Data_allcyc.stim(:,keep_tr),'k','LineWidth',line_wid.norm)
+    if isfield(CycAvg,'stim_cyc') %Mutiple head traces to show
+        plot(t_s,CycAvg.stim_cyc,'k','LineWidth',line_wid.norm)
+    else
+        plot(t_s,stims,'k','LineWidth',line_wid.norm)
+    end
     %Only Accepted Trace Filtered Velocity Data
     for i = 1:length(traces_vel)
         trac = [traces_vel{i}(1),'E_Vel_',traces_vel{i}(2:end)];

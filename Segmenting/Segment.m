@@ -454,8 +454,6 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
             starts1(i) = max([zero_cross(find(zero_cross<starts1(i),1,'last'))-10,1]);
             ends1(i) = min([zero_cross(find(zero_cross>ends1(i),1,'first'))+10,length(GyroAll)]);
         end
-        starts1 = unique(starts1);
-        ends1 = unique(ends1);
         % Combine segments with only a few samples between them
         for i = 1:length(starts1)-1
             if starts1(i+1)-ends1(i) < 2*Fs

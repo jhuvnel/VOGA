@@ -176,16 +176,16 @@ function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,F
             trig = diff(stim);
             starts = find(trig==1)-1;
             starts = starts(1:2:end);
-            snip_len = round(median(diff(starts)));
+            snip_len = floor(median(diff(starts)));
             ends = starts + snip_len;
             %Create model stimulus trace
             stims = stim(starts(1):ends(1));
-            ind = find(stims==1);
-            end1 = ind(diff(ind)>1);
-            start2 = ind(find(diff(ind)>1)+1);
-            stims(ind(1):end1) = linspace(0,50,length(ind(1):end1));
-            stims(end1+1:start2-1) = 50*ones(length(end1+1:start2-1),1);
-            stims(start2:ind(end)) = linspace(50,0,length(start2:ind(end)));
+            ind1 = find(diff(stims)==1);
+            ind2 = find(diff(stims)==-1);
+            stims(ind1(1):ind2(1)) = linspace(0,50,length(ind1(1):ind2(1)));
+            stims(ind2(1)+1:ind1(2)-1) = 50;
+            stims(ind1(2):ind2(2)) = linspace(50,0,length(ind1(2):ind2(2)));
+            stims(ind2(2)+1:end) = 0;
         elseif contains(info.dataType,'Sine') %sine (toggle = new cycle), remove last cycle
             trig = abs(diff(stim));
             starts = find(trig==1);
@@ -211,6 +211,7 @@ function [stim,t_snip,stims,keep_inds,detec_tr] = MakeCycAvg__alignCycles(info,F
             fparts = split(info.dataType,'-');
             amp = str2double(strrep(strrep(fparts{contains(fparts,'dps')},'dps',''),'n','-'));
             stims = amp*stim;
+            stim = amp*stim;
             starts = 1;
             ends = length(ts);
         else

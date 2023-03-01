@@ -22,7 +22,9 @@ function CycAvg = MakeCycAvg__makeStruct(fname,info,Fs,filt,keep_tr,detec_tr,t_i
             else
                 CycAvg.([trac,'_cyc']) = Data_cyc.(var_n)';
             end
-            if (contains(fname,'Impulse')&&isfield(Data_vel,var_n))||contains(fname,{'Activation','VelStep'})
+            if contains(fname,{'Activation','Step'})
+                CycAvg.([trac,'_cyc_prefilt']) = Data_vel.(var_n); 
+            elseif contains(fname,'Impulse')&&isfield(Data_vel,var_n)
                 CycAvg.([trac,'_cyc_prefilt']) = Data_vel.(var_n)(Data_cyc.keep_inds(:,keep_tr));      
                 CycAvg.([trac,'_cyc_QP']) = Data_cyc.([var_n,'_smooth'])(:,keep_tr); 
                 long_t = repmat(Data_cyc.t,1,sum(keep_tr));

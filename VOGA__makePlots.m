@@ -2,9 +2,8 @@ function VOGA__makePlots(plot_type,Path)
 opts = {'Raw VOG','Segment','Cycle Average','Parameterized',...
     'Across Subjects','Sphere Plot','Edit Plot Params'};
 %Default plot parameters (No annotation, No set Y-axis maximum, Show eye
-%movements [not just the sync signal/gyro], No fits on the plot, LRZ axes
-%[not xyz])
-plot_params = {'0','','1','0','lrz'};
+%movements [not just the sync signal/gyro], No fits on the plot
+plot_params = {'0','','1','0'};
 %The subset of options that should be run within a folder
 %that covers one experiment within a visit (not aggregated)
 fold_level_opts = {'Raw VOG','Segment','Cycle Average','Sphere Plot'};
@@ -42,7 +41,6 @@ while tf % Run until the user selects cancel
     params.YMax = str2double(plot_params{2});
     params.plot_eyes = str2double(plot_params{3});
     params.plot_fits = str2double(plot_params{4});
-    params.lrz_xyz = plot_params{5};
     if any(contains(fold_level_opts,opts{ind}))&&~VOGA__makeFolders(Path,0) %Expected folders not there
         error('Expected folder structure not present. Navigate to appropriate folder before trying again.')
     end
@@ -70,7 +68,7 @@ while tf % Run until the user selects cancel
         if tf2
             for i = 1:length(indx)
                 load([params.Cyc_Path,filesep,all_files{indx(i)}],'CycAvg')
-                plotCycAvg(CycAvg,params.plot_fits,params.lrz_xyz);
+                plotCycAvg(CycAvg,params.plot_fits);
             end
         end
     elseif strcmp(opts{ind},'Parameterized')
@@ -80,7 +78,7 @@ while tf % Run until the user selects cancel
     elseif strcmp(opts{ind},'Sphere Plot')
         plotSpherePlot(params);
     elseif strcmp(opts{ind},'Edit Plot Params')
-        prompt = {'Descriptive annotation (0/1)','Y-Axis Limit','Show eye (0/1)','Show fits (0/1)','Plot LRZ or XYZ (lrz/xyz)'};
+        prompt = {'Descriptive annotation (0/1)','Y-Axis Limit','Show eye (0/1)','Show fits (0/1)'};
         temp_plot_params = inputdlg(prompt,'Set Plot Defaults',[1 50],plot_params);
         if ~isempty(temp_plot_params)
             plot_params = temp_plot_params;

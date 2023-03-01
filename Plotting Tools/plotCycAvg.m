@@ -1,4 +1,4 @@
-function plotCycAvg(CycAvg,plot_fits,lrz_xyz)  
+function plotCycAvg(CycAvg,plot_fits)  
     %First, assign type
     if contains(CycAvg.info.dataType,{'Impulse'}) %All head and cycles
         type = 3;
@@ -13,9 +13,7 @@ function plotCycAvg(CycAvg,plot_fits,lrz_xyz)
     if nargin < 2
         plot_fits = 0;
     end
-    if nargin < 3 || isempty(lrz_xyz)
-        traces = {'ll','rl','lr','rr','lx','rx','ly','ry','lz','rz'};
-    elseif contains(lrz_xyz,{'lrz','LRZ'}) 
+    if ~contains(CycAvg.info.dataType,{'X','Y'})
         traces = {'ll','rl','lr','rr','lz','rz'};
     else
         traces = {'lx','rx','ly','ry','lz','rz'};
