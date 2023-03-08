@@ -1,4 +1,5 @@
-function [Data,good_rng] = MakeCycAvg__shortenSegment(ha,te,Data,screen_size)
+function [Data,good_rng] = MakeCycAvg__shortenSegment(ha,Data,screen_size)
+te = Data.te;
 def = cellfun(@(x) num2str(x,10),num2cell([te(1),te(end)]),'UniformOutput',false);
 good_rng = 'Redo';
 axes(ha(1))

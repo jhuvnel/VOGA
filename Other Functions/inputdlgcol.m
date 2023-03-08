@@ -1,4 +1,4 @@
-function Answer=inputdlgcol(Prompt, Title, NumLines, DefAns,Resize,NumCols,Position)
+function Answer=inputdlgcol(Prompt,Title,NumLines,DefAns,Resize,NumCols,Position,ButtonNames)
 %INPUTDLGCOL Input dialog box.
 %  Answer = INPUTDLGCOL(Prompt) creates a modal dialog box that returns
 %  user input for multiple prompts in the cell array Answer.  Prompt
@@ -63,8 +63,9 @@ function Answer=inputdlgcol(Prompt, Title, NumLines, DefAns,Resize,NumCols,Posit
 %  Copyright 1998-2002 The MathWorks, Inc.
 %  $Revision: 1.58 $
 
-% Added the ability to specify where the inputdlgcol figure position. Default
+% AIA: Added the ability to specify where the inputdlgcol figure position. Default
 % unit is in inches.
+% AIA: Added ability to rename "Cancel" and "OK" buttons.
 
 %%%%%%%%%%%%%%%%%%%%%
 %%% General Info. %%%
@@ -86,8 +87,8 @@ if nargin == 1 & nargout == 0,
 end
 
 %********************** EDITTED ************
-% Change the number of maximum inputs to 7
-error(nargchk(1,7,nargin));
+% Change the number of maximum inputs to 8
+error(nargchk(1,8,nargin));
 %*******************************************
 
 error(nargoutchk(1,1,nargout));
@@ -117,7 +118,7 @@ end
 %********************** EDITTED ************
 % Set up sizes for 5 and 6 inputs
 if nargin>=5
-    if isstruct(Resize),
+    if isstruct(Resize)
         Interpreter=Resize.Interpreter;
         WindowStyle=Resize.WindowStyle;
         Resize=Resize.Resize;
@@ -131,14 +132,20 @@ end
 if nargin < 7
     Position = [];
 end
+
+if nargin < 8 || length(ButtonNames)~=2 || ~all(cellfun(@ischar,ButtonNames))
+    ButtonNames = {'Cancel','OK'};
+end
+cancel_str = ButtonNames{1};
+ok_str = ButtonNames{2};
 %*******************************************
 
-if strcmp(Resize,'on'),
+if strcmp(Resize,'on')
   WindowStyle='normal';
 end
 
 % Backwards Compatibility
-if isstr(NumLines),
+if isstr(NumLines)
   warning(['Please see the INPUTDLG help for correct input syntax.' 10 ...
            '         OKCallback no longer supported.' ]);
   NumLines=1;
@@ -229,11 +236,11 @@ ExtControl=uicontrol(StInfo, ...
 WrapQuest=cell(NumQuest,1);
 QuestPos=zeros(NumQuest,4);
 
-for ExtLp=1:NumQuest,
+for ExtLp=1:NumQuest
   if size(NumLines,2)==2
     [WrapQuest{ExtLp},QuestPos(ExtLp,1:4)]= ...
         textwrap(ExtControl,Prompt(ExtLp),NumLines(ExtLp,2));
-  else,
+  else
     [WrapQuest{ExtLp},QuestPos(ExtLp,1:4)]= ...
         textwrap(ExtControl,Prompt(ExtLp),80);
   end
@@ -309,7 +316,7 @@ EditYOffset=zeros(NumQuest,1);
 QuestYOffset(1)=FigHeight-DefOffset-QuestHeight(1);
 EditYOffset(1)=QuestYOffset(1)-EditHeight(1);% -SmallOffset;
 
-for YOffLp=2:NumQuest,
+for YOffLp=2:NumQuest
   QuestYOffset(YOffLp)=EditYOffset(YOffLp-1)-QuestHeight(YOffLp)-DefOffset;
   EditYOffset(YOffLp)=QuestYOffset(YOffLp)-EditHeight(YOffLp); %-SmallOffset;
 end % for YOffLp
@@ -329,7 +336,7 @@ num_col_left = NumCols;
 oldlp = 1;
 %*******************************************
 
-for lp=1:NumQuest,
+for lp=1:NumQuest
     QuestTag=['Prompt' num2str(lp)];
     EditTag=['Edit' num2str(lp)];
     if ~ischar(DefAns{lp}),
@@ -422,7 +429,7 @@ CancelHandle=uicontrol(InputFig   ,              ...
                       'Position'  ,[FigWidth-BtnWidth-DefOffset DefOffset ...
                                     BtnWidth  BtnHeight  ...
                                    ]           , ...
-                      'String'    ,'Cancel'    , ...
+                      'String'    ,cancel_str    , ...
                       'Callback'  ,CBString    , ...
                       'Tag'       ,'Cancel'      ...
                       );
@@ -435,7 +442,7 @@ OKHandle=uicontrol(InputFig    ,              ...
                    'Position'  ,[ FigWidth-2*BtnWidth-2*DefOffset DefOffset ...
                                   BtnWidth                    BtnHeight ...
                                 ]           , ...
-                  'String'     ,'OK'        , ...
+                  'String'     ,ok_str        , ...
                   'Callback'   ,CBString    , ...
                   'Tag'        ,'OK'          ...
                   );
@@ -463,16 +470,16 @@ end
 TempHide=get(0,'ShowHiddenHandles');
 set(0,'ShowHiddenHandles','on');
 
-if any(get(0,'Children')==InputFig),
+if any(get(0,'Children')==InputFig)
   Answer={};
-  if strcmp(get(InputFig,'UserData'),'OK'),
+  if strcmp(get(InputFig,'UserData'),'OK')
     Answer=cell(NumQuest,1);
-    for lp=1:NumQuest,
+    for lp=1:NumQuest
       Answer(lp)=get(EditHandle(lp),{'String'});
     end % for
   end % if strcmp
   delete(InputFig);
-else,
+else
   Answer={};
 end % if any
 

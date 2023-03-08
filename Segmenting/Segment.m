@@ -573,22 +573,21 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
             start = 1;
             ends = length(Time_Eye);
         end
-    elseif all(contains(stim_info,'VelStep')) %A really long multivector file
-        temp = find(abs(diff(Stim))==1);
-        all_starts = temp;
-        all_ends = [temp(2:end);length(Stim)];
-        temp2 = all_ends-all_starts;
-        thresh_tol = Fs*10; %Looks for segements longer than 10 seconds
-        start = all_starts(temp2>thresh_tol);
-        ends = all_ends(temp2>thresh_tol);
-        %However, we know there are two long segments (stim on and stim
-        %off) in each velstep segment, so take every other
-        if start(1)~=all_starts(1) 
-            start = [all_starts(1);ends(2)];
-        else %First cycle start is a toggle not the duration of the ramp
-            start = [start(1);ends(2)];
+    elseif all(contains(stim_info,{'VelStep','MultiVector'}))
+        %These files have trigger toggles for the "ramp" of every cycle
+        if Stim(1)==1 %If Stim started "high", the first ramp is missing so add it back in
+            temp = diff(find(abs(diff(Stim))==1));
+            ramp_dur = temp(2);
+            Stim(1:(find(diff(Stim)==-1,1,'first')-ramp_dur)) = 0;
         end
-        ends = ends([2,end]);
+        temp = find(diff(Stim)==1)-1;
+        all_starts = temp(1:2:end);
+        all_ends = [temp(3:2:end);length(Stim)];
+        temp2 = all_ends-all_starts;
+        [~,ind] = sort(temp2,'descend');
+        ind2 = sort(ind(1:length(stim_info)));
+        start = all_starts([1;ind2(1:end-1)+1]);
+        ends = all_ends(ind2);
     else %Should work for Sine, Pulse Trains and Multi Vector
         %Every trigger toggle is a cycle
         temp = find(abs(diff(Stim))==1);
@@ -598,7 +597,6 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
         start = all_starts;
         ends = all_ends;
         thresh_tol = Fs*0.4; %tolerance for differences in cyc length (always at least 400ms of break)
-        %thresh_tol = 50; %old
         for i = 2:length(all_starts)
             if abs(temp2(i)-temp2(i-1))<thresh_tol
                 start(i) = start(i-1);

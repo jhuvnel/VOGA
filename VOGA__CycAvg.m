@@ -70,7 +70,7 @@ while(~done)
             for j = 1:length(indx)
                 fname = progress_tab{progress_i(indx(j)),1}{:};
                 load([Seg_Path,filesep,fname],'Data');
-                [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,fname);
+                [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Auto Rerun'});
                 if analyzed                    
                     MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed);
                     if ~strcmp(CycAvg.name,['CycAvg_',fname]) %Had a different name, delete file

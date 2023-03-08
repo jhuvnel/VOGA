@@ -1,5 +1,11 @@
 %% Make Full Plot Cyc Avg
-function ha = MakeCycAvg__plotFullCycAvg(ha,type,colors,line_wid,YLim_Pos,YLim_Vel,traces_pos,traces_vel,CycAvg)
+function ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info)
+type = CycAvg.Data.info.type;
+colors = plot_info.colors;
+line_wid = plot_info.line_wid;
+YLim = plot_info.YLim;
+traces_pos = plot_info.traces_pos;
+traces_vel = plot_info.traces_vel;
 %% Initialize Figure
 if isempty(ha) %first time running
     ha = gobjects(5,1);
@@ -65,8 +71,8 @@ keep_tr = CycAvg.keep_tr;
 detec_tr = CycAvg.detec_tr;
 fill_color = repmat({colors.cyc_rm},size(keep_inds,2),1);
 fill_color(keep_tr) = {colors.cyc_keep};
-set(ha(1),'YLim',YLim_Pos)
-set(ha(2:5),'YLim',YLim_Vel)
+set(ha(1),'YLim',YLim.Pos)
+set(ha(2:5),'YLim',YLim.Vel)
 title(ha(4),['Accepted Cycles: ',num2str(sum(keep_tr)),'/',num2str(length(keep_tr))])
 if get(ha(1),'Visible')==1
     set(ha(1),'XTick',te(round(floor(mean(keep_inds)),0)),'XTickLabel',1:length(keep_tr),'Xaxislocation','top')

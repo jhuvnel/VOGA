@@ -1,7 +1,7 @@
 function VOGA__automaticAnalysis
 %Made for Autoscan data
 %tic;
-if ~VOGA__checkFolders(0)
+if ~VOGA__makeFolders(cd,0,0)
     disp('Folder structure not present. Generate folders, process raw data, and segment first.')
     return;
 end
@@ -10,7 +10,7 @@ Seg_Path = [Path,filesep,'Segmented Files'];
 Cyc_Path = [Path,filesep,'Cycle Averages'];
 % Cyc Avg Files
 progress_tab = assessProgress(Path);
-for j = 22 %1:size(progress_tab,1)    
+for j = 1 %1:size(progress_tab,1)    
     fname = progress_tab{j,1}{:};
     load([Seg_Path,filesep,fname],'Data');
     [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,'Auto');   
@@ -20,7 +20,7 @@ end
 %% Make Table and Summary Figure
 MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);
 %Make Summary Figure
-plot_params = {'0','','1','0','lrz'};
+plot_params = {'0','','1','0'};
 code_Path = [userpath,filesep,'VOGA'];
 params.code_Path = code_Path;
 % Get version and experimenter info from the file
