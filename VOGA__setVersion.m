@@ -6,7 +6,7 @@ if nargin < 1
     current_ver = '';
 end
 prompt = {['Set VOGA parameters.',newline,newline,'Version: '];...
-'Experimenter: '};
+'Experimenter: ';'Path: '};
 if isfile([userpath,filesep,'VOGA_VerInfo.txt'])
     data = table2cell(readtable([userpath,filesep,'VOGA_VerInfo.txt'],'ReadVariableNames',false));
     items = data(:,2);
@@ -14,15 +14,13 @@ if isfile([userpath,filesep,'VOGA_VerInfo.txt'])
     if length(items)<3||~strcmp(current_ver,items{1})||isempty(items{3}) 
         user_prompt = 1;
     end
-    def_ans = [{current_ver},items{2}];
+    def_ans = [{current_ver};items(2:3)];
 else
     user_prompt = 1;
-    def_ans = {current_ver;''};
+    def_ans = {current_ver;'';''};
 end
 if user_prompt
     items = inputdlg(prompt,'Set VOGA Parameters',1,def_ans);
-    disp('Select the MVI Study Subject Folder')
-    items{3} = uigetdir('Select the MVI Study Subject Folder','Select the MVI Study Subject Folder');    
 end
 if any(cellfun(@isempty,items))
     return;

@@ -93,14 +93,16 @@ if contains(info.goggle_ver,{'NKI','NL'})
         for i = 1:length(long_str)
             LX_uniq(find(LX_uniq(1:long_str(i)),1,'last')+reps) = true;
         end
-        Torsion_LE_Position = interp1(te(LX_uniq),Torsion_LE_Position(LX_uniq),te);       
+        Torsion_LE_Position(~LX_uniq) = NaN;
+        Torsion_LE_Position = interp1(Time_Eye(~isnan(Torsion_LE_Position)),Torsion_LE_Position(~isnan(Torsion_LE_Position)),Time_Eye);       
         RX_uniq = [true;Torsion_RE_Position(2:end)~=Torsion_RE_Position(1:end-1)];
         RX_inds = reshape(1:floor(length(Torsion_RE_Position)/reps)*reps,reps,[]);
         long_str = RX_inds(1,~any(RX_uniq(RX_inds),1));
         for i = 1:length(long_str)
             RX_uniq(find(RX_uniq(1:long_str(i)),1,'last')+reps) = true;
         end
-        Torsion_RE_Position = interp1(te(RX_uniq),Torsion_RE_Position(RX_uniq),te); 
+        Torsion_RE_Position(~RX_uniq) = NaN;
+        Torsion_RE_Position = interp1(Time_Eye(~isnan(Torsion_RE_Position)),Torsion_RE_Position(~isnan(Torsion_RE_Position)),Time_Eye);       
     end
     GyroX = reshape(XAxisVelHead,[],1);
     GyroY = reshape(YAxisVelHead,[],1);

@@ -92,6 +92,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             filt = filt1;
             filt.t_interp = [];
             filt.keep_tr = true(1,size(Data.keep_inds,2));
+            filt = MakeCycAvg__autoFilter(Data,filt);
             CycAvg = MakeCycAvg__filterTraces(Data,filt);
             ha = MakeCycAvg__plotFullCycAvg([],CycAvg,plot_info);
             [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Automatic'); 

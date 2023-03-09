@@ -77,7 +77,7 @@ while tf
             t_ind = find(Data_cyc.t>x,1,'first');
             traces = reshape(all_trac(t_ind,:,:),length(keep_tr),[])';
             [~,trace_i] = sort(min(abs(traces-y)));
-            trace_i(ismember(trace_i,~keep_tr)) = [];
+            trace_i(ismember(trace_i,find(~keep_tr))) = [];
             ind = 1;
             axes(ha(4))
             hold on

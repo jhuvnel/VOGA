@@ -49,6 +49,7 @@ switch type
         t_nonan = t_out(~isnan(trace_out));
         if ~isempty(t_nonan)
             trace_out = interp1(t_nonan,trace_out(~isnan(trace_out)),t_out);
+            trace_out(isnan(trace_out)) = 0;
         else
             trace_out = trace_in;
         end
