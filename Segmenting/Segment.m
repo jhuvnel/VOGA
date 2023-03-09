@@ -93,14 +93,14 @@ if contains(info.goggle_ver,{'NKI','NL'})
         for i = 1:length(long_str)
             LX_uniq(find(LX_uniq(1:long_str(i)),1,'last')+reps) = true;
         end
-        Torsion_LE_Position(~LX_uniq) = NaN;
+        Torsion_LE_Position = interp1(te(LX_uniq),Torsion_LE_Position(LX_uniq),te);       
         RX_uniq = [true;Torsion_RE_Position(2:end)~=Torsion_RE_Position(1:end-1)];
         RX_inds = reshape(1:floor(length(Torsion_RE_Position)/reps)*reps,reps,[]);
         long_str = RX_inds(1,~any(RX_uniq(RX_inds),1));
         for i = 1:length(long_str)
             RX_uniq(find(RX_uniq(1:long_str(i)),1,'last')+reps) = true;
         end
-        Torsion_RE_Position(~RX_uniq) = NaN;
+        Torsion_RE_Position = interp1(te(RX_uniq),Torsion_RE_Position(RX_uniq),te); 
     end
     GyroX = reshape(XAxisVelHead,[],1);
     GyroY = reshape(YAxisVelHead,[],1);
@@ -424,13 +424,14 @@ end
 %% Segment
 if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fit on motion trace
     stim_info = strrep(stim_info,'manual','Manual'); %in case I forgot to capitalize
-    if any(contains(stim_info,{'LARP','LA','RP'}))
-        GyroAll = GyroLARP;
-    elseif any(contains(stim_info,{'RALP','RA','LP'}))
-        GyroAll = GyroRALP;
-    else
-        GyroAll = GyroZ;
-    end
+    GyroAll = GyroZ+GyroLARP+GyroRALP;
+%     if any(contains(stim_info,{'LARP','LA','RP'}))
+%         GyroAll = GyroLARP;
+%     elseif any(contains(stim_info,{'RALP','RA','LP'}))
+%         GyroAll = GyroRALP;
+%     else
+%         GyroAll = GyroZ;
+%     end
     if any(contains(stim_info,'VelStep'))
         thresh = 50; %Adjust as needed
         thresh2 = 1; %Counts as 0.

@@ -3,7 +3,7 @@ screen_size = plot_info.screen_size;
 traces_vel = plot_info.traces_vel;
 Data_cyc = CycAvg.Data_allcyc;
 if CycAvg.Data.info.type == 2
-    disp('No cycle selection for this data type')
+    filt = CycAvg.filt;
     return;
 end
 list = {'Automatic','Click','List'};
