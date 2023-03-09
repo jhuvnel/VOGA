@@ -1,4 +1,5 @@
 function [selection,value] = nmlistdlg(varargin)
+MATLAB_ver_before_change = 2021>str2double(strrep(extract(version,"R"+digitsPattern(4)),'R',''));
 %AA edited so that this version is nonmodal and allow for position to be
 %adjusted.
 %'Position' in in inches right now.
@@ -215,10 +216,11 @@ try
     %on other computers
     % In June of 2022 AIA realized she would need it to work for future
     % versions too.
-    if contains(version,'R202')
-        c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely(true);
+    % In March 2023, AIA discovered this bug extends to 2020a
+    if MATLAB_ver_before_change
+        c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely();        
     else
-        c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely();
+        c = matlab.ui.internal.dialog.DialogUtils.disableAllWindowsSafely(true);       
     end
     uiwait(fig);
     delete(c);

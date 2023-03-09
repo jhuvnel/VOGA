@@ -430,16 +430,6 @@ switch type
         head_accel = NaN(nc,1);
         saccade_timing = cell(nc,2);
         time_to_target = NaN(nc,2);
-        %Where to look for saccades
-        if contains(CycAvg.name,{'LH','RH'})
-            rel_tr = {'lz','rz'};
-        elseif contains(CycAvg.name,{'LA','RP'})
-            rel_tr = {'ll','rl'};
-        elseif contains(CycAvg.name,{'LP','RA'})
-            rel_tr = {'lr','rr'};
-        else
-            rel_tr = [];
-        end
         if -min(CycAvg.stim_cycavg)>max(CycAvg.stim_cycavg)
             neg_flag = -1;
         else
@@ -483,10 +473,6 @@ switch type
                 ts_h = t_upsamp(1:length(rel_head));
                 head_lin_fit = [ones(length(ts_h),1),ts_h']\rel_head';
                 avg_gain_Ga(tr) = eye_lin_fit(2)/head_lin_fit(2);
-                %Look for saccades
-                if any(contains(rel_tr,traces{tr})) %Look for saccades
-                    eye_cyc_prefilt = -neg_flag*spline(t,CycAvg.([traces{tr},'_cyc_prefilt'])',t_upsamp);
-                end
                 for i = 1:nc
                     %define start and end as 10dps
                     warning('off')
@@ -523,33 +509,7 @@ switch type
                     head_lin_fit = [ones(length(ts_h),1),ts_h']\rel_head';
                     gain_Ga(i,tr) = eye_lin_fit(2)/head_lin_fit(2);
                     head_accel(i) = head_lin_fit(2);
-                    if any(contains(rel_tr,traces{tr})) %Look for saccades
-                        Ts = median(diff(t_upsamp));
-                        eye_pf = eye_cyc_prefilt(i,:);
-                        pos_eye = cumtrapz(eye_pf)*Ts;
-                        pos_head = cumtrapz(head)*median(diff(t_upsamp));
-                        % Saccade detection method
-                        prom = 0.7;
-                        step = 1e-3;
-                        wind1 = floor(10e-3/Ts);
-                        wind2 = floor(step/Ts);
-                        t2 = (wind1+1):wind2:length(pos_eye);
-                        dpos_eye = filterTrace('spline',pos_eye(t2)-pos_eye(t2-wind1),0.9999995,t_upsamp(t2),t_upsamp);
-                        [pk,loc,wid,prom2] = findpeaks(dpos_eye,t_upsamp,'MinPeakProminence',prom,'WidthReference','halfprom','MinPeakDistance',50e-3); %At least 25ms apart
-                        starts = zeros(1,length(loc));
-                        for ii = 1:length(starts)
-                            rel_thresh = dpos_eye<(pk(ii)-0.5*prom2(ii));
-                            rel_thresh(t_upsamp>loc(ii)) = false;
-                            starts(ii) = t_upsamp(find(rel_thresh,1,'last'));
-                        end
-                        TF = starts(pk>prom&wid>10e-3&wid<150e-3&starts>t_upsamp(h_max)); %saccade between 10-150ms long
-                        saccade_t = (TF-t_upsamp(h_start))*1000;
-                        saccade_timing{i,contains(rel_tr,traces{tr})} = saccade_t';
-                        if any(pos_eye(h_end:end)>pos_head(h_end:end))
-                            time_to_target(i,contains(rel_tr,traces{tr})) = t_upsamp(find(pos_eye(h_end:end)>pos_head(h_end:end),1,'first'))*1000;
-                        end
-                    end
-                end
+               end
                 %Update table for trace-dependent things
                 results.(['MaxVel_',upper(traces{tr})]) = avg_max_vel(tr);
                 results.(['MaxVel_',upper(traces{tr}),'_sd']) = std(max_vel(:,tr),'omitnan');

@@ -88,7 +88,7 @@ if ismember(type,[1,3,4]) %Has cycles
     end
     if ~isempty(detec_tr)
         for i = 1:length(detec_tr)
-            plot(te(keep_inds([1,end],detec_tr(i))),[YLim_Pos(2),YLim_Pos(2)],'-b','LineWidth',2)
+            plot(te(keep_inds([1,end],detec_tr(i))),[YLim.Pos(2),YLim.Pos(2)],'-b','LineWidth',2)
         end
     end
 end
@@ -188,7 +188,7 @@ if get(ha(4),'Visible')
             plot(t_s,CycAvg.Data_allcyc.(trac)(:,keep_tr),'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2))]),'LineWidth',line_wid.norm)
         end
         if isfield(CycAvg,[lower(traces_vel{i}(1:2)),'_saccade_time'])
-            plot(CycAvg.([lower(traces_vel{i}(1:2)),'_saccade_time']),(0.99*diff(YLim_Vel)+YLim_Vel(1))*ones(length(CycAvg.([lower(traces_vel{i}(1:2)),'_saccade_time'])),1),'*','MarkerSize',5,'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']))
+            plot(CycAvg.([lower(traces_vel{i}(1:2)),'_saccade_time']),(0.99*diff(YLim.Vel)+YLim.Vel(1))*ones(length(CycAvg.([lower(traces_vel{i}(1:2)),'_saccade_time'])),1),'*','MarkerSize',5,'Color',colors.([lower(traces_vel{i}(1)),'_',lower(traces_vel{i}(2)),'_s']))
         end
     end
     hold off

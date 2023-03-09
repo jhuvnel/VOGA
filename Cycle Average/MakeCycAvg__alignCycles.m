@@ -72,7 +72,7 @@ if contains(info.dataType,'Impulse')
     %sample 48
     starts = spike_i-floor(0.195*Fs);
     ends = starts+floor(0.71*Fs);
-    inv_i = starts<1|ends>length(stim)|(stim(spike_i)-stim(spike_i-floor(0.1*Fs))<50);
+    inv_i = starts<1|ends>length(stim);
     starts(inv_i)= [];
     ends(inv_i) = [];
     t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);
