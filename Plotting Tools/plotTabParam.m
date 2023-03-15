@@ -34,6 +34,10 @@ annotation('textbox',[0 0 1 1],'String',[Path,newline,code_name,newline,...
     'VOGA',version,newline,Experimenter],'FontSize',5,...
     'EdgeColor','none','interpreter','none');
 ha = gobjects(n_row,n_col);
+leg_loc = 'northeast';
+if contains(fig_name,'Autoscan')
+    leg_loc = 'northwest';
+end
 for j = 1:n_col
     for i = 1:n_row
         ind = sub2ind([n_col,2],j,i);        
@@ -50,7 +54,7 @@ for j = 1:n_col
             for jj = 1:size(sub_leg,1)
                 h(jj) = plot(NaN,NaN,'Color',sub_leg.Color{jj},'LineStyle',sub_leg.LineStyle{jj},'Marker',sub_leg.Marker{jj},'LineWidth',1.5);
             end
-            leg = legend(ha(i,j),h,sub_leg.Name,'NumColumns',1,'box','off');
+            leg = legend(ha(i,j),h,sub_leg.Name,'Location',leg_loc,'NumColumns',1,'box','off');
             leg.ItemTokenSize(1) = 7;
         end
         hold off

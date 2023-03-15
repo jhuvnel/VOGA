@@ -116,7 +116,9 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             %Keep running until the user selects "Done" (the Cancel Button renamed)
             while ~isempty(temp_filt)
                 filt.(pos_vel){:,:} = reshape(temp_filt,length(traces),[]);
-                [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt);
+                CycAvg = MakeCycAvg__filterTraces(Data,filt);
+                CycAvg = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Restart');
+                [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Automatic');
                 ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
                 definput = strrep(cellfun(@(x) num2str(x,10),...
                     table2cell(filt.(pos_vel)),'UniformOutput',false),'NaN','');

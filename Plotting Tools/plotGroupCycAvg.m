@@ -73,11 +73,12 @@ for i = 1:fnum
             disp_text = ['MaxVel ',text_num{1,1},'(dps): ',text_num{1,2},newline,...
                 'MaxVel ',text_num{2,1},'(dps): ',text_num{2,2},newline,...
                 'Phase(deg): ',text_num{1,3}];
+            box_bool = 'on';
+            grid_bool = 'on';
         elseif contains(fig_name,'Impulse')
+            n = -1;
             if -min(mean(CycAvg.stim))>max(mean(CycAvg.stim))
                 n = 1;
-            else
-                n = -1;
             end
             plot(CycAvg.t,-n*CycAvg.stim_cyc,'k');
             for ii = 1:length(p_tr)
@@ -91,6 +92,8 @@ for i = 1:fnum
             end
             disp_text = ['Gain: ',num2str(round(CycAvg.parameterized.Gain,2)),newline,...
                 'Lat(ms): ',num2str(round(CycAvg.parameterized.Latency,0))];
+            box_bool = 'on';
+            grid_bool = 'on';
         elseif contains(fig_name,'Exponential')
             plot(CycAvg.t(s),-CycAvg.stim(s),'k');
             for ii = 1:length(p_tr)
@@ -104,10 +107,26 @@ for i = 1:fnum
             end
             disp_text = ['MaxVel(dps): ',num2str(round(CycAvg.parameterized.MaxVel(1),2),2),newline,...
                 'Tau(s): ',num2str(round(CycAvg.parameterized.Tau(1),2),2)];
+            box_bool = 'on';
+            grid_bool = 'on';
+        elseif contains(fig_name,'Autoscan')
+            for ii = 1:length(p_tr)
+                tr = p_tr{ii};
+                if isfield(CycAvg,[tr,'_cyc'])
+                    plot(CycAvg.t,CycAvg.([tr,'_cyc']),'Color',colors.([tr(1),'_',tr(2)]))
+                else
+                    p_tr_bool(ii) = true;
+                end
+            end
+            disp_text = sub_t{i};
+            sub_t{i} = '';      
+            box_bool = 'on';
+            grid_bool = 'on';
         end        
         XLim = CycAvg.t([1,end]);
         set(gca,'XLim',XLim)
-        text(0.99*diff(XLim)+XLim(1),YLim(1),disp_text,'HorizontalAlignment','right','VerticalAlignment','bottom','FontSize',7)
+        text(0.99*diff(XLim)+XLim(1),YLim(1),disp_text,...
+            'HorizontalAlignment','right','VerticalAlignment','bottom','FontSize',7)
     end
     hold off
     title(sub_t{i})
@@ -125,8 +144,8 @@ for i = 1:fnum
 end
 ylabel(ha(1),'Angular Velocity (dps)','FontSize',12)
 xlabel(ha,'Time (s)')
-set(ha,'box','on','YLim',YLim)
-set(ha(2:fnum),'YTick',[])
+set(ha(2:fnum),'YTickLabel',[])
+set(ha,'box',box_bool,'YLim',YLim,'XGrid',grid_bool,'YGrid',grid_bool)
 leg = legend(ha(1),h1,[{'Stim'};upper(p_tr)],'NumColumns',length(h1),'box','off');
 leg.ItemTokenSize(1) = 7;
 leg.Position = [0.5-(0.1635/2),y_max+0.05,0.1635,0.0516];

@@ -6,7 +6,7 @@ if CycAvg.Data.info.type == 2
     filt = CycAvg.filt;
     return;
 end
-list = {'Automatic','Click','List'};
+list = {'Automatic','Click','List','Restart'};
 tf = 1;
 if nargin <4 ||~ismember(in_opt,list)
     in_opt = '';    
@@ -130,6 +130,12 @@ while tf
             end
             keep_tr = false(1,length(keep_tr));
             keep_tr(ind2) = true;
+            %Recalculate and plot
+            CycAvg.keep_tr = keep_tr;
+            CycAvg = MakeCycAvg__filterTraces([],[],CycAvg);
+            MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
+        case 'Restart'
+            keep_tr = true(1,length(keep_tr));
             %Recalculate and plot
             CycAvg.keep_tr = keep_tr;
             CycAvg = MakeCycAvg__filterTraces([],[],CycAvg);

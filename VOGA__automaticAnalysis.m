@@ -10,10 +10,10 @@ Seg_Path = [Path,filesep,'Segmented Files'];
 Cyc_Path = [Path,filesep,'Cycle Averages'];
 % Cyc Avg Files
 progress_tab = assessProgress(Path);
-for j = 1 %1:size(progress_tab,1)    
+for j = 1:15 %1:size(progress_tab,1)    
     fname = progress_tab{j,1}{:};
     load([Seg_Path,filesep,fname],'Data');
-    [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,'Auto');   
+    [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'});   
     MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed);
 end
 %disp(toc)

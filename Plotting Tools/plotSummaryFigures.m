@@ -10,7 +10,7 @@ if tf
     sub_info = params.sub_info;
     all_subs = sub_info.Subject;
     sub_ears = sub_info.Ear;
-    results_mat = dir('*Results.mat');
+    results_mat = dir('*VOGResults.mat');
     if isempty(results_mat)
         error('No Results files found in this directory')
     end
@@ -41,17 +41,13 @@ if tf
             end
             % Extract relevant normative values
             load('RotaryChairNormativeData.mat','norm_dat')
-            all_freqs = unique(all_results.('Frequency(Hz)'));
+            %all_freqs = unique(all_results.('Frequency(Hz)'));
             % Limit summary stats to 0.05-1Hz (0.05, 0.1, 0.2, 0.5, 1)
             freqs = [0.05,0.1,0.2,0.5,1];
             remove_phase_with_gain_below = 0.025;
-            
-            % Isolate the half-cycle for the implanted ear
-            half_cyc = repmat({'HIGH'},length(sub_ears),1);
-            half_cyc(strcmp(sub_ears,'R')) = {'LOW'};
             %Make structs for each condition
             conds = {'pre','post','mmo','cro'};
-            cond_logic = [contains(all_results.Visit,'Visit0')&contains(all_results.Condition,'NoStim'),...
+            cond_logic = [contains(all_results.Visit,'Visit0')&~contains(all_results.Condition,'Light'),...
                 contains(all_results.Visit,'Visit3')&contains(all_results.Condition,'NoStim'),...
                 contains(all_results.Condition,'Motion'),...
                 contains(all_results.Condition,'Constant')];
@@ -66,18 +62,14 @@ if tf
                 %Populate them with the available numbers
                 for i = 1:length(all_subs)
                     for j = 1:length(freqs)
-                        subtab = all_results(contains(all_results.Subject,all_subs(i))&all_results.('Frequency(Hz)')==freqs(j)&cond_logic(:,c),:);
+                        subtab = all_results(find(contains(all_results.Subject,all_subs(i))...
+                            &all_results.Frequency==freqs(j)&cond_logic(:,c)&...
+                            contains(all_results.AxisName,sub_ears(i)),1,'last'),:);
                         if ~isempty(subtab)
-                            subtab = subtab(end,:);
-                            if subtab.(['Gain_LZ_',half_cyc{i}])>subtab.(['Gain_RZ_',half_cyc{i}]) %Use L eye
-                                eye = 'L';
-                            else
-                                eye = 'R';
-                            end
-                            gain.(conds{c})(i,j) = subtab.(['Gain_',eye,'Z_',half_cyc{i}]);
-                            gain_sd.(conds{c})(i,j) = subtab.(['Gain_',eye,'Z_',half_cyc{i},'_sd']);
-                            phase.(conds{c})(i,j) = subtab.(['Phase_',eye]);
-                            phase_sd.(conds{c})(i,j) = subtab.(['Phase_',eye,'_sd']);
+                            gain.(conds{c})(i,j) = subtab.Gain;
+                            gain_sd.(conds{c})(i,j) = subtab.Gain_sd;
+                            phase.(conds{c})(i,j) = subtab.Phase;
+                            phase_sd.(conds{c})(i,j) = subtab.Phase_sd;
                         end
                     end
                 end
@@ -88,11 +80,6 @@ if tf
                 phase_mean.(conds{c}) = mean(phase.(conds{c}),1,'omitnan');
                 phase_std.(conds{c}) = std(phase.(conds{c}),[],1,'omitnan');
             end
-            %Each subject
-            for i = 1:length(all_subs)
-                
-            end
-            
         elseif contains(opts{ind(ii)},'vHIT')
             
         end
@@ -282,24 +269,17 @@ if tf
                 cand_gain_R = NaN(1,length(freqs));
                 cand_phase = NaN(1,length(freqs));
                 for j = 1:length(freqs)
-                    subtab = all_results(all_results.('Frequency(Hz)')==freqs(j),:);
-                    if ~isempty(subtab)
-                        subtab = subtab(end,:);
-                        if subtab.Gain_LZ_HIGH>subtab.Gain_RZ_HIGH %Use L eye
-                            cand_gain_L(j) = subtab.Gain_LZ_HIGH;
-                        else
-                            cand_gain_L(j) = subtab.Gain_RZ_HIGH;
-                        end
-                        if subtab.Gain_LZ_LOW>subtab.Gain_RZ_LOW %Use L eye
-                            cand_gain_R(j) = subtab.Gain_LZ_LOW;
-                        else
-                            cand_gain_R(j) = subtab.Gain_RZ_LOW;
-                        end
-                        if cand_gain_L(j) > cand_gain_R(j)
-                            cand_phase(j) = subtab.Phase_L;
-                        else
-                            cand_phase(j) = subtab.Phase_R;
-                        end
+                    subtab_L = all_results(find(all_results.Frequency==freqs(j)&...
+                        contains(all_results.AxisName,'L'),1,'last'),:);
+                    subtab_R = all_results(find(all_results.Frequency==freqs(j)&...
+                        contains(all_results.AxisName,'R'),1,'last'),:);
+                    if ~isempty(subtab_L)
+                        cand_gain_L(j) = subtab_L.Gain;
+                        cand_phase(j) = subtab_L.Phase;
+                    end
+                    if ~isempty(subtab_R)
+                        cand_gain_R(j) = subtab_R.Gain;
+                        cand_phase(j) = subtab_R.Phase;
                     end
                 end
                 %% Over Freq

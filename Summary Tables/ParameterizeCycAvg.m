@@ -119,7 +119,7 @@ if any(contains(fparts,{'ua','uA'}))
     fparts(contains(fparts,{'ua','uA'})) = [];
 end
 %Stim Vector and Axis Name
-if ~contains(fname,{'LARP','LHRH','RALP','X','Y','RP','RA','LH','Rotary','Sine','Sinusoid'})
+if contains(fname,{'LA','LP','RH'})&&~contains(fname,{'LARP','LHRH','RALP','X','Y'})
     n = [2,1];
 else 
     n = [1,2];
@@ -183,6 +183,7 @@ if type == 1
 elseif type == 2 && contains(fname,'VelStep')
     %On and "off" period for exponential
     results.StimAxis{2} = 0*results.StimAxis{2};
+    results.AxisName{2} = '';
 end
 fparts(contains(fparts,{'Hz','Sin','VelStep','Activation','Impulse','Gaussian','eeVOR'})) = [];
 results.Type(:) = Types(type);
@@ -450,7 +451,7 @@ switch type
                 h_end = min([find(head<10&t_upsamp>t_upsamp(h_max),1,'first'),(h_max-h_start)*2+h_start]);
                 head_start = t_upsamp(h_start);
                 head_end = t_upsamp(h_end);
-                avg_max_vel(tr) = max(eye(h_start:((h_max-h_start)*3+h_start)));
+                avg_max_vel(tr) = max(abs(eye(h_start:((h_max-h_start)*3+h_start))));
                 %Gain by taking the ratio of area under the curve
                 h_AUC = trapz(head(h_start:h_end))*median(diff(t_upsamp));
                 e_AUC = trapz(eye(h_start:h_end))*median(diff(t_upsamp));
