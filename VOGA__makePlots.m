@@ -50,7 +50,7 @@ while tf % Run until the user selects cancel
     params.Cyc_Path = [Path,filesep,'Cycle Averages'];
     if strcmp(opts{ind},'Raw VOG')
         %Select file inside this function
-        plotRawVOG(params.Raw_Path,params.plot_eyes,params.lrz_xyz) 
+        plotRawVOG(params.Raw_Path,params.plot_eyes) 
     elseif strcmp(opts{ind},'Segment')
         %Select files first
         all_files = extractfield(dir([params.Seg_Path,filesep,'*.mat']),'name');

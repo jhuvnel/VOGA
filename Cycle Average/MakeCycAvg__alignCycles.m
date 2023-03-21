@@ -2,6 +2,7 @@ function Data = MakeCycAvg__alignCycles(Data)
 fname = Data.info.name;
 info = Data.info;
 Fs = Data.Fs;
+%Set time values
 if contains(fname,'Activation') %Preserve time to rejoin them later
     Data.te = Data.Time_Eye;
     Data.ts = Data.Time_Stim;
@@ -27,7 +28,8 @@ elseif contains(fname,{'eeVOR','Moogles'})
     Data.stim1 = Data.Trigger;
 else
     dir = ['L','R','Z'];
-    Data.stim1 = Data.(['HeadVel_',dir(cellfun(@(x) contains(fname,x),{{'LA','RP'};{'RA','LP'};{'LH','RH','Rotary'}}))]);    
+    Data.stim1 = Data.(['HeadVel_',dir(cellfun(@(x) contains(fname,x),...
+        {{'LA','RP'};{'RA','LP'};{'LH','RH','Rotary'}}))]);    
 end
 %Shift Trigger if needed
 ts = Data.ts;
@@ -42,46 +44,24 @@ elseif TrigShift < 0
     stim = [stim;repmat(stim(end),-TrigShift,1)];
     stim = stim((-TrigShift+1):end);
 end
+% Set stim and find cycle start/end time indeces
 if contains(info.dataType,'Impulse')
     thresh = 50;
-    is_pos = (contains(fname,'GNO')&&contains(fname,{'LH','RP','RA'}))||...
-        (~contains(fname,'GNO')&&contains(fname,{'LH','RP','LP'}));
-    if is_pos
-        abov_i = find(stim>thresh);
-    else
-        abov_i = find(stim<-thresh);
-    end
-    p_len = 0;
-    spike_i = abov_i;
-    while p_len~=length(spike_i) %Just to make sure it's really done running
-        p_len = length(spike_i);
-        for i = 1:p_len
-            snip = spike_i(i) + (-floor(0.5*Fs):floor(0.5*Fs)); %1 second apart at least
-            snip(snip < 1|snip > length(stim)) = [];
-            [~,max_i] = max(abs(stim(snip)));
-            spike_i(i) = snip(1)-1+max_i;
-        end
-        spike_i = unique(spike_i);
-    end
-    if is_pos
-        spike_i(stim(spike_i)<0)=[];
-    else
-        spike_i(stim(spike_i)>0)=[];
-    end
-    %Consisitent with GNO's csv, take a 175 sample trace with max at
-    %sample 48
+    is_pos = (2*double(contains(fname,'GNO')&&contains(fname,{'LH','RP','RA'})||...
+        ~contains(fname,'GNO')&&contains(fname,{'LH','RP','LP'}))-1);
+    [vals,spike_i,widths] = findpeaks(abs(stim),'MinPeakProminence',thresh,...
+        'MinPeakDistance',round(Fs)); %Impulses will be at least 1 second apart
+    spike_i(isoutlier(vals)|isoutlier(widths)) = [];
+    spike_i((2*is_pos-1)*stim(spike_i)<0)=[];
+    %Consisitent with GNO's csv, take a 175 sample trace with max at sample 48
     starts = spike_i-floor(0.195*Fs);
     ends = starts+floor(0.71*Fs);
     inv_i = starts<1|ends>length(stim);
     starts(inv_i)= [];
     ends(inv_i) = [];
-    t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);
-    keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
-    for i = 1:length(starts)
-        keep_inds(:,i) = starts(i):ends(i);
-    end
-    stims = stim(keep_inds);
-elseif contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
+    t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);    
+elseif contains(info.dataType,{'RotaryChair','aHIT'})||...
+        contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
     if contains(info.dataType,'Sine')
         fparts = split(info.dataType,'-');
         freqs = fparts(contains(fparts,'Hz'));
@@ -151,21 +131,22 @@ elseif contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,
         end
         ends = starts + snip_len - 1;
         %Delete incomplete cycles
-        starts(ends>length(stim)) = [];
-        ends(ends>length(stim)) = [];
-        all_stim = zeros(snip_len,length(starts));
-        for i = 1:length(starts)
-            all_stim(:,i) = stim(starts(i):ends(i));
-        end
-        %Remove any obvious erroneous motion traces
-        if contains(info.dataType,{'RotaryChair'})
-            tol = 0.2; %Amplitude can be 20% wrong and still be tolerated
-            rm_tr = abs(max(all_stim)-amp)/amp > tol | abs(min(all_stim)+amp)/amp > tol;
-            starts(rm_tr) = [];
-            ends(rm_tr) = [];
-            all_stim(:,rm_tr) = [];
-        end
-        stims = mean(all_stim,2);
+        inv_i = starts<1|ends>length(stim);
+        starts(inv_i)= [];
+        ends(inv_i) = [];
+%         all_stim = zeros(snip_len,length(starts));
+%         for i = 1:length(starts)
+%             all_stim(:,i) = stim(starts(i):ends(i));
+%         end
+%         %Remove any obvious erroneous motion traces
+%         if contains(info.dataType,{'RotaryChair'})
+%             tol = 0.2; %Amplitude can be 20% wrong and still be tolerated
+%             rm_tr = abs(max(all_stim)-amp)/amp > tol | abs(min(all_stim)+amp)/amp > tol;
+%             starts(rm_tr) = [];
+%             ends(rm_tr) = [];
+%             all_stim(:,rm_tr) = [];
+%         end
+%         stims = mean(all_stim,2);
     elseif contains(info.dataType,'Step')
         stims = stim;
         starts = 1;
@@ -173,21 +154,12 @@ elseif contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,
     else
         error('Unknown Data Type (RotaryChair/aHIT)')
     end
-    t_snip = reshape(ts(1:size(stims,1))-ts(1),1,[]);
-    keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
-    for i = 1:length(starts)
-        keep_inds(:,i) = starts(i):ends(i);
-    end
+    t_snip = reshape(ts(1:size(stims,1)),1,[]);
 elseif contains(info.dataType,'eeVOR') %align using the trigger signal
     if contains(info.dataType,{'65Vector','MultiVector'})
-        %The trigger is actually showing when the trapezoids start and end. There
-        %are only 20 cycles of the stimulus applied and there are 40 trigger
-        %toggles. To make the stimulus trace, I assumed the trigger was high when
-        %the virtual velocity was linear and that the max virtual velocity is 50
-        %dps (estimated from PJB's 2019 manuscript).
-        %The above was confirmed by the the VOG code.
-        %I also want both excitation and inhibition phases of the stimulus during
-        %alignemnt.
+        %The trigger here shows when the stimulus ramps up and down.
+        %50dps was chosen as a trigger value based on the Figures in the
+        %Boutros 2019 JCI paper.
         %Find time window for alignment
         trig = diff(stim);
         starts = find(trig==1)-1;
@@ -239,12 +211,18 @@ elseif contains(info.dataType,'eeVOR') %align using the trigger signal
         ends(end) = [];
     end
     t_snip = reshape(ts(1:length(stims))-ts(1),1,[]);
-    keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
-    for i = 1:length(starts)
-        keep_inds(:,i) = starts(i):ends(i);
-    end
 else
     error('Unknown Data Type')
+end
+%Make the keep_inds matrix
+keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
+for i = 1:length(starts)
+    keep_inds(:,i) = starts(i):ends(i);
+end
+if contains(info.dataType,'Impulse')
+    stims = stim(keep_inds);
+elseif contains()
+    stims = mean(stim(keep_inds),2);
 end
 Data.stim = stim;
 Data.t_snip = t_snip;

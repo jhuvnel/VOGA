@@ -126,6 +126,7 @@ while tf
                 'ListSize',[100 250],'ListString',cellstr(num2str(cyc_num')),...
                 'Position',[screen_size(3)-4,screen_size(4)-5.25,2,5.25]);
             if ~tf
+                filt = CycAvg.filt;
                 return;
             end
             keep_tr = false(1,length(keep_tr));

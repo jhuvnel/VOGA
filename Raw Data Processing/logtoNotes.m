@@ -8,7 +8,7 @@ if isempty(file_names)
     file_names = '';
 end
 Notes_ind = contains(file_names,'-Notes.txt');
-Log_ind = contains(file_names,{'LDHP','LDPC'});
+Log_ind = contains(file_names,{'LDHP','LDPC','TestingLog'});
 VOG_ind = find(contains(file_names,{'SESSION','.dat'})&~Notes_ind&~Log_ind);
 has_notes = contains(strrep(strrep(file_names(VOG_ind),'.txt',''),'.dat',''),strrep(file_names(Notes_ind),'-Notes.txt',''));
 VOG_files = file_names(VOG_ind(~has_notes));
@@ -297,16 +297,19 @@ for f = 1:length(logfiles)
             %Plot
             sub_i = unique(floor(linspace(1,length(Time_Eye),1000000)));
             %Update plots
-            plot(Time_Eye(sub_i),GyroX(sub_i),'Color',0.5*[1,1,1],...
-                Time_Eye(sub_i),GyroY(sub_i),'Color',0.75*[1,1,1],...
-                Time_Eye(sub_i),GyroZ(sub_i),'Color','k',...
-                Time_Eye(sub_i),100*Stim(sub_i),'Color','b')
+            plot(Time_Eye(sub_i),100*Stim(sub_i),'Color','b')
+            hold on
+            plot(Time_Eye(sub_i),GyroX(sub_i),'Color',0.5*[1,1,1])
+            plot(Time_Eye(sub_i),GyroY(sub_i),'Color',0.75*[1,1,1])
+            plot(Time_Eye(sub_i),GyroZ(sub_i),'Color','k')
+            hold off
             title([{Raw_Path};{fname}],'FontSize',12,'interpreter','none')
             legend('GyroX','GyroY','GyroZ','Trigger')
             set(plot_notes,'String',w_notes)
+            filePh = fopen([Raw_Path,filesep,fname(1:end-4),'-Notes.txt'],'w');
             fprintf(filePh,'%s\n',w_notes{:});
             fclose(filePh);
-            close(fig2)
+            set(plot_notes,'String','')
         end
     end
 end

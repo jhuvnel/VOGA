@@ -427,14 +427,7 @@ end
 if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fit on motion trace
     stim_info = strrep(stim_info,'manual','Manual'); %in case I forgot to capitalize
     GyroAll = GyroZ+GyroLARP+GyroRALP;
-%     if any(contains(stim_info,{'LARP','LA','RP'}))
-%         GyroAll = GyroLARP;
-%     elseif any(contains(stim_info,{'RALP','RA','LP'}))
-%         GyroAll = GyroRALP;
-%     else
-%         GyroAll = GyroZ;
-%     end
-    if any(contains(stim_info,'VelStep'))
+    if any(contains(lower(stim_info),'velstep'))
         thresh = 50; %Adjust as needed
         thresh2 = 1; %Counts as 0.
         approx0 = find(abs(GyroAll)< thresh2);

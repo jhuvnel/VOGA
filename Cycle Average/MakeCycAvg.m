@@ -127,7 +127,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                     position,{'Done','Refilter'}));
             end
         case 'Select Cycles'
-            [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info);   
+            [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info);
         case 'Set Plot View'
             %Get new parameter values
             prompt = {['Set Y-axis limits',newline,newline,'Position:',newline,newline,'Lower Limit:'],...
@@ -169,7 +169,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                 end
                 [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt);
                 ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
-            end
+            end                
         case 'Shorten Segment'
             [Data,good_rng] = MakeCycAvg__shortenSegment(ha,Data,plot_info.screen_size);
             if strcmp(good_rng,'Keep') %Did shorten segment

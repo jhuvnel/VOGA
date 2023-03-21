@@ -1,6 +1,6 @@
 function trace_out = filterTrace(type,trace_in,param,t_out,t_in)
 %No filtering needed/possible
-if all(isempty(param))||any(isnan(param))||all(isnan(trace_in))
+if all(isempty(reshape(param,[],1)))||any(isnan(reshape(param,[],1)))||all(isnan(trace_in))
     trace_out = trace_in;
     return;
 end
