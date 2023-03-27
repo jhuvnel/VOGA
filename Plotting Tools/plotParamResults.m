@@ -55,7 +55,7 @@ if any(contains(all_results.Type,'Sine'))
     %Phase
     YVar = {'Gain';'Phase'};
     YLabs = {'Gain';'Phase Lead (deg)'};
-    rel_labs = {'Subject','Visit','DateStr','Condition','Goggle'};
+    rel_labs = {'Subject','Visit','DateStr','Experiment','Type','Condition','Goggle'};
     [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
     file_parts = table2cell(tab(:,rel_col));
     %Parts applicable to each file
@@ -117,7 +117,7 @@ if any(contains(all_results.Type,'Sine'))
                     freq = '';
                     amp = '';
                     name = [common_cond,' ',conds{dat.Cond_i(i)},...
-                        ' ',all_canals{dat.Canal_i(i),2},' Sine'];
+                        ' ',all_canals{dat.Canal_i(i),2}];
                     x_val = IFA(inds);
                     x_var = 'IFA';
                     x_tick = 1:fanum;
@@ -128,7 +128,7 @@ if any(contains(all_results.Type,'Sine'))
                     files = cell(fanum,1);
                 elseif dat.Freq_i(i)==0 %Amp
                     freq = '';
-                    amp = [str_amps{dat.Amp_i(i)},' Sine'];
+                    amp = [str_amps{dat.Amp_i(i)}];
                     name = [common_cond,' ',conds{dat.Cond_i(i)},...
                         ' ',all_canals{dat.Canal_i(i),2},' ',str_amps{dat.Amp_i(i)},' Sine'];
                     x_val = IF(inds);
@@ -140,7 +140,7 @@ if any(contains(all_results.Type,'Sine'))
                     sub_names = str_freqs;
                     files = cell(fnum,1);
                 elseif dat.Amp_i(i)==0 %Freq
-                    freq = [str_freqs{dat.Freq_i(i)},' Sine'];
+                    freq = [str_freqs{dat.Freq_i(i)}];
                     amp = '';
                     name = [common_cond,' ',conds{dat.Cond_i(i)},...
                         ' ',all_canals{dat.Canal_i(i),2},' ',str_freqs{dat.Freq_i(i)},' Sine'];
@@ -261,8 +261,7 @@ if any(contains(all_results.Type,'Impulse'))
     tab = all_results(contains(all_results.Type,'Impulse'),:);
     [~,Ic] = ismember(tab.AxisName,canals(:,1));
     tab.Ic = Ic;
-    tab = sortrows(tab,'Ic','ascend');
-    Ic = tab.Ic;
+    
     fn = size(tab,1);
     GainMax = 0.1*ceil(max(tab.Gain+tab.Gain_sd)/0.1);
     %Make one figure for each group of cycle averages (same subject, visit,
@@ -270,7 +269,7 @@ if any(contains(all_results.Type,'Impulse'))
     %Make one figure with Gain and Lantecy across canals for each condition
     YVar = {'Gain';'Latency'};
     YLabs = {'Gain';'Latency (ms)'};
-    rel_labs = {'Subject','Visit','DateStr','Condition','Goggle'};
+    rel_labs = {'Subject','Visit','DateStr','Experiment','Type','Condition','Goggle'};
     [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
     file_parts = table2cell(tab(:,rel_col));
     %Parts applicable to each file
@@ -280,6 +279,10 @@ if any(contains(all_results.Type,'Impulse'))
     rel_file_parts = join(file_parts(:,~common_cond_i),2);
     [conds,~,IC] = unique(rel_file_parts,'stable');
     enum = length(conds);
+    tab.IC = IC;
+    tab = sortrows(sortrows(tab,'IC','ascend'),'Ic','ascend');
+    IC = tab.IC;
+    Ic = tab.Ic;
     [~,~,IFA] = unique([IC,Ic],'rows','stable');
     dat = array2table([1:enum,zeros(1,length(unique(Ic)));zeros(1,enum),reshape(unique(Ic),1,[])]','VariableNames',{'Cond_i','Canal_i'});
     for i = 1:size(dat,1)
@@ -298,7 +301,7 @@ if any(contains(all_results.Type,'Impulse'))
         if dat.Cond_i(i)==0 % All conditions in this canal
             cond = '';
             canal = canals{dat.Canal_i(i),1};
-            name = [common_cond,' ',canal,' Impulse'];
+            name = [common_cond,' ',canal];
         elseif dat.Canal_i(i)==0 % All canals in this condition (for param plots)
             cond = conds{dat.Cond_i(i)};
             canal = '';
@@ -329,7 +332,7 @@ if any(contains(all_results.Type,'Impulse'))
     leg_tab = cell2table([conds,all_markers(1:enum)],'VariableNames',{'Name','Marker'});
     leg_tab.LineStyle(:) = {'none'};
     leg_tab.Color(:) = {[0,0,0]};
-    param_plots = cell2table({[common_cond,' Impulse Gain']},'VariableNames',{'Name'});
+    param_plots = cell2table({[common_cond,' Gain']},'VariableNames',{'Name'});
     sub_tab = dat(ismember(dat.Name,{''}),:);
     rel_tab = cell(length(YVar),1);
     rel_leg = cell(length(YVar),1);
@@ -364,7 +367,7 @@ if any(contains(all_results.Type,'Exponential'))
     YMax = 10*ceil(max(tab.MaxVel)/10);
     %Make one figure for each group of cycle averages (same subject, visit,
     %date, goggle, axis, and amplitude across condition)
-    rel_labs = {'Subject','Visit','DateStr','Condition','Goggle','AmpStr'};
+    rel_labs = {'Subject','Visit','DateStr','Experiment','Type','Condition','Goggle','AmpStr'};
     [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
     file_parts = table2cell(tab(:,rel_col));
     %Parts applicable to each file
@@ -425,7 +428,7 @@ if any(contains(all_results.Condition,'Autoscan'))
     %Phase
     YVar = {'MaxVel';'Align'};
     YLabs = {'Eye Velocity (dps)';'Misalignment (deg)'};
-    rel_labs = {'Subject','Visit','DateStr','Condition','Goggle',...
+    rel_labs = {'Subject','Visit','DateStr','Condition','Experiment','Type','Goggle',...
         'PulseFreqStr','PhaseDurStr','Electrode'};
     [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
     file_parts = strrep(table2cell(tab(:,rel_col)),'us','\mus');

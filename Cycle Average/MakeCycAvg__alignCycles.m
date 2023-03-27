@@ -45,108 +45,37 @@ elseif TrigShift < 0
     stim = stim((-TrigShift+1):end);
 end
 % Set stim and find cycle start/end time indeces
+fparts = split(info.dataType,'-');
 if contains(info.dataType,'Impulse')
-    thresh = 50;
+    amp = 50;
+    if contains(info.dataType,'dps')
+        amp = str2double(strrep(fparts{contains(fparts,'dps')},'dps',''));
+    end
     is_pos = (2*double(contains(fname,'GNO')&&contains(fname,{'LH','RP','RA'})||...
         ~contains(fname,'GNO')&&contains(fname,{'LH','RP','LP'}))-1);
-    [vals,spike_i,widths] = findpeaks(abs(stim),'MinPeakProminence',thresh,...
+    [vals,spike_i,widths] = findpeaks(abs(stim),'MinPeakProminence',amp/2,...
         'MinPeakDistance',round(Fs)); %Impulses will be at least 1 second apart
     spike_i(isoutlier(vals)|isoutlier(widths)) = [];
     spike_i((2*is_pos-1)*stim(spike_i)<0)=[];
     %Consisitent with GNO's csv, take a 175 sample trace with max at sample 48
     starts = spike_i-floor(0.195*Fs);
-    ends = starts+floor(0.71*Fs);
-    inv_i = starts<1|ends>length(stim);
-    starts(inv_i)= [];
-    ends(inv_i) = [];
-    t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);    
+    ends = starts+floor(0.71*Fs);       
 elseif contains(info.dataType,{'RotaryChair','aHIT'})||...
         contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
     if contains(info.dataType,'Sine')
-        fparts = split(info.dataType,'-');
-        freqs = fparts(contains(fparts,'Hz'));
-        freq = zeros(1,length(freqs));
-        for i = 1:length(freqs)
-            freq(i) = str2double(strrep(freqs(i),'Hz',''));
-        end
+        pos_stim = (abs(stim)+stim)/2; %Pos half-cycle only
+        freq = str2double(strrep(fparts{contains(fparts,'Hz')},'Hz',''));
         amp = str2double(strrep(fparts{contains(fparts,'dps')},'dps',''));
-        snip_len = floor(Fs/min(freq));
-        template = zeros(length(freq),snip_len);
-        for i = 1:length(freq)
-            template(i,:) = sin(2*pi*freq(i)*ts(1:snip_len));
+        [vals,spike_i,widths] = findpeaks(pos_stim,'MinPeakProminence',amp/2,...
+        'MinPeakDistance',round(0.3*Fs/freq),'Annotate','extents'); %Impulses will be at least 1 second apart
+        spike_i(isoutlier(vals,"mean")|isoutlier(widths,"mean")) = [];
+        starts = spike_i;
+        for i = 1:length(spike_i)
+            [min_val,ind] = sort(pos_stim(1:starts(i)));
+            starts(i) = ind(find(min_val==min_val(1),1,'last'));            
         end
-        template = sum(template,1);
-        template = amp/max(template)*template;
-        if size(stim,2)==1
-            template = template';
-        end
-        %Find the mismatch between signal and template
-        errors = NaN(1,1000);
-        sub_i = floor(linspace(1,length(stim)-snip_len,1000));
-        for i = 1:1000
-            errors(i) = sum((template-stim(sub_i(i):sub_i(i)+snip_len-1)).^2);
-        end
-        errors = (errors - min(errors))/(max(errors)-min(errors));
-        errors2 = errors;
-        errors2(errors>0.1)=NaN;
-        poss_val = find(~isnan(errors2));
-        region_s = [poss_val(1),poss_val([false,diff(poss_val)>1])];
-        region_e = [poss_val([diff(poss_val)>1,false]),poss_val(end)];
-        starts = region_s;
-        for i = 1:length(starts)
-            temp_err = NaN*errors;
-            temp_err(region_s(i):region_e(i)) = errors(region_s(i):region_e(i));
-            [~,m_ind] = min(temp_err);
-            starts(i) = sub_i(m_ind);
-        end
-        %Now find zeros crossings on the stimulus trace itself
-        neg_stim = find(stim < 0);
-        pos_stim = find(stim > 0);
-        for i = 1:length(starts)
-            if stim(starts(i)) < 0 %look for next positive value
-                l_i = pos_stim(find(pos_stim>starts(i),1,'first'));
-                if isempty(l_i)
-                    l_i = length(starts);
-                end
-                poss_i = [l_i-1 l_i];
-            else %look for previous negative value
-                l_i = neg_stim(find(neg_stim<starts(i),1,'last'));
-                if isempty(l_i)
-                    l_i = 1;
-                end
-                poss_i = [l_i l_i+1];
-            end
-            [~,ind] = min(abs(stim(poss_i)));
-            starts(i) = poss_i(ind);
-        end
-        starts = unique(starts); %remove duplicates
-        if length(starts) > 1
-            snip_len1 = round(median(diff(starts)));
-            snip_len2 = length(stim) - starts(end);
-            if abs(snip_len2-snip_len1)/snip_len1 < 0.01 %Less than 1% off of the expected cycle length
-                snip_len = min([snip_len1 snip_len2]);
-            else
-                snip_len = snip_len1;
-            end
-        end
+        snip_len = round(median(diff(starts)));
         ends = starts + snip_len - 1;
-        %Delete incomplete cycles
-        inv_i = starts<1|ends>length(stim);
-        starts(inv_i)= [];
-        ends(inv_i) = [];
-%         all_stim = zeros(snip_len,length(starts));
-%         for i = 1:length(starts)
-%             all_stim(:,i) = stim(starts(i):ends(i));
-%         end
-%         %Remove any obvious erroneous motion traces
-%         if contains(info.dataType,{'RotaryChair'})
-%             tol = 0.2; %Amplitude can be 20% wrong and still be tolerated
-%             rm_tr = abs(max(all_stim)-amp)/amp > tol | abs(min(all_stim)+amp)/amp > tol;
-%             starts(rm_tr) = [];
-%             ends(rm_tr) = [];
-%             all_stim(:,rm_tr) = [];
-%         end
-%         stims = mean(all_stim,2);
     elseif contains(info.dataType,'Step')
         stims = stim;
         starts = 1;
@@ -154,7 +83,6 @@ elseif contains(info.dataType,{'RotaryChair','aHIT'})||...
     else
         error('Unknown Data Type (RotaryChair/aHIT)')
     end
-    t_snip = reshape(ts(1:size(stims,1)),1,[]);
 elseif contains(info.dataType,'eeVOR') %align using the trigger signal
     if contains(info.dataType,{'65Vector','MultiVector'})
         %The trigger here shows when the stimulus ramps up and down.
@@ -206,14 +134,13 @@ elseif contains(info.dataType,'eeVOR') %align using the trigger signal
     else
         error('Unknown Data Type (eeVOR)')
     end
-    if ends(end) > length(ts)
-        starts(end) = [];
-        ends(end) = [];
-    end
-    t_snip = reshape(ts(1:length(stims))-ts(1),1,[]);
 else
     error('Unknown Data Type')
 end
+%Remove starts/ends out of bounds
+inv_i = starts<1|ends>length(stim);
+starts(inv_i)= [];
+ends(inv_i) = [];
 %Make the keep_inds matrix
 keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
 for i = 1:length(starts)
@@ -221,9 +148,10 @@ for i = 1:length(starts)
 end
 if contains(info.dataType,'Impulse')
     stims = stim(keep_inds);
-elseif contains()
+elseif contains(info.dataType,'Sine')
     stims = mean(stim(keep_inds),2);
 end
+t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);
 Data.stim = stim;
 Data.t_snip = t_snip;
 Data.stims = stims;

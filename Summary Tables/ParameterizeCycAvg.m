@@ -330,51 +330,58 @@ switch type
         params3 = array2table(NaN(6,length(traces)),'VariableNames',traces,'RowNames',{'K_High','Tau_High','C_High','K_Low','Tau_Low','C_Low'});
         for i = 1:length(traces)
             if isfield(CycAvg,[traces{i},'_cyc'])
-                long_dat = CycAvg.([traces{i},'_cyc']);
-                dat = reshape(long_dat(sub_i),[],1);
+                results.(['RMSE_',upper(traces{i}),'_sd'])(:) = 0; %Only 1 cyc
+                results.(['Tau_',upper(traces{i}),'_sd'])(:) = 0; %Only 1 cyc
+                results.(['MaxVel_',upper(traces{i}),'_sd'])(:) = 0; %Only 1 cyc
+                results.(['Gain_',upper(traces{i}),'_sd'])(:) = 0; %Only 1 cyc
+                long_dat = reshape(CycAvg.([traces{i},'_cyc']),[],1);
+                dat = long_dat(sub_i);
                 t_high = tt(Stim(sub_i)'==1&~isnan(dat))'-high_i;
                 t_low = tt(Stim(sub_i)'==0&~isnan(dat))'-low_i;
                 dat_high = dat(Stim(sub_i)'==1&~isnan(dat));
                 dat_low = dat(Stim(sub_i)'==0&~isnan(dat));
                 %Stim is high
-                [fitobj,gof] = fit(t_high,dat_high,'exp2');
-                results.(['RMSE_',upper(traces{i})])(1) = gof.rmse;
-                results.(['RMSE_',upper(traces{i}),'_sd'])(1) = 0; %Only 1 cyc
-                params{1:4,i} = coeffvalues(fitobj)';
-                dconfint = mean(abs(confint(fitobj)-mean(confint(fitobj))));
+                [fitobj_h,gof_h] = fit(t_high,dat_high,'exp2');
+                params{1:4,i} = coeffvalues(fitobj_h)';
+                %dconfint_h = mean(abs(confint(fitobj_h)-mean(confint(fitobj_h))));
                 params2{1:2,i} = makefit2(dat_high,t_high);
                 params3{1:3,i} = makefit3(dat_high,t_high);
                 all_fits(i,Stim==1) = makefit(t(Stim==1)-high_i,params{1:4,i}');
                 all_fits2(i,Stim==1) = exp_fit1(t(Stim==1)-high_i,params2{1:2,i}');
                 all_fits3(i,Stim==1) = exp_fit2(t(Stim==1)-high_i,params3{1:3,i}');
+                gof_h.rmse = sqrt(mean((all_fits2(i,Stim==1)-long_dat(Stim==1)').^2,'omitnan'));
                 %Stim is low
+                %dconfint_l = NaN*dconfint_h;
+                %gof_l = gof_h;
+                gof_l.rmse = NaN;
                 if length(t_low)>4
-                    [fitobj,gof] = fit(t_low,dat_low,'exp2');
-                    results.(['RMSE_',upper(traces{i})])(2) = gof.rmse;
-                    results.(['RMSE_',upper(traces{i}),'_sd'])(2) = 0; %Only 1 cyc
-                    params{5:8,i} = coeffvalues(fitobj)';
-                    dconfint(2,:) = mean(abs(confint(fitobj)-mean(confint(fitobj))));
+                    [fitobj_l,gof_l] = fit(t_low,dat_low,'exp2');
+                    params{5:8,i} = coeffvalues(fitobj_l)';
+                    %dconfint_l = mean(abs(confint(fitobj_l)-mean(confint(fitobj_l))));
                     params2{3:4,i} = makefit2(dat_low,t_low);
                     params3{4:6,i} = makefit3(dat_low,t_low);
                     all_fits(i,Stim==0) = makefit(t(Stim==0)-low_i,params{5:8,i}');
                     all_fits2(i,Stim==0) = exp_fit1(t(Stim==0)-low_i,params2{3:4,i}');
                     all_fits3(i,Stim==0) = exp_fit2(t(Stim==0)-low_i,params3{4:6,i}');
-                else
-                    dconfint(2,:) = NaN*dconfint(1,:);
-                end
-                results.(['MaxVel_',upper(traces{i})]) = abs(sum([params{[1,3],i}';params{[5,7],i}'],2,'omitnan'));
-                results.(['MaxVel_',upper(traces{i}),'_sd']) = sum(dconfint(:,[1,3]),2,'omitnan');
-                results.(['Gain_',upper(traces{i})]) = results.(['MaxVel_',upper(traces{i})])./(results.Amplitude(1)*[-1;1]);
-                results.(['Gain_',upper(traces{i}),'_sd']) = results.(['MaxVel_',upper(traces{i})])./(results.Amplitude(1)*[-1;1]);
-                tau = -([params{[1,3],i}';params{[5,7],i}']).^-1;
-                tau(tau<0) = NaN;
-                tau_dCI = (dconfint(:,[2,4])).^-1;
-                tau_dCI(isnan(tau)) = NaN;
-                [~,tau_i] = min(tau,[],2);
-                results.(['Tau_',upper(traces{i})]) = min(tau,[],2);
-                results.(['Tau_',upper(traces{i}),'_sd']) =  [tau_dCI(1,tau_i(1));tau_dCI(2,tau_i(2))];               
-                CycAvg.([traces{i},'_cycavg_fit']) = all_fits(i,:);
-                CycAvg.([traces{i},'_cyc_fit']) = all_fits(i,:);
+                    gof_l.rmse = sqrt(mean((all_fits2(i,Stim==0)-long_dat(Stim==0)').^2,'omitnan'));
+                end                
+                results.(['RMSE_',upper(traces{i})]) = [gof_h.rmse;gof_l.rmse];
+                results.(['MaxVel_',upper(traces{i})]) = params2{[1,3],i};
+                results.(['Tau_',upper(traces{i})]) = params2{[2,4],i};
+                results.(['Gain_',upper(traces{i})]) = results.(['MaxVel_',upper(traces{i})])./(results.Amplitude(1)*[-1;1]);                               
+                %OLD WAY using the 2nd order exponential, decommissioned on
+                %2023-03-24                                 
+%                 results.(['MaxVel_',upper(traces{i})]) = abs(sum([params{[1,3],i}';params{[5,7],i}'],2,'omitnan'));
+%                 results.(['MaxVel_',upper(traces{i}),'_sd']) = sum(dconfint(:,[1,3]),2,'omitnan');
+%                 tau = -([params{[1,3],i}';params{[5,7],i}']).^-1;
+%                 tau(tau<0) = NaN;
+%                 tau_dCI = ([dconfint_h(:,[2,4]);dconfint_l(:,[2,4])).^-1;
+%                 tau_dCI(isnan(tau)) = NaN;
+%                 [~,tau_i] = min(tau,[],2);
+%                 results.(['Tau_',upper(traces{i})]) = min(tau,[],2);
+%                 results.(['Tau_',upper(traces{i}),'_sd']) =  [tau_dCI(1,tau_i(1));tau_dCI(2,tau_i(2))];    
+                CycAvg.([traces{i},'_cycavg_fit']) = all_fits2(i,:);
+                CycAvg.([traces{i},'_cyc_fit']) = all_fits2(i,:);
             end
         end
         % Misalignment

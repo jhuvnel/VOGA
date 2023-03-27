@@ -38,7 +38,7 @@ switch type
         trace_out = trace_in;
         vel_thresh = 30; %Set threshold for saccade
         Fs = 1/median(diff(t_out));
-        g_trac = gradient(reshape(trace_in,[],1))*Fs;
+        g_trac = gradient(trace_out)*Fs;
         over_thresh = abs(g_trac)>abs(param)&abs(trace_out)>vel_thresh;
         under_thresh = abs(g_trac)<abs(param)&abs(trace_out)<2*vel_thresh;
         o_start = find(diff(over_thresh)>0);
