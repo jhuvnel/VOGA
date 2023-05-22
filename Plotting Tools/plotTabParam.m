@@ -59,7 +59,12 @@ for j = 1:n_col
         end
         hold off
     end
-    title(ha(1,j),sub_t{j},'FontSize',14,'Color',sub_tab.Color{ii})
+    if isempty(ii)
+        title_col = [0,0,0];
+    else
+        title_col = sub_tab.Color{ii};
+    end
+    title(ha(1,j),sub_t{j},'FontSize',14,'Color',title_col)
 end
 for j = 1:n_col
     for i = 1:n_row
