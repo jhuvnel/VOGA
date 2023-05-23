@@ -40,7 +40,7 @@ if contains(fig_name,'Autoscan')
 end
 for j = 1:n_col
     for i = 1:n_row
-        ind = sub2ind([n_col,2],j,i);        
+        ind = sub2ind([n_col,n_row],j,i);        
         ha(i,j) = subplot(n_row,n_col,ind);
         hold on
         sub_tab = rel_tab{i,j}; 
@@ -70,7 +70,7 @@ for i = 1:n_row
     ylabel(ha(i,1),YLabel{i},'FontSize',12)
     set(ha(i,:),'YLim',YLim(i,:))
 end
-xlabel(ha(2,:),XLab,'FontSize',12)
+xlabel(ha(end,:),XLab,'FontSize',12)
 set(ha,'XTick',XTick,'XTickLabel',XTickLab,'xscale',XScale,'box','on',...
     'XTickLabelRotation',0,'xminortick','off')
 if contains(XScale,'log')
@@ -80,5 +80,5 @@ else
     set(ha,'XLim',[XTick(1)-buff,XTick(end)+buff])
 end
 set(ha(:,2:n_col),'YTickLabel',[])
-set(ha(1,:),'XTickLabel',[])
+set(ha(1:end-1,:),'XTickLabel',[])
 end

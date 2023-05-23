@@ -9,11 +9,8 @@
 function vals = sine_fit(t,freq,p)
     all_vals = zeros(length(freq),length(t));
     for i = 1:length(freq)
-        pos = p(3*i-2)*sin(2*pi*freq(i)*t+p(3*i)*pi/180+pi);
-        pos(pos > 0) = 0; %positive half-cycle
-        neg = p(3*i-1)*sin(2*pi*freq(i)*t+p(3*i)*pi/180+pi);
-        neg(neg < 0) = 0; %negative half-cycle
-        all_vals(i,:) = pos+neg;
+        all_vals(i,:) = min(p(3*i-2)*sin(2*pi*freq(i)*t+p(3*i)*pi/180+pi),0)+...
+        	max(p(3*i-1)*sin(2*pi*freq(i)*t+p(3*i)*pi/180+pi),0);
     end
     vals = sum(all_vals,1);
 end

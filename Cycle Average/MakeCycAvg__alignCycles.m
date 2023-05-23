@@ -19,12 +19,7 @@ end
 if ~isfield(Data,'HeadVel_R')&&isfield(Data,'HeadVel_X')&&isfield(Data,'HeadVel_Y')
     Data.HeadVel_R = (Data.HeadVel_X + Data.HeadVel_Y)/sqrt(2);
 end
-if contains(fname,'eeVOR')&&contains(fname,'Step') %Fix the trigger
-    %Fix the stimulus trace
-    temp_ends = find(diff(Data.Trigger)==-1)-1; %The last index of this is the change to the break.
-    Data.stim1 = 0*Data.Trigger;
-    Data.stim1(1:(temp_ends(end)-1)) = 1;
-elseif contains(fname,{'eeVOR','Moogles'})
+if contains(fname,{'eeVOR','Moogles'})
     Data.stim1 = Data.Trigger;
 else
     dir = ['L','R','Z'];
@@ -84,7 +79,7 @@ elseif contains(info.dataType,{'RotaryChair','aHIT'})||...
         error('Unknown Data Type (RotaryChair/aHIT)')
     end
 elseif contains(info.dataType,'eeVOR') %align using the trigger signal
-    if contains(info.dataType,{'65Vector','MultiVector'})
+    if contains(info.dataType,{'65Vector','MultiVector','Step'})
         %The trigger here shows when the stimulus ramps up and down.
         %50dps was chosen as a trigger value based on the Figures in the
         %Boutros 2019 JCI paper.
@@ -92,15 +87,25 @@ elseif contains(info.dataType,'eeVOR') %align using the trigger signal
         trig = diff(stim);
         starts = find(trig==1)-1;
         starts = starts(1:2:end);
-        snip_len = floor(median(diff(starts)));
-        ends = starts + snip_len;
+        if length(starts)==1 %VelStep
+            ends = length(ts);
+            fparts = split(info.dataType,'-');
+            amp = str2double(strrep(strrep(fparts{contains(fparts,'dps')},'dps',''),'n','-'));
+            if contains(info.dataType,{'RH','LA','LP'})
+                amp = -amp;
+            end
+        else %Multivector
+            snip_len = floor(median(diff(starts)));
+            ends = starts + snip_len;
+            amp = 50;
+        end
         %Create model stimulus trace
         stims = stim(starts(1):ends(1));
         ind1 = find(diff(stims)==1);
         ind2 = find(diff(stims)==-1);
-        stims(ind1(1):ind2(1)) = linspace(0,50,length(ind1(1):ind2(1)));
-        stims(ind2(1)+1:ind1(2)-1) = 50;
-        stims(ind1(2):ind2(2)) = linspace(50,0,length(ind1(2):ind2(2)));
+        stims(ind1(1):ind2(1)) = linspace(0,amp,length(ind1(1):ind2(1)));
+        stims(ind2(1)+1:ind1(2)-1) = amp;
+        stims(ind1(2):ind2(2)) = linspace(amp,0,length(ind1(2):ind2(2)));
         stims(ind2(2)+1:end) = 0;
     elseif contains(info.dataType,'Sine') %sine (toggle = new cycle), remove last cycle
         trig = abs(diff(stim));
@@ -124,13 +129,6 @@ elseif contains(info.dataType,'eeVOR') %align using the trigger signal
         stims = 50*stim;
         starts = 1;
         ends = length(ts);
-    elseif contains(info.dataType,'Step')
-        fparts = split(info.dataType,'-');
-        amp = str2double(strrep(strrep(fparts{contains(fparts,'dps')},'dps',''),'n','-'));
-        stims = amp*stim;
-        stim = amp*stim;
-        starts = 1;
-        ends = length(ts);
     else
         error('Unknown Data Type (eeVOR)')
     end
@@ -150,6 +148,8 @@ if contains(info.dataType,'Impulse')
     stims = stim(keep_inds);
 elseif contains(info.dataType,'Sine')
     stims = mean(stim(keep_inds),2);
+elseif contains(info.dataType,'eeVOR')&&contains(info.dataType,'Step')
+    stim = stims;
 end
 t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);
 Data.stim = stim;

@@ -130,7 +130,8 @@ if any(contains(all_results.Type,'Sine'))
                     freq = '';
                     amp = [str_amps{dat.Amp_i(i)}];
                     name = [common_cond,' ',conds{dat.Cond_i(i)},...
-                        ' ',all_canals{dat.Canal_i(i),2},' ',str_amps{dat.Amp_i(i)},' Sine'];
+                        ' ',all_canals{dat.Canal_i(i),2},' ',...
+                        str_amps{dat.Amp_i(i)}];
                     x_val = IF(inds);
                     x_var = 'Frequency';
                     x_tick = freqs;
@@ -143,7 +144,8 @@ if any(contains(all_results.Type,'Sine'))
                     freq = [str_freqs{dat.Freq_i(i)}];
                     amp = '';
                     name = [common_cond,' ',conds{dat.Cond_i(i)},...
-                        ' ',all_canals{dat.Canal_i(i),2},' ',str_freqs{dat.Freq_i(i)},' Sine'];
+                        ' ',all_canals{dat.Canal_i(i),2},' ',...
+                        str_freqs{dat.Freq_i(i)}];
                     x_val = IA(inds);
                     x_var = 'Amplitude';
                     x_tick = amps;
@@ -391,7 +393,7 @@ if any(contains(all_results.Type,'Exponential'))
             sub_i(k_i) = []; %Keep this one
             inds(sub_i) = []; %Delete the others
         end
-        dat.Name{i} = [common_cond,' ',all_canals{dat.Canal_i(i),1},' Exponential'];
+        dat.Name{i} = [common_cond,' ',all_canals{dat.Canal_i(i),1}];
         dat.Files{i} = tab.File(inds);
         dat.SubNames{i} = conds;
         dat.YLim{i} = YMax*[-1 1];
@@ -421,13 +423,16 @@ if any(contains(all_results.Condition,'Autoscan'))
     tab.CyclesStr = strcat('n=',strrep(cellstr(num2str(tab.Cycles)),' ',''));
     fn = size(tab,1);
     YMax = 5*ceil(max(tab.MaxVel+tab.MaxVel_sd)/5);
+    W = 0.75;
+    tab.Score = (W*tab.MaxVel./max(tab.MaxVel) + (1-W)*(1-tab.Align/90))*100;
+    tab.Score_sd = (W*tab.MaxVel_sd./max(tab.MaxVel) + (1-W)*(tab.Align_sd/90))*100;
     %Make one figure for each group of cycle averages (same subject, visit,
     %date, condition, goggle, axis, across frequency, and/or amplitude)
     %Make one figure per for frequency and/or amplitude sweep with MaxVel
     %of each each component for each condition and one figure with Gain and
     %Phase
-    YVar = {'MaxVel';'Align'};
-    YLabs = {'Eye Velocity (dps)';'Misalignment (deg)'};
+    YVar = {'MaxVel';'Align';'Score'};
+    YLabs = {'Eye Velocity (dps)';'Misalignment (deg)';'Score (%)'};
     rel_labs = {'Subject','Visit','DateStr','Condition','Experiment','Type','Goggle',...
         'PulseFreqStr','PhaseDurStr','Electrode'};
     [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
@@ -471,6 +476,7 @@ if any(contains(all_results.Condition,'Autoscan'))
         dat.XLabel{i} = '% of Current Range';
         dat.XScale{i} = 'linear';
         dat.X{i} = tab.CurrentAmpNorm(inds);
+        dat.CurrentAmp{i} = tab.CurrentAmp(inds);
         for ii = 1:length(YVar)
             dat.(YVar{ii}){i} = tab.(YVar{ii})(inds);
             dat.([YVar{ii},'_sd']){i} = tab.([YVar{ii},'_sd'])(inds);
@@ -509,7 +515,8 @@ if any(contains(all_results.Condition,'Autoscan'))
     [~,indC] = ismember(sub_tab.Canal,sub_t);
     rel_tab = cell(length(YVar),length(sub_t));
     rel_leg = cell(length(YVar),length(sub_t));
-    for ii = 1:length(sub_t)        
+    for ii = 1:length(sub_t) 
+        rel_leg{1,ii} = leg_tab(indC==ii,:);
         for j = 1:length(YVar)
             n_tab = table();
             n_tab.Marker = leg_tab.Marker(indC==ii);
@@ -519,11 +526,10 @@ if any(contains(all_results.Condition,'Autoscan'))
             n_tab.Y = sub_tab.(YVar{j})(indC==ii);
             n_tab.Y_sd = sub_tab.([YVar{j},'_sd'])(indC==ii);
             rel_tab{j,ii} = n_tab;
-        end
-        rel_leg{1,ii} = leg_tab(indC==ii,:);
+        end        
     end
     param_plots.SubNames{1} = sub_t;
-    param_plots.YLim{1} = [0,YMax;0,180];
+    param_plots.YLim{1} = [0,YMax;0,180;-10,110];
     param_plots.YLabel{1} = YLabs;
     param_plots.Tables{1} = rel_tab;
     param_plots.Legend{1} = rel_leg;
@@ -531,6 +537,10 @@ if any(contains(all_results.Condition,'Autoscan'))
     all_plot_tabs.CycAvg{'PulseTrain'} = cycavg_plots;
     all_plot_tabs.MaxVel{'PulseTrain'} = maxvel_plots;
     all_plot_tabs.Param{'PulseTrain'} = param_plots;
+    %Save data for later
+    s.dat = sub_tab;
+    s.param_plots = param_plots;
+    save('AutoscanParameters.mat','-struct','s')
 end
 %% Make all plots
 all_cycavg_plots = vertcat(all_plot_tabs.CycAvg{:});

@@ -79,7 +79,7 @@ if nargin < 3
                 temp4 = filterTrace('irls',temp3,filt.pos.irlssmooth(i));
                 temp5 = filterTrace('spline',temp4,filt.pos.spline(i),te,ts);
                 Data_pos_filt.(var_n) = temp5;
-                if contains(Data.info.goggle_ver,'ESC3')
+                if contains(Data.info.name,'Impulse')
                     Data_pos.([var_n,'_cond']) = Data_pos.(var_n)(reshape(keep_inds,[],1)); 
                     Data_pos_filt.([var_n,'_cond']) = Data_pos_filt.(var_n)(reshape(keep_inds,[],1)); 
                 end
