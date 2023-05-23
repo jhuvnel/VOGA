@@ -18,7 +18,6 @@ while tf
     keep_tr = CycAvg.keep_tr;
     switch sel
         case 'Automatic'
-            keep_tr1 = keep_tr;
             nc = length(keep_tr);
             %Extract eye and stim data
             fields = fieldnames(Data_cyc);
@@ -48,8 +47,6 @@ while tf
                 perc_sd = mean((sd_comp-sd_new)./sd_new);
                 val = 2*sum(keep_tr)*perc_sd;
             end
-            disp('Cycles Automatically Removed:')
-            disp(find(keep_tr1&~keep_tr))
             %Recalculate and plot
             CycAvg.keep_tr = keep_tr;
             CycAvg = MakeCycAvg__filterTraces([],[],CycAvg);

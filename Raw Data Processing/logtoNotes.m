@@ -192,8 +192,8 @@ for f = 1:length(logfiles)
         rel_inds = logfile_times >= VOG_times(1) & logfile_times <= VOG_times(end);
         rel_dat = data(rel_inds,~all(cellfun(@isempty,data(rel_inds,:)),1));
         %% Check in case it's in another log file from another computer
+        % % % % MOVED THIS LINE 
         if ~isempty(rel_dat)
-            rel_dat(cellfun(@isempty,rel_dat(:,3)),:) = [];
             %Find the number of experiments done and add them to the experiment
             %cell block by block. Experiment types can differ.
             if any(contains(rel_dat(:,2),'Electrode characterization.')) %Autoscan
@@ -226,6 +226,7 @@ for f = 1:length(logfiles)
                 end
                 notes = strcat({'Experiment eeVOR-Autoscan-'},experiments);
             else
+                rel_dat(cellfun(@isempty,rel_dat(:,3)),:) = [];
                 %Adjust for misalignment in stim start and file start
                 %Scrolls up in the log file until it finds a header
                 stim_ind = ~isnan(str2double(rel_dat(:,2)));

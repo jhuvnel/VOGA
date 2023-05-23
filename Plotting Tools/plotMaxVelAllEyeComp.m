@@ -56,9 +56,12 @@ for j = 1:cn
                 errorbar(rel_tab{i,j}.(x_ax),abs(rel_tab{i,j}.(['MaxVel_',upper(tr)])),rel_tab{i,j}.(['MaxVel_',upper(tr),'_sd']),'Color',colors.([tr(1),'_',tr(2)]),'LineWidth',line_width(ii));
                 plot(rel_tab{i,j}.(x_ax),abs(rel_tab{i,j}.(['MaxVel_',upper(tr)])),'o','Color',colors.([tr(1),'_',tr(2)]),'LineWidth',line_width(ii));
             end
+            title_col = colors.(['l_',tr(2)]);
+        else
+            title_col = [0,0,0];
         end
         hold off
-        title(sub_t{i,j},'FontSize',14,'Color',colors.(['l_',tr(2)]))
+        title(sub_t{i,j},'FontSize',14,'Color',title_col)
     end
 end
 for j = 1:cn
