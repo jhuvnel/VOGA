@@ -431,7 +431,7 @@ if any(contains(all_results.Condition,'Autoscan'))
     %Make one figure per for frequency and/or amplitude sweep with MaxVel
     %of each each component for each condition and one figure with Gain and
     %Phase
-    YVar = {'MaxVel';'Align';'Score'};
+    YVar = {'MaxVel';'Align'};
     YLabs = {'Eye Velocity (dps)';'Misalignment (deg)';'Score (%)'};
     rel_labs = {'Subject','Visit','DateStr','Condition','Experiment','Type','Goggle',...
         'PulseFreqStr','PhaseDurStr','Electrode'};
@@ -481,6 +481,8 @@ if any(contains(all_results.Condition,'Autoscan'))
             dat.(YVar{ii}){i} = tab.(YVar{ii})(inds);
             dat.([YVar{ii},'_sd']){i} = tab.([YVar{ii},'_sd'])(inds);
         end
+        dat.Score{i} = tab.Score(inds);
+        dat.MaxScore{i} = max(tab.Score(inds));
     end
     cycavg_plots = dat(:,{'Name','Files','SubNames','YLim'}); %Figure name and cyc avg file names for all
     %Initialize the table for MaxVel plots
@@ -538,9 +540,7 @@ if any(contains(all_results.Condition,'Autoscan'))
     all_plot_tabs.MaxVel{'PulseTrain'} = maxvel_plots;
     all_plot_tabs.Param{'PulseTrain'} = param_plots;
     %Save data for later
-    s.dat = sub_tab;
-    s.param_plots = param_plots;
-    save('AutoscanParameters.mat','-struct','s')
+    save('AutoscanParameters.mat','dat')
 end
 %% Make all plots
 all_cycavg_plots = vertcat(all_plot_tabs.CycAvg{:});
