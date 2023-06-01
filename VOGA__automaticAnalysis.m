@@ -13,13 +13,13 @@ progress_tab = assessProgress(Path);
 for j = 1:size(progress_tab,1)    
     fname = progress_tab{j,1}{:};
     load([Seg_Path,filesep,fname],'Data');
-    [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'});   
-    MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed);
+    [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'},0);   
+    MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed,0);
 end
 %% Make Table and Summary Figure
 MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);
 %Make Summary Figure
 VOGA__makePlots('Parameterized');
-AutoscanParamSelection;
+%AutoscanParamSelection;
 disp(toc)
 end

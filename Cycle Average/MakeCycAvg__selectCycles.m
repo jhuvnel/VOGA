@@ -50,7 +50,9 @@ while tf
             %Recalculate and plot
             CycAvg.keep_tr = keep_tr;
             CycAvg = MakeCycAvg__filterTraces([],[],CycAvg);
-            MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
+            if ~isempty(ha)
+                MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
+            end
         case 'Click'
             keep_tr1 = keep_tr;
             %Extract eye and stim data

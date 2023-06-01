@@ -3,8 +3,26 @@
 % LDVOG data sets as much as possible.
 % Cycle average before filtering
 
-function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,in_opts)
+function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,in_opts,has_fig)
 %% General Setup
+%Loop parameters
+opts = {'Set Plot View','Filter Position','Filter Velocity',...
+    'Select Cycles','Advanced','Start Over','Save'};
+advanced_opts = {'Shift Trigger','Shorten Segment',...
+    'Load from Selected File','Manual QPR','Not Analyzeable',...
+    'Auto Rerun'};
+sel = 'Start Over'; %Run the start procedure first
+% Input handling
+if nargin < 4
+    has_fig = 1;
+end
+if nargin < 3
+    in_opts = {};
+end
+if ~isempty(in_opts)&&any(~ismember(in_opts,[opts,advanced_opts]))
+    disp(in_opts(~ismember(in_opts,[opts,advanced_opts])))
+    error('Invalid CycAvg commands.')
+end
 % Set colors and line widths
 load('VNELcolors.mat','colors')
 colors.cyc_keep = [0.85 0.85 0.85]; % Fill colors for cycle selection
@@ -25,16 +43,20 @@ fname = Data.info.name;
 filt_params = VOGA__saveLastUsedParams;
 filt1 = filt_params.filt1;
 YLim = filt_params.YLim; 
-% Initialize Figure
-close all;
-fig = figure('Units','normalized','Position',[0 0 1 1],'Units','inches');
-screen_size = fig.Position;
-fig.Position = screen_size - [-0.5 -0.5 4.5 1.5];
-plot_info.screen_size = screen_size;
-% Title
-fig_title = strrep(strrep(strrep(fname,'_',' '),'-',' '),'.mat','');
-fig_title(strfind(fig_title,'['):strfind(fig_title,']')) = strrep(fig_title(strfind(fig_title,'['):strfind(fig_title,']')),' ','-');
-annotation('textbox',[0 .9 1 .1],'String',fig_title,'FontSize',14,'HorizontalAlignment','center','EdgeColor','none');
+%For speed during autoscan analysis, do not make cycle average figures
+plot_info.screen_size = [];
+if has_fig
+    % Initialize Figure
+    close all;
+    fig = figure('Units','normalized','Position',[0 0 1 1],'Units','inches');
+    screen_size = fig.Position;
+    fig.Position = screen_size - [-0.5 -0.5 4.5 1.5];
+    plot_info.screen_size = screen_size;
+    % Title
+    fig_title = strrep(strrep(strrep(fname,'_',' '),'-',' '),'.mat','');
+    fig_title(strfind(fig_title,'['):strfind(fig_title,']')) = strrep(fig_title(strfind(fig_title,'['):strfind(fig_title,']')),' ','-');
+    annotation('textbox',[0 .9 1 .1],'String',fig_title,'FontSize',14,'HorizontalAlignment','center','EdgeColor','none');
+end
 % Plot defaults
 all_traces = {'LX','RX','LY','RY','LZ','RZ','LLARP','RLARP','LRALP','RRALP'};
 traces_pos1 = all_traces(1:6); %XYZ pos
@@ -59,20 +81,6 @@ else %Position, Velocity, and Cycle Averaging
 end
 Data.info.type = type;
 %% The Main Loop
-opts = {'Set Plot View','Filter Position','Filter Velocity',...
-    'Select Cycles','Advanced','Start Over','Save'};
-advanced_opts = {'Shift Trigger','Shorten Segment',...
-    'Load from Selected File','Manual QPR','Not Analyzeable',...
-    'Auto Rerun'};
-%See if options have already been defined
-if nargin < 3
-    in_opts = {};
-end
-if ~isempty(in_opts)&&any(~ismember(in_opts,[opts,advanced_opts]))
-    disp(in_opts(~ismember(in_opts,[opts,advanced_opts])))
-    error('Invalid CycAvg commands.')
-end
-sel = 'Start Over'; %Run the start procedure first
 while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
     if strcmp(sel,'Advanced') %Give the advanced menu and run that selection
         [ind2,tf2] = nmlistdlg('PromptString','Select an action:',...
@@ -94,7 +102,10 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             filt.keep_tr = true(1,size(Data.keep_inds,2));
             filt = MakeCycAvg__autoFilter(Data,filt);
             CycAvg = MakeCycAvg__filterTraces(Data,filt);
-            ha = MakeCycAvg__plotFullCycAvg([],CycAvg,plot_info);
+            ha = [];
+            if has_fig %Only should not happen during autoscan analysis
+                ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
+            end
             [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Automatic'); 
         case {'Filter Position','Filter Velocity'}
             %Load either filt.pos or filt.vel and make a prompt with each

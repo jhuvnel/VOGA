@@ -62,17 +62,17 @@ while(~done)
         if length(indx)==1 %Just one file
             fname = progress_tab{progress_i(indx),1}{:};
             load([Seg_Path,filesep,fname],'Data');
-            [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,'');
+            [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,'',1);
             if ~isempty(CycAvg)
-                MakeCycAvg__saveCycAvg(Cyc_Path,fname,CycAvg,analyzed);
+                MakeCycAvg__saveCycAvg(Cyc_Path,fname,CycAvg,analyzed,1);
             end
         else %reanalyze files that already exist, rarely used case
             for j = 1:length(indx)
                 fname = progress_tab{progress_i(indx(j)),1}{:};
                 load([Seg_Path,filesep,fname],'Data');
-                [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Auto Rerun'});
+                [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Auto Rerun'},1);
                 if analyzed                    
-                    MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed);
+                    MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed,1);
                     if ~strcmp(CycAvg.name,['CycAvg_',fname]) %Had a different name, delete file
                         delete([Cyc_Path,filesep,'CycAvg_',fname])
                     end

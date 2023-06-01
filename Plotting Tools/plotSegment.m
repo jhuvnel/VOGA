@@ -94,6 +94,6 @@ function fig = plotSegment(Data)
         title('Raw Angular Position')
         xlabel('Time(s)')
         ylabel('Position (deg)')
-        legend('Stim','L X','L Y','L Z','R X','R Y','R Z')
+        legend('LE X','LE Y','LE Z','RE X','RE Y','RE Z','Stim')
     end
 end
