@@ -15,13 +15,13 @@ function VOGA__CRF(Path)
 if nargin < 1
     Path = cd;
 end
-rel_tab = extractfield(dir([Path,filesep,'*Results.mat']),'name');
 if ~VOGA__makeFolders(Path,0,0)
     disp('Expected file structure missing.')
     return;
-elseif isempty(rel_tab)
-    error('No Results.mat table has been generated yet. Complete analysis first or create the CRF manually.')
 end
+MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);
+rel_tab = extractfield(dir([Path,filesep,'*Results.mat']),'name');
+VOGA__makePlots('Parameterized',Path)
 CRF_Path = [Path,filesep,'CRFs'];
 load([Path,filesep,rel_tab{end}],'all_results')
 all_results(cellfun(@(x) all(x==0),all_results.StimAxis),:) = []; %Remove any "rest" experiments

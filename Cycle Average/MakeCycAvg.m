@@ -69,14 +69,18 @@ elseif contains(fname,'ESC')
 else
     traces_vel1 = all_traces(5:end);
 end
-% Assign Type
+% Assign Type (Position, Cycle Averaging, Impulse)
+% Type 1: Yes, Yes, No (Pulse Train, Sinusoids)
+% Type 2: Yes, No, No (Velocity Steps, Activation)
+% Type 3: No, Yes, Yes (Impulse from GNO and old ESC)
+% Type 4: Yes, Yes, Yes (Impulse from LDVOG and new ESC)
 if contains(fname,'ESC3')||(contains(fname,'Impulse')&&~contains(fname,{'GNO','ESC'}))
-    type = 4; %Raw pos traces but show only cycles and no in between time
-elseif contains(fname,{'GNO','ESC'}) %No raw pos traces
+    type = 4;
+elseif contains(fname,{'GNO','ESC'})
     type = 3;    
-elseif contains(fname,{'Activation','Step'}) %No cycle averaging
+elseif contains(fname,{'Activation','Step'})
     type = 2;
-else %Position, Velocity, and Cycle Averaging
+else
     type = 1;
 end
 Data.info.type = type;
@@ -100,7 +104,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             filt = filt1;
             filt.t_interp = [];
             filt.keep_tr = true(1,size(Data.keep_inds,2));
-            filt = MakeCycAvg__autoFilter(Data,filt);
+            filt = MakeCycAvg__autoFilter(Data,filt,plot_info);
             CycAvg = MakeCycAvg__filterTraces(Data,filt);
             ha = [];
             if has_fig %Only should not happen during autoscan analysis
@@ -169,7 +173,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             end
             ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
         case 'Shift Trigger'
-            new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ','Shift',[1 15],{num2str(info.TriggerShift2)},'on',1,[screen_size(3)-4 screen_size(4)-1.25 1.75 1.25]));
+            new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ','Shift',[1 15],{num2str(Data.info.TriggerShift2)},'on',1,[screen_size(3)-4 screen_size(4)-1.25 1.75 1.25]));
             if ~isempty(new_TrigShift)
                 Data.info.TriggerShift2 = round(new_TrigShift);
                 Data = MakeCycAvg__alignCycles(Data);

@@ -8,12 +8,13 @@
 % and Cycle Average folders and then run "VOGA." Click cancel to end the
 % loop.
 %Current version of VOGA - Changed with each GitHub committ
-current_ver = 'v5.3.1';
+current_ver = 'v5.4.0';
 %VOGA Menu Options
 opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average',...
-    'Summary Table','Generate Figures','CRF','Advanced'};
-advanced_opts = {'Automatic VOG Analysis','Recalibrate LDVOG','Combine Segments',...
-    'Trim Segment','Rename Files','Set Version'};
+    'CRF','Generate Figures','Advanced'};
+advanced_opts = {'Automatic VOG Analysis','Recalibrate LDVOG',...
+    'Fix Raw VOG Trigger','Combine Segments','Trim Segment','Rename Files',...
+    'Summary Table''Set Version'};
 resp1 = '';
 tf1 = 1;
 %Run the start procedure first--will make the files needed if they don't
@@ -30,20 +31,20 @@ while tf1
             VOGA__Segment;
         case 'Cycle Average'
             VOGA__CycAvg;
-        case 'Summary Table'
-            VOGA__SummaryTable;
-        case 'Generate Figures'
-            VOGA__makePlots;
         case 'CRF'
             VOGA__CRF;
+        case 'Generate Figures'
+            VOGA__makePlots;        
         case 'Advanced'
             [ind2,tf2] = nmlistdlg('PromptString','Select an action:','SelectionMode','single',...
                        'ListSize',[150 125],'ListString',advanced_opts); 
-            if tf2
+            while tf2
                 resp2 = advanced_opts{ind2};
                 switch resp2
                     case 'Automatic VOG Analysis'
                         VOGA__automaticAnalysis;
+                    case 'Fix Raw VOG Trigger'
+                        updateRawVOGTrigger;
                     case 'Recalibrate LDVOG'
                         RecalibrateRawLDVOG; 
                     case 'Combine Segments'
@@ -52,9 +53,13 @@ while tf1
                         VOGA__trimSegment;
                     case 'Rename Files'
                         VOGA__RenameFiles;
+                    case 'Summary Table'
+                        VOGA__SummaryTable;
                     case 'Set Version'
                         VOGA__setVersion(current_ver,1);
                 end
+                [ind2,tf2] = nmlistdlg('PromptString','Select an action:','SelectionMode','single',...
+                       'ListSize',[150 125],'ListString',advanced_opts);                
             end           
     end
     % Poll for new reponse

@@ -114,7 +114,7 @@ for f = 1:length(logfiles)
     if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected formatting
         sub = path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')};
         MVI_num = str2double(sub((-3:1:-1)+strfind(sub,'R')));
-        if ismember(MVI_num,[1,2,3,4,7,9]) %EXPAND as needed
+        if ismember(MVI_num,[1,2,3,4,7,9,11]) %EXPAND as needed
             ear = 'L';
         else
             ear = 'R';
@@ -190,12 +190,10 @@ for f = 1:length(logfiles)
         common_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang]};
         %Find where the time stamps overlap
         rel_inds = logfile_times >= VOG_times(1) & logfile_times <= VOG_times(end);
-        rel_dat = data(rel_inds,~all(cellfun(@isempty,data(rel_inds,:)),1));
+        rel_col = ~all(cellfun(@isempty,data(rel_inds,:)),1);
+        rel_dat = data(rel_inds,rel_col);
         %% Check in case it's in another log file from another computer
-        % % % % MOVED THIS LINE 
-        if ~isempty(rel_dat)
-            %Find the number of experiments done and add them to the experiment
-            %cell block by block. Experiment types can differ.
+        if ~isempty(rel_dat)&&(any(contains(rel_dat(:,2),'Electrode characterization.'))||sum(rel_col)>2)
             if any(contains(rel_dat(:,2),'Electrode characterization.')) %Autoscan
                 e_i = find(contains(rel_dat(:,2),'Electrode characterization.'));
                 rel_exp = rel_dat(e_i,2);
@@ -225,7 +223,7 @@ for f = 1:length(logfiles)
                     experiments{j} = [canal,'-',pps,'pps-',us,'us-',curr,'uA']; %rounds to closest uA for file naming
                 end
                 notes = strcat({'Experiment eeVOR-Autoscan-'},experiments);
-            else
+            else 
                 rel_dat(cellfun(@isempty,rel_dat(:,3)),:) = [];
                 %Adjust for misalignment in stim start and file start
                 %Scrolls up in the log file until it finds a header
@@ -249,6 +247,8 @@ for f = 1:length(logfiles)
                     %Figure out what type of experiment it is
                     if isempty(col_labs)
                         disp([fname,': Experiment type was not detected.'])
+                    elseif any(contains(col_labs,'Depth of Modulation'))&&any(contains(data(rel_inds,2),'VelocityStep-LHRH'))
+                        experiments(j) = {[{'Experiment eeVOR-VelStep-LH-240dps'};{'Experiment eeVOR-VelStep-RH-240dps'}]};
                     elseif any(contains(col_labs,'Depth of Modulation'))
                         experiments(j) = {strcat('Experiment eeVOR-MultiVector-[',stim_tab(2:end,2),',',stim_tab(2:end,3),',',stim_tab(2:end,4),']')};
                     elseif any(contains(col_labs,'Frequency'))

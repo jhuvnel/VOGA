@@ -81,29 +81,15 @@ if contains(info.goggle_ver,{'NKI','NL'})
     Vertical_RE_Position = -data.RightVert;
     Torsion_RE_Position = data.RightTorsion;
     %Remove repeated values in torsion
-    [GC,GR] = groupcounts([diff(find(Torsion_LE_Position(2:end)~=Torsion_LE_Position(1:end-1)));diff(find(Torsion_RE_Position(2:end)~=Torsion_RE_Position(1:end-1)))]);
-    reps = GR(GC==max(GC));
-    if reps > 1
-        %Add back in real repeated numbers with repeats more than normal
-        %(Ex: if data points repeat three times, six repeated points means
-        %two real measurements at that level)
-        LX_uniq = [true;Torsion_LE_Position(2:end)~=Torsion_LE_Position(1:end-1)];        
-        LX_inds = reshape(1:floor(length(Torsion_LE_Position)/reps)*reps,reps,[]);
-        long_str = LX_inds(1,~any(LX_uniq(LX_inds),1));
-        for i = 1:length(long_str)
-            LX_uniq(find(LX_uniq(1:long_str(i)),1,'last')+reps) = true;
-        end
-        Torsion_LE_Position(~LX_uniq) = NaN;
-        Torsion_LE_Position = interp1(Time_Eye(~isnan(Torsion_LE_Position)),Torsion_LE_Position(~isnan(Torsion_LE_Position)),Time_Eye);       
-        RX_uniq = [true;Torsion_RE_Position(2:end)~=Torsion_RE_Position(1:end-1)];
-        RX_inds = reshape(1:floor(length(Torsion_RE_Position)/reps)*reps,reps,[]);
-        long_str = RX_inds(1,~any(RX_uniq(RX_inds),1));
-        for i = 1:length(long_str)
-            RX_uniq(find(RX_uniq(1:long_str(i)),1,'last')+reps) = true;
-        end
-        Torsion_RE_Position(~RX_uniq) = NaN;
-        Torsion_RE_Position = interp1(Time_Eye(~isnan(Torsion_RE_Position)),Torsion_RE_Position(~isnan(Torsion_RE_Position)),Time_Eye);       
-    end
+    [gr,gc] = groupcounts(diff(find(diff([Torsion_LE_Position;Torsion_RE_Position])~=0&...
+        ~isnan([Torsion_LE_Position(2:end);Torsion_RE_Position]))));
+    reps = gc(gr==max(gr));
+    if reps>1
+        M = [movmean(Torsion_LE_Position,reps);zeros(floor(reps/2)-1,1)];
+        Torsion_LE_Position = [M(round(reps/2):end);zeros(round(reps/2)-1,1)];
+        M = [movmean(Torsion_RE_Position,reps);zeros(floor(reps/2)-1,1)];
+        Torsion_RE_Position = [M(round(reps/2):end);zeros(round(reps/2)-1,1)];        
+    end    
     GyroX = reshape(XAxisVelHead,[],1);
     GyroY = reshape(YAxisVelHead,[],1);
     GyroZ = reshape(ZAxisVelHead,[],1);
@@ -584,7 +570,7 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
         ind2 = sort(ind(1:length(stim_info)));
         start = all_starts([1;ind2(1:end-1)+1]);
         ends = all_ends(ind2);
-    else %Should work for Sine, Pulse Trains and Multi Vector
+    elseif all(contains(stim_info,'Sine'))    
         %Every trigger toggle is a cycle
         temp = find(abs(diff(Stim))==1);
         all_starts = temp(1:end-1);
@@ -610,6 +596,15 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
         ends = ends+temp2;
         start(start<0) = 1;
         ends(ends>length(Time_Stim)) = length(Time_Stim);
+    else %Pulse Train and Autoscan--high period is stimulation and low is break.
+        temp = find(diff(Stim)==1)-1;
+        temp2 = diff(temp);
+        all_starts = temp;
+        all_ends = all_starts+median(temp2);
+        [~,ind] = sort(temp2,'descend');
+        ind2 = sort(ind(1:length(stim_info)-1));
+        start = all_starts([1;ind2+1])-round(0.5*median(diff(temp)));
+        ends = all_ends([ind2;end])+round(0.5*median(diff(temp)));
     end
     stim = Stim;
     start = round(start);

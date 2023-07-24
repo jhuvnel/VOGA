@@ -134,17 +134,17 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
             GyroZ = data(:,4);
             GyroL = data(:,3);
             GyroR = data(:,2);
-            if contains(rel_files{indx(i)},'LARP')
+            if contains(file,'LARP')
                 RZ = data(:,5);
                 RL = data(:,6); 
                 RR = NaN*data(:,6);
                 RY = NaN*data(:,6);
-            elseif contains(rel_files{indx(i)},'RALP')
+            elseif contains(file,'RALP')
                 RZ = data(:,5);
                 RR = data(:,6); 
                 RL = NaN*data(:,6);
                 RY = NaN*data(:,6);
-            elseif contains(rel_files{indx(i)},'Lateral')
+            elseif contains(file,'Lateral')
                 RZ = data(:,5);
                 RY = data(:,6);
                 RR = NaN*data(:,6);
@@ -167,6 +167,6 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
         end      
         xlabel('Time (s)')
         ylabel('Velocity (dps)')
-        title(strrep(strrep(rel_files{indx(i)},'_',' '),'-',' '),'interpreter','none') 
+        title(strrep(strrep(file,'_',' '),'-',' '),'interpreter','none') 
     end
 end

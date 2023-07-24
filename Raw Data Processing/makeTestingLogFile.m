@@ -15,7 +15,7 @@ if isempty(file_names)
     file_names = {''};
 end
 VOG_files = file_names(contains(file_names,{'SESSION','.dat'})&...
-    ~contains(file_names,{'LDHP','LDPC','-Notes,txt'}));
+    ~contains(file_names,{'LDHP','LDPC','-Notes.txt'}));
 if isempty(VOG_files)
     disp(['No VOG files found in this directory: ',Raw_Path])
     return;

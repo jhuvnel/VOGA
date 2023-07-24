@@ -1,6 +1,10 @@
 function updateRawVOGTrigger(Raw_Path,In_Path,TEMP_In_Path)
 if nargin < 1
-    Raw_Path = cd;
+    if isfolder([cd,filesep,'Raw Files'])
+        Raw_Path = [cd,filesep,'Raw Files'];
+    else
+        Raw_Path = cd;
+    end
 end
 all_files = extractfield(dir(Raw_Path),'name',find(~extractfield(dir(Raw_Path),'isdir')));
 LDVOG_files = all_files(contains(all_files,'SESSION')&contains(all_files,'.txt')&~contains(all_files,'Notes.txt'));
@@ -96,74 +100,56 @@ else
 end
 %Load template from file
 if isempty(TEMP_In_Path)
-    TEMP_Time_Eye = Time_Eye;
-    TEMP_Stim = NaN*Stim;
+   TEMP_In_Path = ''; 
+end    
+if strcmp(TEMP_In_Path(end-2:end),'dat')%NKI
+    warning('off')
+    data2 = readtable(TEMP_In_Path,'ReadVariableNames',true);
+    warning('on')
+    TEMP_Stim = zeros(length(data2.EventCode),1);
+    TEMP_Stim(data2.EventCode ~= 0) = 1;    
+    small_TEMP = TEMP_Stim(find(TEMP_Stim~=TEMP_Stim(1),1,'first')-1:find(TEMP_Stim~=TEMP_Stim(end),1,'last')+1);
+    TEMP_Stim = 0*Stim;
+    TEMP_Stim(1:length(small_TEMP)) = small_TEMP;   
+elseif strcmp(TEMP_In_Path(end-2:end),'txt') %LDVOG
+    data2 = readtable(TEMP_In_Path);
+    TEMP_Stim = data2{1:size(data2,1),35};
+    small_TEMP = TEMP_Stim(find(TEMP_Stim~=TEMP_Stim(1),1,'first')-1:find(TEMP_Stim~=TEMP_Stim(end),1,'last')+1);
+    TEMP_Stim = 0*Stim;
+    TEMP_Stim(1:length(small_TEMP)) = small_TEMP;     
 else
-    if strcmp(TEMP_In_Path(end-2:end),'dat')%NKI
-        warning('off')
-        data2 = readtable(TEMP_In_Path,'ReadVariableNames',true);
-        warning('on')
-        data2.Properties.VariableNames{1} = 'EyeTime';  
-        TEMP_Time_Eye = data2.EyeTime;
-        TEMP_Stim = zeros(length(TEMP_Time_Eye),1); 
-        TEMP_Stim(data2.EventCode ~= 0) = 1; 
-    elseif strcmp(TEMP_In_Path(end-2:end),'txt') %LDVOG
-        data2 = readtable(TEMP_In_Path);
-        % Generate Time_Eye vector
-        Time = data2{:,2};
-        TEMP_Time_Eye = (0:length(Time)-1)'*median(diff(Time)); 
-        % Index for the VOG GPIO line
-        StimIndex = 35; 
-        TEMP_Stim = data2{1:length(TEMP_Time_Eye),StimIndex};
-    else
-        TEMP_Time_Eye = Time_Eye;
-        TEMP_Stim = NaN*Stim;
-    end
+    TEMP_Stim = NaN*Stim;
 end
 %% Adjust Trigger
 ind = 2; %Start with Initialize
-opts = {'Save','Initialize','Set Plot Limits','Set Plot Items','Align From Start','Align From End',' '};
+opts = {'Save','Initialize','Set Plot Limits','Set Plot Items','Align From Start','Align From End','Zero Padding'};
 while ~strcmp(opts{ind},'Save')
     if strcmp(opts{ind},'Initialize')
-        % Initialize Plot
-        template = Stim;
+        % Initialize Plot        
         plot_eyes = 1;
         plot_gyro = 1;
-        time1 = Time_Eye(1);
-        time2 = TEMP_Time_Eye(1);
-        len = min([Time_Eye(end)-Time_Eye(1),TEMP_Time_Eye(end)-TEMP_Time_Eye(1)]);
-        [~,t1] = min(abs(Time_Eye-time1));
-        [~,t2] = min(abs(Time_Eye-(time1+len)));
-        [~,t3] = min(abs(TEMP_Time_Eye-time2));
-        [~,t4] = min(abs(TEMP_Time_Eye-(time2+len)));
-    elseif strcmp(opts{ind},'Set Plot Limits')
-        %Get new parameter values
-        prompt = {['Set plot axis limits:',newline,newline,'Sync Time Start:'],...
-            'Template Time Start:','Length:'};
-        dlgtitle = 'Y-axis Limits';
-        definput = cellfun(@(x) num2str(x,10),num2cell([time1,time2,len]),'UniformOutput',false);
-        out_nums = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 25],definput,'on',1,[screen_size(3)-6 screen_size(4)-4 3 3]));
-        if ~isempty(out_nums)
-            time1 = out_nums(1);
-            time2 = out_nums(2);
-            len = out_nums(3);
-            XLim = min([time1 time2])+ [0,len]
-        else
-            XLim = [Time_Eye(1),Time_Eye(end)];
-        end
-        [~,t1] = min(abs(Time_Eye-time1));
-        [~,t2] = min(abs(Time_Eye-(time1+len)));
-        [~,t3] = min(abs(TEMP_Time_Eye-time2));
-        [~,t4] = min(abs(TEMP_Time_Eye-(time2+len)));        
-        set(gca,'XLim',XLim)
+        rel_shift = 0;
+        template = TEMP_Stim;
+        plot(NaN,NaN)
+        hold on
+        plot(Time_Eye',LX','Color',colors.l_x);plot(Time_Eye',RX','Color',colors.r_x);
+        plot(Time_Eye,LY,'Color',colors.l_y);plot(Time_Eye,RY,'Color',colors.r_y);
+        plot(Time_Eye,LZ,'Color',colors.l_z);plot(Time_Eye,RZ,'Color',colors.r_z);
+        plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-')
+        h1 = plot(Time_Eye,Stim,'b');
+        h2 = plot(Time_Eye,template,'g');
+        hold off
+        xlabel('Time (s)')
+        ylabel('Velocity (dps)')
+        legend([h1;h2],'Original Sync','New Sync')        
     elseif strcmp(opts{ind},'Set Plot Items')
-        plot_opts = {'Plot Eyes','Plot Gyro','Plot Sync'};
+        plot_opts = {'Plot Eyes','Plot Gyro'};
         [ind3,tf3] = nmlistdlg('PromptString','Select an action:',...
                            'SelectionMode','multiple',...
                            'ListSize',[150 150],...
                            'ListString',plot_opts,...
                            'Position',[screen_size(3)-6,screen_size(4)-3.75,3,3.75],...
-                           'InitialValue',find([plot_eyes,plot_gyro,1])); 
+                           'InitialValue',find([plot_eyes,plot_gyro])); 
         if tf3
             if ismember(ind3,1)
                 plot_eyes = 1;
@@ -178,62 +164,67 @@ while ~strcmp(opts{ind},'Save')
         end    
     elseif strcmp(opts{ind},'Align From Start')
         %Flip the template if needed
-        template(t1:t2) = TEMP_Stim(t3:t4);
-        if template(t1)~=Stim(t1)
-            template(t1:t2) = 1-template(t1:t2);
+        if template(1)~=Stim(1)
+            template = 1-template;
         end
-        k1 = find(Stim(t1:t2)==(1-Stim(t1)),1,'first')-1+t1;
-        k2 = find(template(t1:t2)==(1-template(t1)),1,'first')-1+t1;
+        k1 = find(Stim==(1-Stim(1)),1,'first');
+        k2 = find(template==(1-template(1)),1,'first');
         if k1 > k2
-            template1 = [template(t1)*ones(k1-k2,1);template];
+            template1 = [template(1)*ones(k1-k2,1);template];
         elseif k1 < k2
-            template1 = [template((k2-k1):end);template(t2)*ones(k2-k1,1)];
+            template1 = [template((k2-k1):end);template(1)*ones(k2-k1,1)];
         else
             template1 = template;
         end
-        template(t1:t2) = template1(1:length(t1:t2));
+        template = template1(1:length(template));
     elseif strcmp(opts{ind},'Align From End')
         %Flip the template if needed
-        template(t1:t2) = TEMP_Stim(t3:t4);
-        if template(t2)~=Stim(t2)
-            template(t1:t2) = 1-template(t1:t2);
+        if template(end)~=Stim(end)
+            template = 1-template;
         end
-        k1 = find(Stim(t1:t2)==(1-Stim(t2)),1,'last');
-        k2 = find(template(t1:t2)==(1-template(t2)),1,'last');
+        k1 = find(Stim==(1-Stim(end)),1,'last');
+        k2 = find(template==(1-template(end)),1,'last');
         if k1 > k2
-            template1 = [template(t1)*ones(k1-k2,1);template];
+            template1 = [template(1)*ones(k1-k2,1);template];
         elseif k1 < k2
-            template1 = [template((k2-k1):end);template(t2)*ones(k2-k1,1)];
+            template1 = [template((k2-k1):end);template(1)*ones(k2-k1,1)];
         else
             template1 = template;
         end
-        template(t1:t2) = template1(1:length(t1:t2));
-    end
-    %Remake Plot
+        template = template1(1:length(template));
+    elseif strcmp(opts{ind},'Zero Padding')
+        small_template = TEMP_Stim(find(TEMP_Stim~=TEMP_Stim(1),1,'first')-1:find(TEMP_Stim~=TEMP_Stim(end),1,'last')+1);
+        len = length(small_template);
+        temp = inputdlg('Zero padding:','Zero padding',1,{num2str(rel_shift)});
+        if ~isempty(temp)&&~isnan(str2double(temp{:}))
+            rel_shift = str2double(temp{:});
+        end
+        template = 0*template;
+        template((1:len)+rel_shift) = small_template;
+    end        
+    XLim = get(gca,'XLim');
+    YLim = get(gca,'YLim'); 
+    %Plot
     plot(NaN,NaN)
     hold on
     if plot_eyes
-        plot(Time_Eye,LX,'Color',colors.l_x);plot(Time_Eye,RX,'Color',colors.r_x);plot(Time_Eye,LY,'Color',colors.l_y);
-        plot(Time_Eye,RY,'Color',colors.r_y);plot(Time_Eye,LZ,'Color',colors.l_z);plot(Time_Eye,RZ,'Color',colors.r_z);
+        plot(Time_Eye',LX','Color',colors.l_x);plot(Time_Eye',RX','Color',colors.r_x);
+        plot(Time_Eye,LY,'Color',colors.l_y);plot(Time_Eye,RY,'Color',colors.r_y);
+        plot(Time_Eye,LZ,'Color',colors.l_z);plot(Time_Eye,RZ,'Color',colors.r_z);
     end
     if plot_gyro
         plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-')
     end
-    h(1) = plot(Time_Eye,Stim,'b');
-    h(2) = plot(TEMP_Time_Eye,TEMP_Stim-0.25,'g');
-    h(3) = plot(Time_Eye,template+0.25,'k');
-    plot(Time_Eye(t1),Stim(t1),'b*',Time_Eye(t2),Stim(t2),'b*')
-    plot(TEMP_Time_Eye(t3),TEMP_Stim(t3)-0.25,'g*',TEMP_Time_Eye(t4),TEMP_Stim(t4)-0.25,'g*')
+    h1 = plot(Time_Eye,Stim,'b');
+    h2 = plot(Time_Eye,template,'g');
     hold off
     xlabel('Time (s)')
     ylabel('Velocity (dps)')
-    legend(h,'Original Sync','Template Sync','New Sync')
+    legend([h1;h2],'Original Sync','New Sync')
+    set(gca,'XLim',XLim','YLim',YLim)
     %Get next step
-    [ind,tf] = nmlistdlg('PromptString','Select an action:',...
-                           'SelectionMode','single',...
-                           'ListSize',[150 150],...
-                           'ListString',opts,...
-                           'Position',[screen_size(3)-6,screen_size(4)-3.75,3,3.75]); 
+    [ind,tf] = nmlistdlg('PromptString','Select an action:','SelectionMode','single','ListSize',[150 150],...
+                           'ListString',opts,'Position',[screen_size(3)-6,screen_size(4)-3.75,3,3.75]); 
     if ~tf
         return;
     end
