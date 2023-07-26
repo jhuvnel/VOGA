@@ -4,6 +4,8 @@
 %with recorded dates for the MVI trial
 %Works for LDVOG, NKI, GNO, and ESC. Limited workability for Moog
 function Segment(In_Path,Seg_Path)
+%% Clear
+clc; clear; close all;
 %% Find the Notes File
 slash = find(In_Path == filesep,1,'last');
 dot = find(In_Path == '.',1,'last');

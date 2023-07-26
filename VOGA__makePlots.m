@@ -34,9 +34,7 @@ if ~isfolder(params.MVIPath)
     error('Invalid MVI "Study Subject" folder path.')
 end
 %Get subject info
-warning('off')
-params.sub_info = readtable([params.MVIPath,filesep,'MVI_Information.xlsx']);
-warning('on')
+params.sub_info = readtable('MVI_Information.xlsx');
 %Add the plot parameters
 params.Path = Path;
 params.Raw_Path = [Path,filesep,'Raw Files'];

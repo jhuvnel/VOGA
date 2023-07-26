@@ -72,6 +72,7 @@ fus = 8;
 ffs = 8;
 uh = 22;
 pos = []; %custom change
+units = 'inches';
 
 if mod(length(varargin),2) ~= 0
     % input args have not com in pairs, woe is me
@@ -109,6 +110,8 @@ for i=1:2:length(varargin)
      % custom change
 	 case 'position'
       pos = varargin{i+1};
+     case 'units'
+      units = varargin{i+1};
      otherwise
       error(message('MATLAB:listdlg:UnknownParameter', varargin{ i }))
     end
@@ -199,7 +202,7 @@ set([fig, ok_btn, cancel_btn, listbox], 'KeyPressFcn', {@doKeypress, listbox});
 if isempty(pos)
    set(fig,'Position',getnicedialoglocation(fp, get(fig,'Units'))); % only this line existed in original code
 else
-   set(fig,'Units','inches','Position',pos); % set the figure position as desired using custom code
+   set(fig,'Units',units,'Position',pos); % set the figure position as desired using custom code
 end
 % Make ok_btn the default button.
 setdefaultbutton(fig, ok_btn);
