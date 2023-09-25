@@ -4,8 +4,6 @@
 %with recorded dates for the MVI trial
 %Works for LDVOG, NKI, GNO, and ESC. Limited workability for Moog
 function Segment(In_Path,Seg_Path)
-%% Clear
-clc; clear; close all;
 %% Find the Notes File
 slash = find(In_Path == filesep,1,'last');
 dot = find(In_Path == '.',1,'last');
@@ -417,7 +415,7 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
     GyroAll = GyroZ+GyroLARP+GyroRALP;
     if any(contains(lower(stim_info),'velstep'))
         thresh = 50; %Adjust as needed
-        thresh2 = 1; %Counts as 0.
+        thresh2 = 5; %Counts as 0.
         approx0 = find(abs(GyroAll)< thresh2);
         start1 = find(abs(GyroAll) > thresh);
         start2 = start1([true;diff(start1)>Fs*10]); %make sure it's at least 45s long
@@ -464,6 +462,8 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
         seg_start = 1;
         seg_end = length(Time_Eye);
     end   
+    seg_start = round(seg_start,0);
+    seg_end = round(seg_end,0);
     if length(seg_start) ~= length(stim_info)
         keep = false(1,length(seg_start));
         plot(NaN,NaN)

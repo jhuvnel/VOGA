@@ -114,7 +114,7 @@ for f = 1:length(logfiles)
     if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected formatting
         sub = path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')};
         MVI_num = str2double(sub((-3:1:-1)+strfind(sub,'R')));
-        if ismember(MVI_num,[1,2,3,4,7,9,11]) %EXPAND as needed
+        if ismember(MVI_num,[1,2,3,4,7,9,11,13]) %EXPAND as needed
             ear = 'L';
         else
             ear = 'R';

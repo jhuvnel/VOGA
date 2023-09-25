@@ -69,7 +69,7 @@ for i = 1:fnum
                     p_tr_bool(ii) = true;
                 end
             end
-            text_num = [CycAvg.parameterized.AxisName,cellstr(num2str(round(CycAvg.parameterized.MaxVel,2),2)),cellstr(num2str(round(CycAvg.parameterized.Phase,0),3))];
+            text_num = [CycAvg.parameterized.AxisName,cellstr(num2str(round(CycAvg.parameterized.MaxVel,0),3)),cellstr(num2str(round(CycAvg.parameterized.Phase,0),3))];
             disp_text = ['MaxVel ',text_num{1,1},'(dps): ',text_num{1,2},newline,...
                 'MaxVel ',text_num{2,1},'(dps): ',text_num{2,2},newline,...
                 'Phase(deg): ',text_num{1,3}];

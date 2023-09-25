@@ -6,7 +6,7 @@ opts = {'Rotary Chair/Sine','vHIT/GNO',...
     'ListSize',[200 125],...
     'ListString',opts);
 if tf
-    sub_mark = 'xdo^ps+hv<>';
+    sub_mark = 'xdo^ps+hv<>|_';
     sub_info = params.sub_info;
     all_subs = sub_info.Subject;
     sub_ears = sub_info.Ear;
@@ -49,8 +49,8 @@ if tf
             conds = {'pre','post','mmo','cro'};
             cond_logic = [contains(all_results.Visit,'Visit0')&~contains(all_results.Condition,'Light'),...
                 contains(all_results.Visit,'Visit3')&contains(all_results.Condition,'NoStim'),...
-                contains(all_results.Condition,'Motion')&contains(all_results.Visit,'Visit10x'),...
-                contains(all_results.Condition,'Constant')&contains(all_results.Visit,'Visit10x')];
+                contains(all_results.Condition,'Motion'),...
+                contains(all_results.Condition,'Constant')];
             %Make the arrays
             %Summary stats
             for c = 1:length(conds)
@@ -89,43 +89,46 @@ if tf
                 %% Over Freq
                 spread = 0.05;
                 mark_size = 7;
-                h1 = gobjects(5,1);
+                h1 = gobjects(6,1);
                 h2 = gobjects(length(all_subs),1);
-                fig1 = figure(1);
-                clf;
+                fig1 = figure;
                 set(fig1,'Units','inches','Position',[1 1 6 4],'Color',[1 1 1])
                 ha(1) = subplot(2,1,1);
                 plot(NaN,NaN)
                 hold on
-                h1(5) = fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.gain-norm_dat.gain_std,fliplr(norm_dat.gain+norm_dat.gain_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
-                h1(4) = plot(norm_dat.freq,norm_dat.gain,'k:','LineWidth',2);
+                h1(6) = fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.gain-norm_dat.gain_std,fliplr(norm_dat.gain+norm_dat.gain_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
+                h1(5) = plot(norm_dat.freq,norm_dat.gain,'k--','LineWidth',2);
                 h1(1) = errorbar((1-1.5*spread)*freqs,gain_mean.pre,gain_std.pre,'k-','LineWidth',1.5);
-                h1(3) = errorbar((1+1.5*spread)*freqs,gain_mean.cro,gain_std.cro,'r--','LineWidth',1.5);
-                h1(2) = errorbar((1+0*spread)*freqs,gain_mean.mmo,gain_std.mmo,'-','Color',[0,0.5,0],'LineWidth',1.5);
+                h1(2) = errorbar((1-0.5*spread)*freqs,gain_mean.post,gain_std.post,'-.','Color',0.5*[1,1,1],'LineWidth',1);
+                h1(3) = errorbar((1+0.5*spread)*freqs,gain_mean.cro,gain_std.cro,'r:','LineWidth',1);
+                h1(4) = errorbar((1+1.5*spread)*freqs,gain_mean.mmo,gain_std.mmo,'r-','LineWidth',1.5);
                 for i = 1:length(all_subs)
-                    plot((1-1.5*spread)*freqs,gain.pre(i,:),'k.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
-                    plot((1+0*spread)*freqs,gain.mmo(i,:),'.','Color',[0,0.5,0],'Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
-                    plot((1+1.5*spread)*freqs,gain.cro(i,:),'r.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
+                    plot((1-0.5*spread)*freqs,gain.post(i,:),'.','Color',0.5*[1,1,1],'Marker',sub_mark(i),'MarkerSize',mark_size)
+                    plot((1-1.5*spread)*freqs,gain.pre(i,:),'k.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','k')
+                    plot((1+1.5*spread)*freqs,gain.mmo(i,:),'r.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','r')
+                    plot((1+0.5*spread)*freqs,gain.cro(i,:),'r.','Marker',sub_mark(i),'MarkerSize',mark_size)
                 end
                 hold off
                 set(gca,'xscale','log','xminortick','off','XTick',freqs,'XTickLabel',[],'box','on','Layer','top')
                 axis([0.041 1.2 -0.025 0.79])
                 ylabel('Horizontal VOR Gain')
-                leg1 = legend(h1,{'Preop','Modulation','Baseline','Norm Mean','Norm±SD'},'Location','northwest','NumColumns',5);
+                leg1 = legend(h1,{'Pre-op','Post-op','MVI OFF','MVI ON','Norm Mean','Norm±SD'},'Location','north','NumColumns',3);
                 title(leg1,'Condition')
                 leg1.ItemTokenSize(1) = 15;
                 ha(2) = subplot(2,1,2);
                 plot(NaN,NaN)
                 hold on
                 fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.phase-norm_dat.phase_std,fliplr(norm_dat.phase+norm_dat.phase_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
-                plot(norm_dat.freq,norm_dat.phase,'k:','LineWidth',2);
+                plot(norm_dat.freq,norm_dat.phase,'k--','LineWidth',2);
+                errorbar((1-0.5*spread)*freqs,phase_mean.post,phase_std.post,'-.','Color',0.5*[1,1,1],'LineWidth',1);
                 errorbar((1-1.5*spread)*freqs,phase_mean.pre,phase_std.pre,'k-','LineWidth',1.5);
-                errorbar((1+0*spread)*freqs,phase_mean.mmo,phase_std.mmo,'-','Color',[0,0.5,0],'LineWidth',1.5);
-                errorbar((1+1.5*spread)*freqs,phase_mean.cro,phase_std.cro,'r--','LineWidth',1.5);
+                errorbar((1+1.5*spread)*freqs,phase_mean.mmo,phase_std.mmo,'r-','LineWidth',1.5);
+                errorbar((1+0.5*spread)*freqs,phase_mean.cro,phase_std.cro,'r:','LineWidth',1);
                 for i = 1:length(all_subs)
-                    plot((1-1.5*spread)*freqs,phase.pre(i,:),'k.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
-                    plot((1+0*spread)*freqs,phase.mmo(i,:),'.','Color',[0,0.5,0],'Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
-                    plot((1+1.5*spread)*freqs,phase.cro(i,:),'r.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
+                    plot((1-0.5*spread)*freqs,phase.post(i,:),'.','Color',0.5*[1,1,1],'Marker',sub_mark(i),'MarkerSize',mark_size)
+                    plot((1-1.5*spread)*freqs,phase.pre(i,:),'k.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','k')
+                    plot((1+1.5*spread)*freqs,phase.mmo(i,:),'r.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','r')
+                    plot((1+0.5*spread)*freqs,phase.cro(i,:),'r.','Marker',sub_mark(i),'MarkerSize',mark_size)
                     h2(i) = plot(NaN,NaN,'k.','Marker',sub_mark(i),'MarkerSize',mark_size,'LineWidth',1);
                 end
                 hold off
@@ -133,48 +136,128 @@ if tf
                 axis([0.041 1.2 -25 135])
                 xlabel('Frequency (Hz)')
                 ylabel('Phase Lead (deg)')
-                leg2 = legend(h2,split(cellstr(num2str(1:length(all_subs)))),'Location','northwest','NumColumns',ceil(length(all_subs)/1));
+                leg2 = legend(h2,split(cellstr(num2str(1:length(all_subs)))),'Location','north','NumColumns',ceil(length(all_subs)/1));
                 leg2.ItemTokenSize(1) = 8;
-                title(leg2,'MVI Users')
+                title(leg2,'Subjects')
                 ha(1).Position = [0.09,0.56,0.98-0.09,0.425];
                 ha(2).Position = [0.09,0.12,0.98-0.09,0.425];
-                %% Rel v0
-                spread = 0.05;
-                mark_size = 7;
-                fig2 = figure(2);
-                clf;
-                set(fig2,'Units','inches','Position',[1 1 6 4],'Color',[1 1 1])
-                ha(1) = subplot(2,1,1);
-                plot(NaN,NaN)
-                hold on
-                yline(0,'k--')
-                errorbar((1+1.5*spread)*freqs,mean(gain.cro-gain.pre,'omitnan'),std(gain.cro-gain.pre,[],'omitnan'),'r--','LineWidth',1.5);
-                errorbar((1+0*spread)*freqs,mean(gain.mmo-gain.pre,'omitnan'),std(gain.mmo-gain.pre,[],'omitnan'),'-','Color',[0,0.5,0],'LineWidth',1.5);
-                for i = 1:length(all_subs)
-                    plot((1+0*spread)*freqs,gain.mmo(i,:)-gain.pre(i,:),'.','Color',[0,0.5,0],'Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
-                    plot((1+1.5*spread)*freqs,gain.cro(i,:)-gain.pre(i,:),'r.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
+                %Figure letter labels
+                annot_wid_x = 0.04;
+                annot_wid_y = 0.06;
+                annot_pos_x = (0.09+0.009)*ones(1,2);
+                annot_pos_y = [0.985, 0.545]-0.075;
+                annot_string = {'A','B'};
+                for i = 1:length(annot_string)
+                    annotation('textbox',[annot_pos_x(i),annot_pos_y(i),annot_wid_x,annot_wid_y],...
+                        'String',annot_string{i},'HorizontalAlignment','center',...
+                        'VerticalAlignment','middle','FontWeight','bold','FontSize',20,...
+                        'Fitboxtotext','off','BackgroundColor',[1,1,1]);
+                end 
+                fname1 = ['Summary Figures',filesep,datestr(now,'yyyymmdd'),'_SummaryRotaryChairGainPhase_AllSub.fig'];
+                savefig(fig1,fname1)
+                saveas(fig1,strrep(fname1,'.fig','.png'))
+                %% Over Freq Grouped Sub (Change groupings of subjects as needed)
+                each_unique_fig_text = {'MVI1-5','MVI6-10','MVI11-13'};
+                each_sub_num = [{1:5},{6:10},{11:13}];
+                for f = 1:length(each_unique_fig_text)
+                    unique_fig_text = each_unique_fig_text{f};
+                    sub_num = each_sub_num{f}; %Subjects to graph (array of #)
+                    %Make fig
+                    spread = 0.05;
+                    fig2 = figure;
+                    set(fig2,'Units','inches','Position',[1 1 5 8],'Color',[1,1,1]);
+                    xmin = 0.09;
+                    xmax = 0.98;
+                    xspc = 0.05;
+                    ymin = 0.05;
+                    ymax = 0.97;
+                    yspc = 0.01;
+                    %Initialize axes
+                    N = length(sub_num);
+                    ha = gobjects(N,2);
+                    h1 = gobjects(6,1);
+                    %Set positions
+                    xwid = (xmax-xmin-xspc)/2; %set for 2 cols
+                    x = xmin:(xwid+xspc):xmax;
+                    ywid = (ymax-ymin-(N-1)*yspc)/N;
+                    y = ymin:(ywid+yspc):ymax;
+                    %Plot
+                    for i = 1:N
+                        ha(i,1) = subplot(N,2,2*i-1);
+                        plot(NaN,NaN)
+                        hold on
+                        h1(6) = fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.gain-norm_dat.gain_std,fliplr(norm_dat.gain+norm_dat.gain_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
+                        h1(5) = plot(norm_dat.freq,norm_dat.gain,'k--','LineWidth',2);
+                        h1(1) = errorbar((1-1.5*spread)*freqs,gain.pre(sub_num(i),:),gain_sd.pre(sub_num(i),:),'k-','LineWidth',1.5);
+                        h1(2) = errorbar((1-0.5*spread)*freqs,gain.post(sub_num(i),:),gain_sd.post(sub_num(i),:),'-.','Color',0.5*[1,1,1],'LineWidth',1.5);
+                        h1(4) = errorbar((1+1.5*spread)*freqs,gain.mmo(sub_num(i),:),gain_sd.mmo(sub_num(i),:),'r-','LineWidth',1.5);
+                        h1(3) = errorbar((1+0.5*spread)*freqs,gain.cro(sub_num(i),:),gain_sd.cro(sub_num(i),:),'r:','LineWidth',1);
+                        if sub_num(i)==1 %Add MVI001 pre-op done elsewhere as black X
+                            freqs2 = [0.01;0.02;0.04;0.08;0.16;0.32;0.64];
+                            gains2 = [0.0083;0.0250;0.0292;0.0458;0.0500;0.0333;0.0625];
+                            plot(freqs2,gains2,'kx','LineWidth',2)
+                        end
+                        hold off
+                        axis([0.041 1.2 -0.025 0.79])
+                        ylabel(all_subs{sub_num(i)}(1:6),'FontSize',12,'FontWeight','bold')
+                        set(gca,'XTick',freqs,'xscale','log','box','on','Layer','top')
+                        if i<N
+                            set(gca,'XTickLabel',[])
+                        else
+                            xlabel('Frequency (Hz)')
+                        end
+                        if i == 1
+                            title('Horizontal VOR Gain')
+                        end    
+                        ha(i,2) = subplot(N,2,2*i);
+                        plot(NaN,NaN)
+                        hold on
+                        fill([norm_dat.freq,fliplr(norm_dat.freq)],[norm_dat.phase-norm_dat.phase_std,fliplr(norm_dat.phase+norm_dat.phase_std)],0.85*[1,1,1],'EdgeColor',0.85*[1,1,1]);
+                        plot(norm_dat.freq,norm_dat.phase,'k--','LineWidth',2);
+                        errorbar((1-1.5*spread)*freqs,phase.pre(sub_num(i),:),phase_sd.pre(sub_num(i),:),'k-','LineWidth',1.5)
+                        errorbar((1-0.5*spread)*freqs,phase.post(sub_num(i),:),phase_sd.post(sub_num(i),:),'-.','Color',0.5*[1,1,1],'LineWidth',1.5)
+                        errorbar((1+1.5*spread)*freqs,phase.mmo(sub_num(i),:),phase_sd.mmo(sub_num(i),:),'r-','LineWidth',1.5)
+                        errorbar((1+0.5*spread)*freqs,phase.cro(sub_num(i),:),phase_sd.cro(sub_num(i),:),'r:','LineWidth',1)
+                        hold off
+                        axis([0.041 1.2 -75 135])
+                        set(gca,'XTick',freqs,'xscale','log','box','on','Layer','top')
+                        if i<N
+                            set(gca,'XTickLabel',[])
+                        else
+                            xlabel('Frequency (Hz)')
+                        end
+                        if i == 1
+                            title('Phase Lead (deg)')
+                        end
+                    end
+                    %Sizing figure and figure letter labels
+                    annot_wid_x = 0.047;
+                    annot_wid_y = 0.035;
+                    annot_pos_x = x+0.009;
+                    annot_pos_y = fliplr(y)+ywid-0.04;                     
+                    for i = 1:N
+                        ha(i,1).Position = [x(1),y(N+1-i),xwid,ywid];
+                        ha(i,2).Position = [x(2),y(N+1-i),xwid,ywid];
+                        annotation('textbox',[annot_pos_x(1),annot_pos_y(i),annot_wid_x,annot_wid_y],...
+                            'String',char(i+64),'HorizontalAlignment','center',...
+                            'VerticalAlignment','middle','FontWeight','bold','FontSize',20,...
+                            'Fitboxtotext','off','BackgroundColor',[1,1,1]);
+                        annotation('textbox',[annot_pos_x(2),annot_pos_y(i),annot_wid_x,annot_wid_y],...
+                            'String',char((N+i)+64),'HorizontalAlignment','center',...
+                            'VerticalAlignment','middle','FontWeight','bold','FontSize',20,...
+                            'Fitboxtotext','off','BackgroundColor',[1,1,1]);
+                    end
+                    %Add legend
+                    leg = legend(ha(1,2),h1,{'Pre-op','Post-op','MVI OFF','MVI ON','Norm Mean','Norm±SD'},'NumColumns',2,'Location','northeast');
+                    leg.ItemTokenSize(1) = 15;
+                    title(leg,'Condition')                    
+                    fname2 = ['Summary Figures',filesep,datestr(now,'yyyymmdd'),'_SummaryRotaryChairGainPhase_EachSub_',unique_fig_text,'.fig'];
+                    savefig(fig2,fname2)
+                    saveas(fig2,strrep(fname2,'fig','png'))
                 end
-                hold off
-                set(gca,'xscale','log','xminortick','off','XTick',freqs,'XTickLabel',[],'box','on','Layer','top')
-                axis([0.041 1.2 -0.44 0.34])
-                ylabel('Change in Gain')
-                ha(2) = subplot(2,1,2);
-                plot(NaN,NaN)
-                hold on
-                yline(0,'k--')
-                errorbar((1+0*spread)*freqs,mean(phase.mmo-phase.pre,'omitnan'),std(phase.mmo-phase.pre,[],'omitnan'),'-','Color',[0,0.5,0],'LineWidth',1.5);
-                errorbar((1+1.5*spread)*freqs,mean(phase.cro-phase.pre,'omitnan'),std(phase.cro-phase.pre,[],'omitnan'),'r--','LineWidth',1.5);
-                for i = 1:length(all_subs)
-                    plot((1+0*spread)*freqs,phase.mmo(i,:)-phase.pre(i,:),'.','Color',[0,0.5,0],'Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
-                    plot((1+1.5*spread)*freqs,phase.cro(i,:)-phase.pre(i,:),'r.','Marker',sub_mark(i),'MarkerSize',mark_size,'MarkerFaceColor','w')
-                end
-                hold off
-                set(gca,'xscale','log','xminortick','off','XTick',freqs,'box','on','Layer','top')
-                axis([0.041 1.2 -104 39])
-                xlabel('Frequency (Hz)')
-                ylabel('Change in Phase Lead (deg)')
-                ha(1).Position = [0.09,0.56,0.98-0.09,0.425];
-                ha(2).Position = [0.09,0.12,0.98-0.09,0.425];
+                %% Each Sub, All Parameters Over Time
+                
+                
             case 'Candidate: Rotary Chair/Sine'
                 results_mat = dir([candidate,filesep,'Visit 0',filesep,'Rotary Chair',filesep,'*Results.mat']);
                 if isempty(results_mat)

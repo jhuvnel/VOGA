@@ -260,9 +260,9 @@ switch type
                 RMSE_neg = sqrt(mean(err_tr_fit(:,Stim_CycAvg<0),'omitnan'));
                 err_cyc_fit = (cyc_fit - CycAvg.([traces{tr},'_cyc'])).^2;
                 RMSE_cyc_pos = sqrt(mean(err_cyc_fit(:,Stim_CycAvg>0),2,'omitnan'));
-                RMSE_cyc_neg = sqrt(mean(err_cyc_fit(:,Stim_CycAvg<0),2,'omitnan'));
-                results.(['MaxVel_',upper(traces{tr})]) = [mean(cyc_param(:,1),'omitnan');mean(cyc_param(:,2),'omitnan')];
-                results.(['MaxVel_',upper(traces{tr}),'_sd']) = [std(cyc_param(:,1),'omitnan');std(cyc_param(:,2),'omitnan')];
+                RMSE_cyc_neg = sqrt(mean(err_cyc_fit(:,Stim_CycAvg<0),2,'omitnan')); 
+                results.(['MaxVel_',upper(traces{tr})]) = [max(abs(CycAvg.([traces{tr},'_cycavg'])(Stim_CycAvg>0)));mean(max(abs(CycAvg.([traces{tr},'_cycavg'])(Stim_CycAvg<0))),'omitnan')];
+                results.(['MaxVel_',upper(traces{tr}),'_sd']) = [std(max(abs(CycAvg.([traces{tr},'_cyc'])(:,Stim_CycAvg>0)),[],2),'omitnan');std(max(abs(CycAvg.([traces{tr},'_cyc'])(:,Stim_CycAvg<0)),[],2),'omitnan')];
                 results.(['Gain_',upper(traces{tr})]) = [mean(cyc_param(:,1),'omitnan');mean(cyc_param(:,2),'omitnan')]/ChairAmp;
                 results.(['Gain_',upper(traces{tr}),'_sd']) = [std(cyc_param(:,1),'omitnan');std(cyc_param(:,2),'omitnan')]/ChairAmp;
                 results.(['Phase_',upper(traces{tr})])(:) = mean(cyc_param(:,3),'omitnan');

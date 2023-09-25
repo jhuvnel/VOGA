@@ -11,9 +11,8 @@ if inval_nargin
     error(['Not enough input arguments to use ',type,' filter.'])
 end
 %Error handling: parameter number
-inval_pnum = contains(type,'sgolay')&&length(param)~=2||...
-        contains(type,'manual_interp')&&length(param)<=0||...
-        ~contains(type,{'sgolay','manual_interp'})&&length(param)~=1;
+inval_pnum = contains(type,'manual_interp')&&length(param)<=0||...
+        ~contains(type,'manual_interp')&&length(param)~=1;
 if inval_pnum
     error('Incorrect number of filter parameters entered.')
 end
@@ -29,10 +28,20 @@ switch type
         q = [true,diff(nums(1,:))~=0];
         trace_out = spline(nums(1,q),nums(2,q),t_out);
     case 'median'
-        trace_out = medfilt1(trace_in,param,'omitnan');
+        trace_out = medfilt1(trace_in,param,'omitnan');      
+    case 'mean'
+        trace_out = trace_in;
+        frame = -(param-1)/2:(param-1)/2; 
+        for i = 1:length(trace_in)
+            inds = frame+i;
+            inds(inds<1|inds>length(trace_in)) = [];  
+            b = [ones(length(inds),1),inds']\trace_in(inds)';
+            %trace_out(i) = mean(trace_in(inds));
+            trace_out(i) = mean([ones(length(inds),1),inds']*b);
+        end            
     case 'sgolay'
-        trace_out = sgolayfilt(trace_in,param(1),param(2));
-    case 'irls'
+        trace_out = sgolayfilt(trace_in,2,param); %Run all with order of 2
+    case 'irlssmooth'
         trace_out = irlssmooth(trace_in,param);
     case 'accel'
         trace_out = trace_in;

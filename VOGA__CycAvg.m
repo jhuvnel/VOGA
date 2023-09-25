@@ -54,9 +54,7 @@ while(~done)
     font_col(progress_tab{progress_i,3}) = {'red'};
     list = strcat('<HTML><FONT color="',font_col,'">',table2cell(progress_tab(progress_i,1)),'</FONT></HTML>');
     [indx,tf] = nmlistdlg('PromptString','Unattempted = Black, Analyzed = Green, Not Analyzeable = Red. Select a file to analyze:',...
-        'SelectionMode','multiple',...
-        'ListSize',[500 600],...
-        'ListString',list);
+        'SelectionMode','multiple','ListSize',[500 600],'ListString',list);
     % Run unless the user selects cancel
     if tf
         if length(indx)==1 %Just one file

@@ -12,8 +12,8 @@ if nargin < 3
     keep_tr = filt.keep_tr;
     %% Validate Parameters
     %Make sure all expected table columns are there
-    pos_labs = {'lowpass','median','sgolay1','sgolay2','irlssmooth','spline'};
-    vel_labs = {'median','sgolay1','sgolay2','accel','irlssmooth','spline'};    
+    pos_labs = {'median','mean','sgolay','spline'};
+    vel_labs = {'median','sgolay','accel','irlssmooth','spline'};    
     missing_pos_labs = pos_labs(~ismember(pos_labs,filt.pos.Properties.VariableNames));
     missing_vel_labs = vel_labs(~ismember(vel_labs,filt.vel.Properties.VariableNames));
     for i = 1:length(missing_pos_labs)
@@ -71,14 +71,12 @@ if nargin < 3
             var_n = [traces{i}(1),'E_Position_',traces{i}(2:end)];
             if isfield(Data,var_n)
                 rel_trace = Data_pos.(var_n);
-                temp0 = interp1(te(~isnan(rel_trace)),rel_trace(~isnan(rel_trace)),te);
-                temp0(isnan(temp0)) = 0;
-                temp1 = filterTrace('lowpass',temp0,filt.pos.lowpass(i),te);
-                temp2 = filterTrace('median',temp1,filt.pos.median(i));
-                temp3 = filterTrace('sgolay',temp2,[filt.pos.sgolay1(i),filt.pos.sgolay2(i)]);
-                temp4 = filterTrace('irls',temp3,filt.pos.irlssmooth(i));
-                temp5 = filterTrace('spline',temp4,filt.pos.spline(i),te,ts);
-                Data_pos_filt.(var_n) = temp5;
+                temp = interp1(te(~isnan(rel_trace)),rel_trace(~isnan(rel_trace)),te);
+                temp(isnan(temp)) = 0;    
+                for f = 1:length(pos_labs)
+                    temp = filterTrace(pos_labs{f},temp,filt.pos.(pos_labs{f})(i),te,ts);
+                end
+                Data_pos_filt.(var_n) = temp;
                 if contains(Data.info.name,'Impulse')
                     Data_pos.([var_n,'_cond']) = Data_pos.(var_n)(reshape(keep_inds,[],1)); 
                     Data_pos_filt.([var_n,'_cond']) = Data_pos_filt.(var_n)(reshape(keep_inds,[],1)); 
@@ -119,13 +117,13 @@ if nargin < 3
                 rm_ind = keep_inds(filt.t_interp,:);
                 rel_trace = Data_vel.(var_n);
             end
-            temp0 = interp1(rel_t(~isnan(rel_trace)),rel_trace(~isnan(rel_trace)),rel_t);
-            temp0(isnan(temp0)) = 0;
-            temp1 = filterTrace('median',temp0,filt.vel.median(i));
-            temp2 = filterTrace('sgolay',temp1,[filt.vel.sgolay1(i),filt.vel.sgolay2(i)]);
+            temp = interp1(rel_t(~isnan(rel_trace)),rel_trace(~isnan(rel_trace)),rel_t);
+            temp(isnan(temp)) = 0;
+            temp1 = filterTrace('median',temp,filt.vel.median(i));
+            temp2 = filterTrace('sgolay',temp1,filt.vel.sgolay(i));
             temp3 = filterTrace('accel',temp2,filt.vel.accel(i),rel_t);
             temp4 = filterTrace('manual_interp',temp3,rm_ind,rel_t);
-            temp5 = filterTrace('irls',temp4,filt.vel.irlssmooth(i));
+            temp5 = filterTrace('irlssmooth',temp4,filt.vel.irlssmooth(i));
             temp6 = filterTrace('spline',temp5,filt.vel.spline(i),rel_t,rel_t);
             Data_vel_filt.(var_n) = temp6;
             if contains(Data.info.name,'Impulse')

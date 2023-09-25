@@ -42,6 +42,9 @@ fname = Data.info.name;
 % Load default filters
 filt_params = VOGA__saveLastUsedParams;
 filt1 = filt_params.filt1;
+%Clear all filters
+filt1.pos{:,:} = NaN; 
+filt1.vel{:,:} = NaN;
 YLim = filt_params.YLim; 
 %For speed during autoscan analysis, do not make cycle average figures
 plot_info.screen_size = [];
@@ -100,13 +103,13 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             plot_info.traces_vel = traces_vel1;
             plot_info.YLim = YLim;
             Data.info.TriggerShift2 = 0;
-            Data = MakeCycAvg__alignCycles(Data); % Cycle Align
             filt = filt1;
             filt.t_interp = [];
-            filt.keep_tr = true(1,size(Data.keep_inds,2));
-            filt = MakeCycAvg__autoFilter(Data,filt,plot_info);
-            CycAvg = MakeCycAvg__filterTraces(Data,filt);
             ha = [];
+            Data = MakeCycAvg__alignCycles(Data); % Cycle Align
+            filt.keep_tr = true(1,size(Data.keep_inds,2));
+            filt = MakeCycAvg__autoFilter(Data,filt,plot_info); %First pass at filter params
+            CycAvg = MakeCycAvg__filterTraces(Data,filt);            
             if has_fig %Only should not happen during autoscan analysis
                 ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
             end
