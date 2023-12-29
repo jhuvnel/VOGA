@@ -1,4 +1,4 @@
-function Answer=inputdlgcol(Prompt,Title,NumLines,DefAns,Resize,NumCols,Position,ButtonNames)
+function Answer=inputdlgcol(Prompt,Title,NumLines,DefAns,Resize,NumCols,Position,ButtonNames,Units)
 %INPUTDLGCOL Input dialog box.
 %  Answer = INPUTDLGCOL(Prompt) creates a modal dialog box that returns
 %  user input for multiple prompts in the cell array Answer.  Prompt
@@ -88,7 +88,7 @@ end
 
 %********************** EDITTED ************
 % Change the number of maximum inputs to 8
-error(nargchk(1,8,nargin));
+error(nargchk(1,9,nargin));
 %*******************************************
 
 error(nargoutchk(1,1,nargout));
@@ -138,6 +138,10 @@ if nargin < 8 || length(ButtonNames)~=2 || ~all(cellfun(@ischar,ButtonNames))
 end
 cancel_str = ButtonNames{1};
 ok_str = ButtonNames{2};
+
+if nargin < 9
+    Units = 'inches';
+end
 %*******************************************
 
 if strcmp(Resize,'on')
@@ -419,7 +423,7 @@ FigPos(4)=FigHeight;
 if isempty(Position)
     set(InputFig,'Position',FigPos);
 else
-    set(InputFig,'Units','inches','Position',Position);
+    set(InputFig,'Units',Units,'Position',Position);
 end
 
 CBString='set(gcbf,''UserData'',''Cancel'');uiresume';

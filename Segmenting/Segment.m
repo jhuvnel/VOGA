@@ -423,7 +423,7 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
         seg_start = approx0(inds);
         seg_start = seg_start([true;diff(seg_start)>Fs*10]); %make sure it's at least 45s long
         seg_end = [seg_start(2:end)-1;length(Time_Eye)];
-        too_long = (seg_end-seg_start)>130*Fs;
+        too_long = (seg_end-seg_start)>round(130*Fs);
         seg_end(too_long) = seg_start(too_long)+130*Fs; %make sure segment is not longer than 2.5 min
     elseif any(contains(stim_info,{'Sine','Impulse'}))&&length(stim_info) > 1 %multiple sine stimuli
         %Segment and allow user to select which segments are "real"
@@ -511,7 +511,7 @@ if all(contains(stim_info,{'RotaryChair','aHIT','manual','Manual','trash'})) %Fi
         stim_info(cellfun(@isempty,stim_info)) = [];                        
     end 
 elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally triggered stimuli for now
-    if all(contains(stim_info,'Activation'))
+    if any(contains(stim_info,'Activation'))
         %Use this to make sure the segments don't start or end on a
         %long blink (which will mess with filtering)
         all_traces = medfilt1([Torsion_LE_Position,Torsion_RE_Position,...
@@ -557,7 +557,7 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
             start = 1;
             ends = length(Time_Eye);
         end
-    elseif all(contains(stim_info,{'VelStep','MultiVector'}))
+    elseif any(contains(stim_info,{'VelStep','MultiVector'}))
         %These files have trigger toggles for the "ramp" of every cycle
         if Stim(1)==1 %If Stim started "high", the first ramp is missing so add it back in
             temp = diff(find(abs(diff(Stim))==1));
@@ -572,30 +572,15 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
         ind2 = sort(ind(1:length(stim_info)));
         start = all_starts([1;ind2(1:end-1)+1]);
         ends = all_ends(ind2);
-    elseif all(contains(stim_info,'Sine'))    
+    elseif any(contains(stim_info,'Sine'))
         %Every trigger toggle is a cycle
-        temp = find(abs(diff(Stim))==1);
-        all_starts = temp(1:end-1);
-        all_ends = temp(2:end);
-        temp2 = diff(temp);
-        start = all_starts;
-        ends = all_ends;
         thresh_tol = Fs*0.4; %tolerance for differences in cyc length (always at least 400ms of break)
-        for i = 2:length(all_starts)
-            if abs(temp2(i)-temp2(i-1))<thresh_tol
-                start(i) = start(i-1);
-                start(i-1) = NaN;
-                ends(i-1) = NaN;
-            elseif start(i-1)==all_starts(i-1)
-                start(i-1) = NaN;
-                ends(i-1) = NaN;
-            end
-        end
-        temp2(isnan(start)) = [];
-        start(isnan(start)) = [];
-        ends(isnan(ends)) = [];
-        start(~ismember(start,ends)) = start(~ismember(start,ends))-temp2(~ismember(start,ends));
-        ends = ends+temp2;
+        temp = find(abs(diff(Stim))==1);
+        temp2 = diff(diff(temp));
+        all_ends = temp([find(temp2>thresh_tol)+1;end]);
+        all_starts = temp([1;find(temp2>thresh_tol)+2]);        
+        start = all_starts-5;
+        ends = all_ends+5;
         start(start<0) = 1;
         ends(ends>length(Time_Stim)) = length(Time_Stim);
     else %Pulse Train and Autoscan--high period is stimulation and low is break.

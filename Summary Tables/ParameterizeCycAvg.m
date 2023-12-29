@@ -27,8 +27,8 @@ num_labs = [{'Frequency';'Amplitude';'PulseFreq';'PhaseDur';'CurrentAmp';'Cycles
     reshape([sub_num_labs;strcat(sub_num_labs,'_sd')],[],1)]';
 %Load in file name and use to figure out how many rows are needed in the table
 old_fname = CycAvg.name;
-fname = strrep(strrep(strrep(strrep(strrep(strrep(old_fname,'CurrentFitting','eeVOR'),...
-    'ElectricalOnly','eeVOR'),'CycAvg_',''),'.mat',''),'_CycleAvg',''),'NA','');
+fname = strrep(strrep(strrep(strrep(strrep(strrep(strrep(old_fname,'CurrentFitting','eeVOR'),...
+    'PreAct_ElectrodeAutoscan','eeVOR'),'ElectricalOnly','eeVOR'),'CycAvg_',''),'.mat',''),'_CycleAvg',''),'NA','');
 fname = fname(1:min([strfind(fname,'_'),length(fname)+1])-1);
 fparts = split(strrep(fname,'.mat',''),'-');
 fparts(cellfun(@isempty,fparts)) = [];
@@ -662,11 +662,27 @@ switch type
                 CycAvg.([traces{tr},'_cycavg_fit']) = mean(max_vel,'omitnan')*ones(1,nt);
             end
         end
-        % Misalignment
-        [results.Align_L(1),results.Align_L_sd(1)] = calc_misalignment(-stim_vect,[CycAvg.ll_cyc(:,I),CycAvg.lr_cyc(:,I),CycAvg.lz_cyc(:,I)]);
-        [results.Align_R(1),results.Align_R_sd(1)] = calc_misalignment(-stim_vect,[CycAvg.rl_cyc(:,I),CycAvg.rr_cyc(:,I),CycAvg.rz_cyc(:,I)]);
+        %Misalignment
+        n_lr = [0,0];
+        if isfield(CycAvg,'ll_cyc')
+            n_lr(1) = size(CycAvg.ll_cyc,1);
+            [results.Align_L(1),results.Align_L_sd(1)] = calc_misalignment(-stim_vect,[CycAvg.ll_cyc(:,I),CycAvg.lr_cyc(:,I),CycAvg.lz_cyc(:,I)]);
+        else
+            results{1,{'Align_L','Align_L_sd'}} = 0;
+        end
+        if isfield(CycAvg,'rl_cyc')
+            n_lr(2) = size(CycAvg.rl_cyc,1);
+            [results.Align_R(1),results.Align_R_sd(1)] = calc_misalignment(-stim_vect,[CycAvg.rl_cyc(:,I),CycAvg.rr_cyc(:,I),CycAvg.rz_cyc(:,I)]);
+        else
+            results{1,{'Align_R','Align_R_sd'}} = 0;
+        end
         %Disconjugacy
-        [results.Disc(1),results.Disc_sd(1)] = calc_misalignment([CycAvg.ll_cyc(:,I),CycAvg.lr_cyc(:,I),CycAvg.lz_cyc(:,I)],[CycAvg.rl_cyc(:,I),CycAvg.rr_cyc(:,I),CycAvg.rz_cyc(:,I)]);
+        if all(n_lr>0)
+            nlr = min(n_lr);
+            [results.Disc(1),results.Disc_sd(1)] = calc_misalignment([CycAvg.ll_cyc(1:nlr,I),CycAvg.lr_cyc(1:nlr,I),CycAvg.lz_cyc(1:nlr,I)],[CycAvg.rl_cyc(1:nlr,I),CycAvg.rr_cyc(1:nlr,I),CycAvg.rz_cyc(1:nlr,I)]);
+        else
+            results{1,{'Disc','Disc_sd'}} = 0;
+        end
         cycle_params = [];
 end
 %Chose the main value for each parameter as the one with the larger eye

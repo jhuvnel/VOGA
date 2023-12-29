@@ -18,6 +18,8 @@ if inval_pnum
 end
 %Add more filter types as needed
 switch type
+    case 'tvd'
+        trace_out = tvd1d(trace_in,param);
     case 'lowpass'
         trace_out = lowpass(trace_in,param,1/median(diff(t_out)));
     case 'spline'

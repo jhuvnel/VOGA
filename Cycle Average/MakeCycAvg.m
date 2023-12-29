@@ -6,11 +6,10 @@
 function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,in_opts,has_fig)
 %% General Setup
 %Loop parameters
-opts = {'Set Plot View','Filter Position','Filter Velocity',...
-    'Select Cycles','Advanced','Start Over','Save'};
-advanced_opts = {'Shift Trigger','Shorten Segment',...
-    'Load from Selected File','Manual QPR','Not Analyzeable',...
-    'Auto Rerun'};
+opts = {'Filter Position','Filter Velocity','Select Cycles','Advanced','Start Over','Save'};
+advanced_opts = {'Set Y-Limit','Set Position View','Set Velocity View',...
+    'Shift Trigger','Shorten Segment','Manual QPR',...
+    'Load from Selected File','Not Analyzeable','Auto Rerun'};
 sel = 'Start Over'; %Run the start procedure first
 % Input handling
 if nargin < 4
@@ -42,19 +41,17 @@ fname = Data.info.name;
 % Load default filters
 filt_params = VOGA__saveLastUsedParams;
 filt1 = filt_params.filt1;
-%Clear all filters
-filt1.pos{:,:} = NaN; 
-filt1.vel{:,:} = NaN;
 YLim = filt_params.YLim; 
 %For speed during autoscan analysis, do not make cycle average figures
-plot_info.screen_size = [];
+buffer_pix = [25,50,450,100]; %left, bottom, right, and top # of pixel buffer
+plot_info.screen_size = get(0,"ScreenSize");
+plot_info.fig_space = [buffer_pix(1:2),plot_info.screen_size(3:4)-buffer_pix(3:4)-buffer_pix(1:2)];
+plot_info.menu_space = [sum(plot_info.fig_space([1,3]))+buffer_pix(1),...
+    plot_info.fig_space(2),buffer_pix(3)-2*buffer_pix(1),plot_info.fig_space(4)];
 if has_fig
     % Initialize Figure
     close all;
-    fig = figure('Units','normalized','Position',[0 0 1 1],'Units','inches');
-    screen_size = fig.Position;
-    fig.Position = screen_size - [-0.5 -0.5 4.5 1.5];
-    plot_info.screen_size = screen_size;
+    figure('Color','w','Position',plot_info.fig_space)
     % Title
     fig_title = strrep(strrep(strrep(fname,'_',' '),'-',' '),'.mat','');
     fig_title(strfind(fig_title,'['):strfind(fig_title,']')) = strrep(fig_title(strfind(fig_title,'['):strfind(fig_title,']')),' ','-');
@@ -77,22 +74,17 @@ end
 % Type 2: Yes, No, No (Velocity Steps, Activation)
 % Type 3: No, Yes, Yes (Impulse from GNO and old ESC)
 % Type 4: Yes, Yes, Yes (Impulse from LDVOG and new ESC)
-if contains(fname,'ESC3')||(contains(fname,'Impulse')&&~contains(fname,{'GNO','ESC'}))
-    type = 4;
-elseif contains(fname,{'GNO','ESC'})
-    type = 3;    
-elseif contains(fname,{'Activation','Step'})
-    type = 2;
-else
-    type = 1;
-end
+type_ord = [3,4,2,1]; %Decision tree of which type it is
+type_logic = [contains(fname,{'GNO','ESC'})&&~contains(fname,'ESC3'),...
+    contains(fname,'Impulse'),contains(fname,{'Activation','Step'}),true];
+type = type_ord(find(type_logic,1,'first'));
 Data.info.type = type;
 %% The Main Loop
 while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
     if strcmp(sel,'Advanced') %Give the advanced menu and run that selection
-        [ind2,tf2] = nmlistdlg('PromptString','Select an action:',...
-            'SelectionMode','single','ListSize',[150 125],'ListString',advanced_opts,...
-            'Position',[screen_size(3)-4,screen_size(4)-3.75,3,3.75]);
+        [ind2,tf2] = nmlistdlg('PromptString','Select an action:','ListString',advanced_opts,...
+            'SelectionMode','single','ListSize',round(0.9*plot_info.menu_space(3:4)),...
+            'Units','pixels','Position',plot_info.menu_space);
         if tf2
             sel = advanced_opts{ind2};
         end
@@ -123,14 +115,12 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             filters = tab.Properties.VariableNames;
             prompt = reshape([strcat(filters,[newline,traces{1}]);...
                 repmat(traces(2:end),1,length(filters))],[],1)';
-            position = [screen_size(3)-(0.5+0.75*length(filters)),...
-                screen_size(4)-(1.0+0.5*length(traces)),...
-                0.75*length(filters),0.5+0.5*length(traces)];
+            position = plot_info.menu_space;
             definput = strrep(cellfun(@(x) num2str(x,10),...
                 table2cell(filt.(pos_vel)),'UniformOutput',false),'NaN','');
             temp_filt = cellfun(@str2double,inputdlgcol(prompt,sel,...
                 [1 10],definput,'on',length(prompt)/length(traces),...
-                position,{'Done','Refilter'}));
+                position,{'Done','Refilter'},'pixels'));
             %Keep running until the user selects "Done" (the Cancel Button renamed)
             while ~isempty(temp_filt)
                 filt.(pos_vel){:,:} = reshape(temp_filt,length(traces),[]);
@@ -142,41 +132,48 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                     table2cell(filt.(pos_vel)),'UniformOutput',false),'NaN','');
                 temp_filt = cellfun(@str2double,inputdlgcol(prompt,sel,...
                     [1 10],definput,'on',length(prompt)/length(traces),...
-                    position,{'Done','Refilter'}));
+                    position,{'Done','Refilter'},'pixels'));
             end
         case 'Select Cycles'
             [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info);
-        case 'Set Plot View'
+        case 'Set Y-Limit'
             %Get new parameter values
             prompt = {['Set Y-axis limits',newline,newline,'Position:',newline,newline,'Lower Limit:'],...
                 'Upper Limit:',['Velocity:',newline,newline,'Lower Limit:'],'Upper Limit:'};
             dlgtitle = 'Y-axis Limits';
             definput = cellfun(@(x) num2str(x,10),num2cell([plot_info.YLim.Pos,plot_info.YLim.Vel]),'UniformOutput',false);
-            out_nums = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 18],definput,'on',2,[screen_size(3)-4 screen_size(4)-4.25 3 2.25]));
+            position = [plot_info.menu_space(1),sum(plot_info.menu_space([2,4]))-300,plot_info.menu_space(3),300];
+            out_nums = cellfun(@str2double,inputdlgcol(prompt,dlgtitle,[1 18],definput,'on',2,position,[],'pixels'));
             if ~isempty(out_nums)
                 %Check to make sure they aren't reversed
                 plot_info.YLim.Pos = sort([out_nums(1),out_nums(2)]);
                 plot_info.YLim.Vel = sort([out_nums(3),out_nums(4)]);
             end
+            ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
+        case 'Set Position View'
             if type ~= 3
                 [ind3,tf] = nmlistdlg('PromptString','Select position traces:',...
                     'InitialValue',find(ismember(all_traces,plot_info.traces_pos)),...
-                    'ListSize',[100 150],'ListString',all_traces,...
-                    'Position',[screen_size(3)-4,screen_size(4)-5,2,4]);
+                    'ListString',all_traces,'ListSize',round(0.9*plot_info.menu_space(3:4)),...
+                    'Units','pixels','Position',plot_info.menu_space);
                 if tf
                     plot_info.traces_pos = all_traces(ind3);
                 end
             end
+            ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
+        case 'Set Velocity View'
             [ind2,tf] = nmlistdlg('PromptString','Select velocity traces:',...
                 'InitialValue',find(ismember(all_traces,plot_info.traces_vel)),...
-                'ListSize',[100 150],'ListString',all_traces,...
-                'Position',[screen_size(3)-4,screen_size(4)-5,2,4]);
+                'ListString',all_traces,'ListSize',round(0.9*plot_info.menu_space(3:4)),...
+                'Units','pixels','Position',plot_info.menu_space);
             if tf
                 plot_info.traces_vel = all_traces(ind2);
             end
             ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
         case 'Shift Trigger'
-            new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ','Shift',[1 15],{num2str(Data.info.TriggerShift2)},'on',1,[screen_size(3)-4 screen_size(4)-1.25 1.75 1.25]));
+            position = [plot_info.menu_space(1),sum(plot_info.menu_space([2,4]))-300,plot_info.menu_space(3),300];
+            new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ',...
+                'Shift',[1 15],{num2str(Data.info.TriggerShift2)},'on',1,position,[],'pixels'));
             if ~isempty(new_TrigShift)
                 Data.info.TriggerShift2 = round(new_TrigShift);
                 Data = MakeCycAvg__alignCycles(Data);
@@ -189,7 +186,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                 ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
             end                
         case 'Shorten Segment'
-            [Data,good_rng] = MakeCycAvg__shortenSegment(ha,Data,plot_info.screen_size);
+            [Data,good_rng] = MakeCycAvg__shortenSegment(ha,Data,plot_info);
             if strcmp(good_rng,'Keep') %Did shorten segment
                 save([strrep(Cyc_Path,'Cycle Averages','Segmented Files'),filesep,fname],'Data')
                 Data = MakeCycAvg__alignCycles(Data); % Cycle Align
@@ -199,7 +196,8 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
         case 'Load from Selected File'
             cyc_files = extractfield(dir([Cyc_Path,filesep,'*.mat']),'name');
             [indx,tf] = nmlistdlg('PromptString','Select an analyzed file to use:',...
-                    'SelectionMode','single','ListSize',[500 600],...
+                    'SelectionMode','single','ListSize',round(0.9*plot_info.menu_space(3:4)),...
+                    'Units','pixels','Position',plot_info.menu_space,...
                     'InitialValue',find(ismember(cyc_files,['CycAvg_',fname])),...
                     'ListString',cyc_files);
             if tf
@@ -264,9 +262,9 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
         sel = in_opts{1};
         in_opts{1} = [];
     else
-        [ind,tf2] = nmlistdlg('PromptString','Select an action:',...
-            'SelectionMode','single','ListSize',[150 180],'ListString',opts,...
-            'Position',[screen_size(3)-4,screen_size(4)-3.75,3,3.75]);
+        [ind,tf2] = nmlistdlg('PromptString','Select an action:','ListString',opts,...
+            'SelectionMode','single','ListSize',round(0.9*plot_info.menu_space(3:4)),...
+            'Units','pixels','Position',plot_info.menu_space);
         if tf2 == 0 %Treat this like an exit
             CycAvg = [];
             analyzed = 0;

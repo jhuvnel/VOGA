@@ -1,11 +1,12 @@
-function [Data,good_rng] = MakeCycAvg__shortenSegment(ha,Data,screen_size)
+function [Data,good_rng] = MakeCycAvg__shortenSegment(ha,Data,plot_info)
 te = Data.te;
 def = cellfun(@(x) num2str(x,10),num2cell([te(1),te(end)]),'UniformOutput',false);
 good_rng = 'Redo';
 axes(ha(1))
 while strcmp(good_rng,'Redo')
+    position = [plot_info.menu_space(1),sum(plot_info.menu_space([2,4]))-300,plot_info.menu_space(3),300];
     out_nums = cellfun(@str2double,inputdlgcol({'Start Time: ','End Time:'},...
-        'X-axis Limits',[1 18],def,'on',1,[screen_size(3)-4 screen_size(4)-2.25 3 2.25]));
+        'X-axis Limits',[1 18],def,'on',1,position,[],'pixels'));
     if isempty(out_nums)
         good_rng = 'Done';
     else

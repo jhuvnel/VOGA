@@ -12,8 +12,8 @@ if nargin < 3
     keep_tr = filt.keep_tr;
     %% Validate Parameters
     %Make sure all expected table columns are there
-    pos_labs = {'median','mean','sgolay','spline'};
-    vel_labs = {'median','sgolay','accel','irlssmooth','spline'};    
+    pos_labs = {'tvd','median','sgolay','spline'};
+    vel_labs = {'tvd','sgolay','irlssmooth','spline'};    
     missing_pos_labs = pos_labs(~ismember(pos_labs,filt.pos.Properties.VariableNames));
     missing_vel_labs = vel_labs(~ismember(vel_labs,filt.vel.Properties.VariableNames));
     for i = 1:length(missing_pos_labs)
@@ -108,24 +108,18 @@ if nargin < 3
         if isfield(Data_vel,var_n)&&any(~isnan(Data_vel.(var_n)))
             if contains(Data.info.name,'Impulse')
                 rel_t = t_cond;                
-                long_i = reshape(1:(size(keep_inds,1)*size(keep_inds,2)),size(keep_inds,1),[]);
-                rm_ind = long_i(filt.t_interp,:);
                 Data_vel.([var_n,'_cond']) = Data_vel.(var_n)(reshape(keep_inds,[],1)); 
                 rel_trace = Data_vel.([var_n,'_cond']);
             else
                 rel_t = ts;
-                rm_ind = keep_inds(filt.t_interp,:);
                 rel_trace = Data_vel.(var_n);
             end
             temp = interp1(rel_t(~isnan(rel_trace)),rel_trace(~isnan(rel_trace)),rel_t);
             temp(isnan(temp)) = 0;
-            temp1 = filterTrace('median',temp,filt.vel.median(i));
-            temp2 = filterTrace('sgolay',temp1,filt.vel.sgolay(i));
-            temp3 = filterTrace('accel',temp2,filt.vel.accel(i),rel_t);
-            temp4 = filterTrace('manual_interp',temp3,rm_ind,rel_t);
-            temp5 = filterTrace('irlssmooth',temp4,filt.vel.irlssmooth(i));
-            temp6 = filterTrace('spline',temp5,filt.vel.spline(i),rel_t,rel_t);
-            Data_vel_filt.(var_n) = temp6;
+            for f = 1:length(vel_labs)
+                temp = filterTrace(vel_labs{f},temp,filt.vel.(vel_labs{f})(i),rel_t,rel_t);
+            end
+            Data_vel_filt.(var_n) = temp;
             if contains(Data.info.name,'Impulse')
                 Data_cyc.(var_n) = reshape(Data_vel_filt.(var_n),size(keep_inds,1),[]);
                 Data_cyc.([var_n,'_smooth']) = reshape(temp2,size(keep_inds,1),[]);
