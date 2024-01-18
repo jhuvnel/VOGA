@@ -284,8 +284,22 @@ switch type
         [results.Align_R(2),results.Align_R_sd(2)] = calc_misalignment(-results.StimAxis{2},[CycAvg.rl_cyc(:,I2),CycAvg.rr_cyc(:,I2),CycAvg.rz_cyc(:,I2)]);
         %Disconjugacy
         [results.Disc(1),results.Disc_sd(1)] = calc_misalignment([CycAvg.ll_cyc(:,I1),CycAvg.lr_cyc(:,I1),CycAvg.lz_cyc(:,I1)],[CycAvg.rl_cyc(:,I1),CycAvg.rr_cyc(:,I1),CycAvg.rz_cyc(:,I1)]);
-        [results.Disc(2),results.Disc_sd(2)] = calc_misalignment([CycAvg.ll_cyc(:,I2),CycAvg.lr_cyc(:,I2),CycAvg.lz_cyc(:,I2)],[CycAvg.rl_cyc(:,I2),CycAvg.rr_cyc(:,I2),CycAvg.rz_cyc(:,I2)]);
-        cycle_params = [];
+        [results.Disc(2),results.Disc_sd(2)] = calc_misalignment([CycAvg.ll_cyc(:,I2),CycAvg.lr_cyc(:,I2),CycAvg.lz_cyc(:,I2)],[CycAvg.rl_cyc(:,I2),CycAvg.rr_cyc(:,I2),CycAvg.rz_cyc(:,I2)]);        
+        %Put the median analysis in cycle params file
+        cycle_params.t = CycAvg.t;
+        cycle_params.stim = CycAvg.stim;
+        Data_med = angpos2angvel(CycAvg.Data);
+        cyc_inds = CycAvg.Data_allcyc.keep_inds;
+        for tr = 1:length(traces)
+            if isfield(CycAvg,[traces{tr},'_cyc'])
+                cycle_params.([traces{tr},'_cycavg']) = CycAvg.([traces{tr},'_cycavg']);
+                cycle_params.([traces{tr},'_cycstd']) = CycAvg.([traces{tr},'_cycstd']);
+                cycle_params.([traces{tr},'_cyc']) = CycAvg.([traces{tr},'_cyc']);
+                long_name = [upper(traces{tr}(1)),'E_Vel_',upper(traces{tr}(2))];   
+                long_name = strrep(strrep(long_name,'_L','_LARP'),'_R','_RALP');
+                cycle_params.([traces{tr},'_cycmed']) = tvd1d(median(Data_med.(long_name)(cyc_inds),2,'omitnan'),2);
+            end
+        end
     case 2
         %% Exponential
         results.Cycles(:) = 1;

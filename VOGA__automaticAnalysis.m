@@ -13,8 +13,12 @@ progress_tab = assessProgress(Path);
 for j = 1:size(progress_tab,1)    
     fname = progress_tab{j,1}{:};
     load([Seg_Path,filesep,fname],'Data');
-    [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'},1);   
-    MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed,1);
+    try
+        [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'},1);   
+        MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed,1);
+    catch
+        disp(fname)
+    end
 end
 %% Make Table and Summary Figure
 MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);

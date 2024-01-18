@@ -36,7 +36,7 @@ end
 %Find the implanted canals for this subject
 imp_canals = strcat(Ears{ismember(unique(all_results.Subject),Subs)},{'A','P','H'});
 all_results.ImpCanal = contains(all_results.AxisName,imp_canals);
-all_results.DateStr = cellstr(datestr(all_results.Date,'yyyymmdd'));
+all_results.DateStr = cellstr(all_results.Date,'yyyyMMdd');
 %Set up the plot tables
 exp_types = {'Sine','HIT','Exp','PulseTrain'};
 plot_types = {'CycAvg','MaxVel','Param'};
