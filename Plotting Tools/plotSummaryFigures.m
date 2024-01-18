@@ -153,7 +153,7 @@ if tf
                         'VerticalAlignment','middle','FontWeight','bold','FontSize',20,...
                         'Fitboxtotext','off','BackgroundColor',[1,1,1]);
                 end 
-                fname1 = ['Summary Figures',filesep,datestr(now,'yyyymmdd'),'_SummaryRotaryChairGainPhase_AllSub.fig'];
+                fname1 = ['Summary Figures',filesep,char(datetime("now",'yyyyMMdd')),'_SummaryRotaryChairGainPhase_AllSub.fig'];
                 savefig(fig1,fname1)
                 saveas(fig1,strrep(fname1,'.fig','.png'))
                 %% Over Freq Grouped Sub (Change groupings of subjects as needed)
@@ -251,7 +251,7 @@ if tf
                     leg = legend(ha(1,2),h1,{'Pre-op','Post-op','MVI OFF','MVI ON','Norm Mean','Norm±SD'},'NumColumns',2,'Location','northeast');
                     leg.ItemTokenSize(1) = 15;
                     title(leg,'Condition')                    
-                    fname2 = ['Summary Figures',filesep,datestr(now,'yyyymmdd'),'_SummaryRotaryChairGainPhase_EachSub_',unique_fig_text,'.fig'];
+                    fname2 = ['Summary Figures',filesep,char(datetime("now",'yyyyMMdd')),'_SummaryRotaryChairGainPhase_EachSub_',unique_fig_text,'.fig'];
                     savefig(fig2,fname2)
                     saveas(fig2,strrep(fname2,'fig','png'))
                 end
@@ -354,7 +354,7 @@ if tf
                         'VerticalAlignment','middle','FontWeight','bold','FontSize',20,...
                         'Fitboxtotext','off','BackgroundColor',[1,1,1]);
                 end 
-                fname1 = [candidate,filesep,'Visit 0',filesep,candidate,'_',datestr(now,'yyyymmdd'),'_SummaryRotaryChairGainPhase_AllMVISub.fig'];
+                fname1 = [candidate,filesep,'Visit 0',filesep,candidate,'_',char(datetime("now",'yyyyMMdd')),'_SummaryRotaryChairGainPhase_AllMVISub.fig'];
                 savefig(fig1,fname1)
                 saveas(fig1,strrep(fname1,'.fig','.png'))
             case 'vHIT/GNO'

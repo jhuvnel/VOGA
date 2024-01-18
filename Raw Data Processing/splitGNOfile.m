@@ -22,7 +22,7 @@ function splitGNOfile(Path,fname,deidentify)
         for i = 1:length(header)
             info = S{header(i)};
             test_info = reshape(strsplit(info(2:end-1),{'>','<'}),3,[]);
-            date_time = datestr(datetime(test_info{2,4},'InputFormat','MM/dd/uuuu hh:mm:ss aa'),'yyyy_mm_dd_hh_MM_ss');
+            date_time = char(datetime(test_info{2,4},'InputFormat','MM/dd/uuuu hh:mm:ss aa'),'yyyy_MM_dd_HH_mm_SS');
             new_fname = [Path,filesep,sub_name,'_',date_time,'_',strrep(test_info{2,3},'HI - ',''),'.txt'];
             filePh = fopen(new_fname,'w');
             fprintf(filePh,'%s\n',S{header(i):ends(i),:});
@@ -54,7 +54,7 @@ function splitGNOfile(Path,fname,deidentify)
         ends = [header(2:end)-1;length(S)];
         for i = 1:length(header)
             info = S(header(i):ends(i));
-            date_time = datestr(datetime(strrep(info{1},'Test Date,',''),'InputFormat','MM/dd/uuuu hh:mm:ss aa'),'yyyy_mm_dd_hh_MM_ss');
+            date_time = char(datetime(strrep(info{1},'Test Date,',''),'InputFormat','MM/dd/uuuu hh:mm:ss aa'),'yyyy_MM_dd_HH_mm_SS');
             test_type = strsplit(info{2},' ');
             new_fname = [Path,filesep,sub_name,'_',date_time,'_',test_type{1,4},'.csv'];
             filePh = fopen(new_fname,'w');

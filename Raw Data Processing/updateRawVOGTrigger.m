@@ -230,7 +230,7 @@ while ~strcmp(opts{ind},'Save')
     end
 end
 %% Keep changes and Save to file
-new_fname = [In_Path(1:end-4),'_UpdatedTrigger_',datestr(now,'yyyymmdd_HHMMSS'),'_FixedShape',In_Path(end-3:end)];
+new_fname = [In_Path(1:end-4),'_UpdatedTrigger_',char(datetime("now",'yyyyMMdd_HHmmSS')),'_FixedShape',In_Path(end-3:end)];
 if strcmp(In_Path(end-2:end),'dat')%NKI
     data.EventCode = template;
     writetable(data,new_fname,'Delimiter','tab');

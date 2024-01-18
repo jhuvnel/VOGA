@@ -35,7 +35,7 @@ if length(info.exp_date)==14 %Just missing '-' in between date and time
 elseif length(info.exp_date)==8 %Just date, add time
     underscore = strfind(rawfile,'_');
     if contains(info.goggle_ver,{'NKI','NL'})
-        VOG_time = datestr(datetime(rawfile(underscore(4)+1:underscore(7)-1),'InputFormat','hh_mm_a'),'HHMMSS');
+        VOG_time = char(datetime(rawfile(underscore(4)+1:underscore(7)-1),'InputFormat','hh_mm_a'),'HHmmSS');
     elseif contains(info.goggle_ver,'LDVOG')
         if ~isempty(underscore)
             rawfile = rawfile(1:underscore(1));

@@ -73,9 +73,8 @@ for f = 1:length(sel_files)
     vogdata(:,VLeftIndex_Deg) = V_LE_deg_new;
     vogdata(:,HRightIndex_Deg) = H_RE_deg_new;
     vogdata(:,VRightIndex_Deg) = V_RE_deg_new;
-    fname_new = [Raw_Path,filesep,sel_files{f}(1:end-4),'_UpdatedVOGCalib_',num2str(DistanceToWall),'in__',datestr(now,'yyyy-mm-dd'),'.txt'];
-    dlmwrite(fname_new, vogdata, 'delimiter',' ','precision','%.4f');
+    fname_new = [Raw_Path,filesep,sel_files{f}(1:end-4),'_UpdatedVOGCalib_',num2str(DistanceToWall),'in__',char(datetime("now",'yyyy-MM-dd')),'.txt'];
+    dlmwrite(fname_new, vogdata, 'delimiter',' ','precision','%.4f'); %Keep dlmwrite over writematrix because of precision
 end
 end
-
 

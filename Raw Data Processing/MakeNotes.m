@@ -182,7 +182,7 @@ elseif contains(Raw_Path,'ESC') %ESC
         else 
             gog = 'ESC3';  %MVI pair
         end        
-        date = datestr(VOG_time,'yyyymmdd-HHMMss');
+        date = char(VOG_time,'yyyyMMdd-HHmmss');
         if contains(exp_info,{'Lateral','LHRH'})
             canal = 'LHRH';
         elseif contains(exp_info,'LARP')
@@ -247,7 +247,7 @@ else %LDVOG and NKI
                 VOG_times = [datetime(strrep([parts{2},' ',parts{3}],'.txt',''),'InputFormat','yyyyMMMdd HHmmss'),datetime(VOG_files_date{i})];
             end
             VOG_times.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
-            date = datestr(VOG_times(1),'yyyymmdd-HHMMss');
+            date = char(VOG_times(1),'yyyyMMdd-HHmmss');
             gog = 'LDVOG2';
             ang = '-170';
             %Load items for plotting
@@ -274,7 +274,7 @@ else %LDVOG and NKI
             VOG_time = datetime(VOG_files_date{i}); %use file creation/saving time since NKI doesn't output time stamps
             VOG_time.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
             VOG_times = [VOG_time-seconds(VOG_data{end,1}) VOG_time];
-            date = datestr(VOG_times(1),'yyyymmdd-HHMMss');
+            date = char(VOG_times(1),'yyyyMMdd-HHmmss');
             if VOG_times(1) > datetime(2022,07,28)
                 gog = 'NL2'; %Changed from NKI1 to NL2 on 2022/07/28
             else
