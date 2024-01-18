@@ -10,7 +10,7 @@
 %Cycle Average Figures to already have been generated to fully function. It
 %will create some of the files depending on availability of data.
 
-function VOGA__CRF(Path)
+function VOGA__CRF(Path,examiner)
 %% Initialize
 if nargin < 1
     Path = cd;
@@ -18,6 +18,9 @@ end
 if ~VOGA__makeFolders(Path,0,0)
     disp('Expected file structure missing.')
     return;
+end
+if nargin < 2 | isempty(examiner) | ~ischar(examiner)
+    examiner = inputdlg('Name of Experimenter(s): ','Name of Experimenter(s): ',1,{'EOV,RS'});
 end
 MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);
 rel_tab = extractfield(dir([Path,filesep,'*Results.mat']),'name');
@@ -35,7 +38,7 @@ end
 StimAxStr = strcat('[',strrep(strrep(cellfun(@(x) num2str(x),...
     all_results.StimAxis,'UniformOutput',false),'  ',' '),' ',','),']');
 StimAxStr(~cellfun(@isempty,all_results.AxisName)) = all_results.AxisName(~cellfun(@isempty,all_results.AxisName));
-date_str = cellstr(datestr(all_results.Date,'yyyy-mm-dd'));
+date_str = cellstr(all_results.Date,'yyyy-MM-dd');
 sub = strjoin(unique(all_results.Subject),', ');
 date = strjoin(unique(date_str),', ');
 vis = strjoin(unique(all_results.Visit),', ');
@@ -43,8 +46,6 @@ test_name = strjoin(unique(strcat(all_results.Experiment,'-',...
     all_results.Type,'-',all_results.Condition,'-',StimAxStr),'stable'),newline);
 gog = strjoin(unique(all_results.Goggle),', ');
 raw_files = strjoin(strrep(extractfield(dir([Path,filesep,'Raw Files',filesep,'*-Notes.txt']),'name'),'-Notes',''),newline);
-%examiner = inputdlg('Name of Experimenter(s): ','Name of Experimenter(s): ',1,{'AIA,EOV,RS'});
-examiner = 'AIA';
 txt = ['Subject ID: ',sub,newline,...
     'Date: ',date,newline,...
     'Visit ID: ',vis,newline,...
