@@ -126,7 +126,7 @@ for i = 1:fnum
         XLim = CycAvg.t([1,end]);
         set(gca,'XLim',XLim)
         text(0.99*diff(XLim)+XLim(1),YLim(1),disp_text,...
-            'HorizontalAlignment','right','VerticalAlignment','bottom','FontSize',7)
+            'HorizontalAlignment','right','VerticalAlignment','bottom','FontSize',10)
     end
     hold off
     title(sub_t{i})
