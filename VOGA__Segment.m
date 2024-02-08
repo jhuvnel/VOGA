@@ -10,8 +10,7 @@ if ~VOGA__makeFolders(Path)
 end
 Raw_Path = [Path,filesep,'Raw Files'];
 Seg_Path = [Path,filesep,'Segmented Files'];
-VOG_fname_pat = {'SESSION','Lateral.txt','LARP.txt','RALP.txt',...
-    '.dat','.mat','ImuData'};
+VOG_fname_pat = {'SESSION','Lateral.txt','LARP.txt','RALP.txt','.dat','.mat','ImuData'};
 rel_dir = dir(Raw_Path);
 rel_dir(extractfield(rel_dir,'isdir')) = [];
 if isempty(rel_dir)

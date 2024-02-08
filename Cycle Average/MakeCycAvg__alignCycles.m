@@ -147,7 +147,7 @@ end
 if contains(info.dataType,'Impulse')
     stims = stim(keep_inds);
 elseif contains(info.dataType,'Sine')&&~contains(info.dataType,'eeVOR')
-    stims = mean(stim(keep_inds),2);
+    stims = median(stim(keep_inds),2);
 elseif contains(info.dataType,'eeVOR')&&contains(info.dataType,'Step')
     stim = stims;
 end

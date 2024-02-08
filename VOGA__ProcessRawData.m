@@ -83,4 +83,5 @@ if ~isempty(file_Path)
 end
 %% Create Notes Files
 flag = MakeNotes(Raw_Path);
+close all;
 end

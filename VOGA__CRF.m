@@ -21,11 +21,12 @@ if ~VOGA__makeFolders(Path,0,0)
 end
 if nargin < 2 | isempty(examiner) | ~ischar(examiner)
     examiner = inputdlg('Name of Experimenter(s): ','Name of Experimenter(s): ',1,{'EOV,RS'});
+    examiner = examiner{:};
 end
-MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);
-rel_tab = extractfield(dir([Path,filesep,'*Results.mat']),'name');
-VOGA__makePlots('Parameterized',Path)
 CRF_Path = [Path,filesep,'CRFs'];
+MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);
+VOGA__makePlots('Parameterized',Path)
+rel_tab = extractfield(dir([Path,filesep,'*Results.mat']),'name');
 load([Path,filesep,rel_tab{end}],'all_results')
 all_results(cellfun(@(x) all(x==0),all_results.StimAxis),:) = []; %Remove any "rest" experiments
 all_results.RawFile(:) = {''};

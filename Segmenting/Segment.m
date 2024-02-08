@@ -52,21 +52,30 @@ end
 %% Load Data Types In
 if contains(info.goggle_ver,{'NKI','NL'})
     info.TriggerShift = 0; %measure and change
-    %Suppress the warning that one of the columns is not a proper
-    %column name for a MATLAB table so it got renamed
+    %Suppress the warning that one of the columns is not a proper column name for a MATLAB table so it got renamed
     warning('off')
-    data = readtable(In_Path,'ReadVariableNames',true);
+    data = readtable(In_Path,'ReadVariableNames',true); %.dat file with uncalibrated eye data
+    data2 = table2array(readtable(strrep(In_Path,'.dat','.csv'))); %.csv with calibrated eye data
     warning('on')
-    data.Properties.VariableNames{1} = 'EyeTime';
-    Time_Eye = data.EyeTime;
-    Time_Stim = data.EyeTime; %Update later as needed
+    len = min([size(data,1),size(data2,1)]);
+    data = data(1:len,:);
+    data2 = data2(1:len,:);
+    % Data Index
+    HLeftIndex = 2;
+    VLeftIndex = 4;
+    TLeftIndex = 10;
+    HRightIndex = 3;
+    VRightIndex = 12;
+    TRightIndex = 13;
+    Time_Eye = data2(:,1);
+    Time_Stim = data2(:,1);
     Stim = zeros(length(Time_Eye),1);
     Stim(data.EventCode ~= 0) = 1;
     % Load Gyroscope and accelerometer readings
     XAxisVelHead = data.GyroY - median(data.GyroY);
-    YAxisVelHead  = -(data.GyroX - median(data.GyroX));
-    ZAxisVelHead  = -(data.GyroZ - median(data.GyroZ));
-    XAxisAccelHead  = data.AccelY - median(data.AccelY);
+    YAxisVelHead = -(data.GyroX - median(data.GyroX));
+    ZAxisVelHead = -(data.GyroZ - median(data.GyroZ));
+    XAxisAccelHead = data.AccelY - median(data.AccelY);
     YAxisAccelHead = -(data.AccelX - median(data.AccelX));
     ZAxisAccelHead = -(data.AccelZ - median(data.AccelZ));
     Fs = 1/median(abs(diff(Time_Eye)));
@@ -74,12 +83,12 @@ if contains(info.goggle_ver,{'NKI','NL'})
     % adjust for the reverse of the X/Y/Z axes direction. This is validated by
     % experiments done on the aHIT in light on normal subjects:
     % https://docs.google.com/document/d/1euk4V0fbnbhg_paUZOaO32s_FEhStmtCbrHJV6WQLu8/edit
-    Horizontal_LE_Position = -data.LeftHoriz;
-    Vertical_LE_Position = -data.LeftVert;
-    Torsion_LE_Position = data.LeftTorsion;
-    Horizontal_RE_Position = -data.RightHoriz;
-    Vertical_RE_Position = -data.RightVert;
-    Torsion_RE_Position = data.RightTorsion;
+    Horizontal_LE_Position = -data2(:,HLeftIndex);
+    Vertical_LE_Position = -data2(:,VLeftIndex);
+    Torsion_LE_Position = data2(:,TLeftIndex);
+    Horizontal_RE_Position = -data2(:,HRightIndex);
+    Vertical_RE_Position = -data2(:,VRightIndex);
+    Torsion_RE_Position = data2(:,TRightIndex);
     %Remove repeated values in torsion
     [gr,gc] = groupcounts(diff(find(diff([Torsion_LE_Position;Torsion_RE_Position])~=0&...
         ~isnan([Torsion_LE_Position(2:end);Torsion_RE_Position]))));
@@ -90,9 +99,9 @@ if contains(info.goggle_ver,{'NKI','NL'})
         M = [movmean(Torsion_RE_Position,reps);zeros(floor(reps/2)-1,1)];
         Torsion_RE_Position = [M(round(reps/2):end);zeros(round(reps/2)-1,1)];        
     end    
-    GyroX = reshape(XAxisVelHead,[],1);
-    GyroY = reshape(YAxisVelHead,[],1);
-    GyroZ = reshape(ZAxisVelHead,[],1);
+    GyroX = medfilt1(reshape(XAxisVelHead,[],1),3);
+    GyroY = medfilt1(reshape(YAxisVelHead,[],1),3);
+    GyroZ = medfilt1(reshape(ZAxisVelHead,[],1),3);
     GyroLARP = (GyroX - GyroY)/sqrt(2);
     GyroRALP = (GyroX + GyroY)/sqrt(2);
 elseif contains(info.goggle_ver,'LDVOG')
@@ -106,20 +115,20 @@ elseif contains(info.goggle_ver,'LDVOG')
     % Generate the time vector for the MPU9250 Data
     Head_Sensor_Latency = 0.047; % From Mehdi Rahman bench tests, the data acquisition of the MPU9250 leads the LD VOG Goggles by 47ms
     Time_Stim = Time_Eye - Head_Sensor_Latency;
-    %Extract Eye position vectors
+    % Data Index
     HLeftIndex = 40;
     VLeftIndex = 41;
     TLeftIndex = 42;
     HRightIndex = 43;
     VRightIndex = 44;
     TRightIndex = 45;
-    % Load raw eye position data in Fick coordinates [degrees]
-    Horizontal_LE_Position = data(:,HLeftIndex);
-    Vertical_LE_Position = data(:,VLeftIndex);
-    Torsion_LE_Position = data(:,TLeftIndex);
-    Horizontal_RE_Position = data(:,HRightIndex);
-    Vertical_RE_Position = data(:,VRightIndex);
-    Torsion_RE_Position = data(:,TRightIndex);
+    XvelHeadIndex = 30;
+    YvelHeadIndex = 29;
+    ZvelHeadIndex = 28;
+    XaccelHeadIndex = 27;
+    YaccelHeadIndex = 26;
+    ZaccelHeadIndex = 25;
+    StimIndex = 35;
     % Around 2018-04, PJB noticed that the LD VOG system appeared to record the
     % PCU trigger LATE relative to the collected eye movement data. PJB, MR,
     % and NV performed some experiments outlined here:
@@ -149,30 +158,27 @@ elseif contains(info.goggle_ver,'LDVOG')
             YvelHeadOffset = 0;
             ZvelHeadOffset = 0;
     end
+    % Load raw eye position data in Fick coordinates [degrees]
+    Horizontal_LE_Position = data(:,HLeftIndex);
+    Vertical_LE_Position = data(:,VLeftIndex);
+    Torsion_LE_Position = data(:,TLeftIndex);
+    Horizontal_RE_Position = data(:,HRightIndex);
+    Vertical_RE_Position = data(:,VRightIndex);
+    Torsion_RE_Position = data(:,TRightIndex);
     % Index for the VOG GPIO line
-    StimIndex = 35;
     Stim = data(1:length(Time_Eye),StimIndex);
     Stim = [Stim(TriggerDelay + 1:end) ; Stim(end)*ones(TriggerDelay,1)];
-    %info.TriggerShift = ['UpdatedLDVOGTrigger_Shifted' num2str(TriggerDelay) 'SamplesEarlier'];
     info.TriggerShift = TriggerDelay;
-    gyroscale = 1;
-    accelscale = 1;
-    XvelHeadIndex = 30;
-    YvelHeadIndex = 29;
-    ZvelHeadIndex = 28;
-    XaccelHeadIndex = 27;
-    YaccelHeadIndex = 26;
-    ZaccelHeadIndex = 25;
     % We need to correct each gyroscope signal by subtracting the
     % correct device-specifc MPU9250 gyroscope offset. Each offset for
     % each VOG goggle ID was measured by Mehdi Rahman and posted on the
     % Google Doc located here: https://docs.google.com/a/labyrinthdevices.com/document/d/1UlZpovNkwer608aswJWdkLhF0gF-frajAdu1qgMJt9Y/edit?usp=sharing
-    XvelHeadRaw = data(1:length(Time_Eye),XvelHeadIndex)*gyroscale + XvelHeadOffset;
-    YvelHeadRaw = data(1:length(Time_Eye),YvelHeadIndex)*gyroscale + YvelHeadOffset;
-    ZvelHeadRaw = data(1:length(Time_Eye),ZvelHeadIndex)*gyroscale + ZvelHeadOffset;
-    XaccelHeadRaw = data(1:length(Time_Eye),XaccelHeadIndex)*accelscale;
-    YaccelHeadRaw = data(1:length(Time_Eye),YaccelHeadIndex)*accelscale;
-    ZaccelHeadRaw = data(1:length(Time_Eye),ZaccelHeadIndex)*accelscale;
+    XvelHeadRaw = data(1:length(Time_Eye),XvelHeadIndex) + XvelHeadOffset;
+    YvelHeadRaw = data(1:length(Time_Eye),YvelHeadIndex) + YvelHeadOffset;
+    ZvelHeadRaw = data(1:length(Time_Eye),ZvelHeadIndex) + ZvelHeadOffset;
+    XaccelHeadRaw = data(1:length(Time_Eye),XaccelHeadIndex);
+    YaccelHeadRaw = data(1:length(Time_Eye),YaccelHeadIndex);
+    ZaccelHeadRaw = data(1:length(Time_Eye),ZaccelHeadIndex);
     % Based on the orientation of the MPU9250 module relative to the
     % patients head, a passive (coordinate system) -150deg rotation is
     % necesary to align the coordinate system of MPU to the coordinate
@@ -184,11 +190,7 @@ elseif contains(info.goggle_ver,'LDVOG')
     % (-150deg + -20deg) to orient the +Z axis of the MPU9250 seated in
     % the VOG goggles with the +LHRH axis of SCC coordinate system.
     phi = info.goggle_reorient_ang;
-    Rotation_Head = [
-        cosd(phi) 0   sind(phi);
-        0   1   0;
-        -sind(phi)    0   cosd(phi)
-        ];
+    Rotation_Head = [cosd(phi),0,sind(phi);0,1,0;-sind(phi),0,cosd(phi)];
     % NOTE: We are transposing the rotation matrix in order to apply a
     % PASSIVE (i.e., a coordinate system) transformation
     A = Rotation_Head' * [XvelHeadRaw' ; YvelHeadRaw' ; ZvelHeadRaw'];

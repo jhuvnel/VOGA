@@ -275,7 +275,9 @@ else %LDVOG and NKI
             VOG_time.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
             VOG_times = [VOG_time-seconds(VOG_data{end,1}) VOG_time];
             date = char(VOG_times(1),'yyyyMMdd-HHmmss');
-            if VOG_times(1) > datetime(2022,07,28)
+            if VOG_times(1) > datetime(2024,01,31)
+                gog = 'NL3'; %Changed from NL2 to NL3 before testing on 2024/01/31 
+            elseif VOG_times(1) > datetime(2022,07,28)
                 gog = 'NL2'; %Changed from NKI1 to NL2 on 2022/07/28
             else
                 gog = 'NL1';

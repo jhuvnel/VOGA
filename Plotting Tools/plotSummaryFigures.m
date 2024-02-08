@@ -6,7 +6,7 @@ opts = {'Rotary Chair/Sine','vHIT/GNO',...
     'ListSize',[200 125],...
     'ListString',opts);
 if tf
-    sub_mark = 'xdo^ps+hv<>|_';
+    sub_mark = 'xdo^ps+hv<>|_.';
     sub_info = params.sub_info;
     all_subs = sub_info.Subject;
     sub_ears = sub_info.Ear;
@@ -336,10 +336,10 @@ if tf
                 ha(1).Position = [0.09,0.56,0.98-0.09,0.425];
                 ha(2).Position = [0.09,0.12,0.98-0.09,0.425];
                 set(gca,'xscale','log','xminortick','off','XTick',freqs,'box','on','Layer','top')
-                axis([0.041 1.2 -25 135])
+                axis([0.041 1.2 -25 185])
                 xlabel('Frequency (Hz)')
                 ylabel('Phase Lead (deg)')
-                leg2 = legend(h2,[split(cellstr(num2str(1:length(all_subs))));{[candidate,'(L)'];[candidate,'(R)']}],'Location','north','NumColumns',length(all_subs)+2);
+                leg2 = legend(h2,[split(cellstr(num2str(1:length(all_subs))));{[candidate,'(L)'];[candidate,'(R)']}],'Location','north','NumColumns',ceil(length(all_subs)+2/2));
                 leg2.ItemTokenSize(1) = 8;
                 title(leg2,'Subjects')
                 %Figure letter labels
@@ -354,7 +354,7 @@ if tf
                         'VerticalAlignment','middle','FontWeight','bold','FontSize',20,...
                         'Fitboxtotext','off','BackgroundColor',[1,1,1]);
                 end 
-                fname1 = [candidate,filesep,'Visit 0',filesep,candidate,'_',char(datetime("now",'yyyyMMdd')),'_SummaryRotaryChairGainPhase_AllMVISub.fig'];
+                fname1 = [candidate,filesep,'Visit 0',filesep,candidate,'_',char(datetime('now','Format','yyyyMMdd')),'_SummaryRotaryChairGainPhase_AllMVISub.fig'];
                 savefig(fig1,fname1)
                 saveas(fig1,strrep(fname1,'.fig','.png'))
             case 'vHIT/GNO'
