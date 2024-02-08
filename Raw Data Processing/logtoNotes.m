@@ -1,6 +1,6 @@
 %Takes in the Raw Path to LDHP/LDPC Fitting Software log files and makes the appropriate Notes files
 %This ignores VOG files that already have notes files.
-function logtoNotes(Raw_Path)
+function logtoNotes(Raw_Path,ImplantSide)
 %Update this line to include more extensions as needed
 file_names = extractfield([dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])],'name');
 file_dates = extractfield([dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])],'date');
@@ -37,6 +37,31 @@ ylabel('Stim Signals')
 ax.Position = [0.05 0.1 0.6 0.83];
 plot_notes = annotation('textbox',[0.7 0.1 0.25 0.83],'String','',...
     'FontSize',11,'HorizontalAlignment','left','EdgeColor','none');
+%% Set some parameters that will likely stay the same but can be edited
+path_parts = strsplit(strrep(strrep(Raw_Path,'_',''),' ',''),filesep);
+sub = '';
+ear = '';
+vis = '';
+if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected formatting
+    sub = path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')};
+    MVI_num = str2double(sub((-3:1:-1)+strfind(sub,'R')));
+    if ismember(MVI_num,ImplantSide{1})
+        ear = 'L';
+    elseif ismember(MVI_num,ImplantSide{2})
+        ear = 'R';
+    else
+        disp('Remember to update the implantation side for this MVI Subject in MakeNotes.m')
+        ear = inputdlg('Implanted Ear: (L/R) ','Implanted Ear: (L/R) ');
+        ear = ear{:};
+        while ~strcmp(ear,'L')&~strcmp(ear,'R')
+            ear = inputdlg('Implanted Ear: (L/R) ','Implanted Ear: (L/R) ');
+            ear = ear{:};
+        end        
+    end
+end
+if any(contains(path_parts,'Visit'))
+    vis = path_parts{contains(path_parts,'Visit')};
+end
 for f = 1:length(logfiles)
     %% Load and parse log file
     logFile = logfiles{f};
@@ -108,25 +133,6 @@ for f = 1:length(logfiles)
         temp = zeros(length(logfile_times),1);
         temp(day_inds(i)+1:end) = 1;
         logfile_times = logfile_times + temp;
-    end
-    %Set some parameters that will likely stay the same but can be edited
-    path_parts = strsplit(strrep(strrep(Raw_Path,'_',''),' ',''),filesep);
-    if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected formatting
-        sub = path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')};
-        MVI_num = str2double(sub((-3:1:-1)+strfind(sub,'R')));
-        if ismember(MVI_num,[1,2,3,4,7,9,11,13,14]) %EXPAND as needed
-            ear = 'L';
-        else
-            ear = 'R';
-        end
-    else
-        sub = '';
-        ear = '';
-    end
-    if any(contains(path_parts,'Visit'))
-        vis = path_parts{contains(path_parts,'Visit')};
-    else
-        vis = '';
     end
     %% Check each VOG file
     for i = 1:length(VOG_files)

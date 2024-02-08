@@ -13,6 +13,7 @@
 % eeVOR-Activation-Light/Dark#
 
 function flag = MakeNotes(Raw_Path)
+ImplantSide = {[1,2,3,4,7,9,11,13,14,15],[5,6,8,10,12]}; %Update MVI# for new subjects {L,R}
 %% Input
 if nargin < 1
     if isfolder([cd,filesep,'Raw Files'])
@@ -22,7 +23,7 @@ if nargin < 1
     end
 end
 %% Process Log Files first
-logtoNotes(Raw_Path)
+logtoNotes(Raw_Path,ImplantSide)
 %% Find Files to Make Notes
 VOG_fname_pat = {'SESSION','Lateral.txt','LARP.txt','RALP.txt',...
     '.dat','.mat','ImuData'};
@@ -52,17 +53,16 @@ if ~isempty(flag)
 end
 %% Set some parameters that will likely stay the same but can be edited
 path_parts = strsplit(strrep(strrep(Raw_Path,'_',''),' ',''),filesep);
+sub = '';
+ear = '';
 if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected formatting
     sub = path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')};
     MVI_num = str2double(sub((-3:1:-1)+strfind(sub,'R')));
-    if ismember(MVI_num,[1,2,3,4,7,9,11,13,14]) %EXPAND as needed
+    if ismember(MVI_num,ImplantSide{1})
         ear = 'L';
-    else
+    elseif ismember(MVI_num,ImplantSide{2})
         ear = 'R';
     end
-else
-    sub = '';
-    ear = '';
 end
 if any(contains(path_parts,'Visit'))
     vis = path_parts{contains(path_parts,'Visit')};
