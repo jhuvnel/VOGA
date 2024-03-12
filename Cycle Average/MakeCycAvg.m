@@ -190,8 +190,10 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             if strcmp(good_rng,'Keep') %Did shorten segment
                 save([strrep(Cyc_Path,'Cycle Averages','Segmented Files'),filesep,fname],'Data')
                 Data = MakeCycAvg__alignCycles(Data); % Cycle Align
-                [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt);
+                filt.keep_tr = true(1,size(Data.keep_inds,2));
+                CycAvg = MakeCycAvg__filterTraces(Data,filt);
                 ha = MakeCycAvg__plotFullCycAvg([],CycAvg,plot_info);
+                [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Automatic');
             end
         case 'Load from Selected File'
             cyc_files = extractfield(dir([Cyc_Path,filesep,'*.mat']),'name');

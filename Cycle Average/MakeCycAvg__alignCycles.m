@@ -139,6 +139,9 @@ end
 inv_i = starts<1|ends>length(stim);
 starts(inv_i)= [];
 ends(inv_i) = [];
+%Remove repeated starts/ends
+starts = unique(starts);
+ends = unique(ends);
 %Make the keep_inds matrix
 keep_inds = zeros(ends(1)-starts(1)+1,length(starts));
 for i = 1:length(starts)

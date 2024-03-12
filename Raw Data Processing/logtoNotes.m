@@ -202,6 +202,11 @@ for f = 1:length(logfiles)
         if ~isempty(rel_dat)&&(any(contains(rel_dat(:,2),'Electrode characterization.'))||sum(rel_col)>2)
             if any(contains(rel_dat(:,2),'Electrode characterization.')) %Autoscan
                 e_i = find(contains(rel_dat(:,2),'Electrode characterization.'));
+                if ~any(contains(rel_dat(1:e_i(1),2),'(pps)'))
+                    rel_inds = find(contains(data(1:find(rel_inds,1,'first'),2),'(pps)'),1,'last'):find(rel_inds,1,'last');
+                    rel_dat = data(rel_inds,rel_col);
+                    e_i = find(contains(rel_dat(:,2),'Electrode characterization.'));
+                end
                 rel_exp = rel_dat(e_i,2);
                 %Make cell vector of experiment names
                 experiments = cell(length(rel_exp),1);
