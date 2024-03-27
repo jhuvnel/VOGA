@@ -90,7 +90,7 @@ for i = 1:length(all_files)
         disp(old_fname)
     elseif strcmp(ext,'.txt')
         data = table2cell(readtable(fname,'ReadVariableNames',false,'Delimiter','*')); %The * is a delimieter we never use so that each line goes into one cell.
-        if any(contains(reshape(data,[],1),str1))
+        if all(cellfun(@ischar,reshape(data,[],1)))&&any(contains(reshape(data,[],1),str1))
             writecell(strrep(data,str1,str2),fname,'QuoteStrings',0)
         end
     end

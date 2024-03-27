@@ -16,7 +16,7 @@ for i = 1:length(fold_Path)
         rmdir([Path,filesep,fold_Path{i}])
     elseif contains(lower(fold_Path{i}),'calibration') %ESC and sometimes LDVOG, move the whole folder
         movefile([Path,filesep,fold_Path{i}],[Raw_Path,filesep,fold_Path{i}])
-    elseif ~isempty(dir([Path,filesep,fold_Path{i},filesep,'*.dat'])) %Detect NKI/NL folder by the presence of .dat files
+    elseif ~isempty(dir([Path,filesep,fold_Path{i},filesep,'*.dat']))||~isempty(dir([Path,filesep,fold_Path{i},filesep,'*Test.csv'])) %Detect NKI/NL folder by the presence of .dat files
         fnames = extractfield(dir([Path,filesep,fold_Path{i}]),'name',~ismember(extractfield(dir([Path,filesep,fold_Path{i}]),'name'),{'.','..'}));
         for ii = 1:length(fnames)
             movefile([Path,filesep,fold_Path{i},filesep,fnames{ii}],[Path,filesep,fold_Path{i},filesep,fold_Path{i},'_',fnames{ii}])

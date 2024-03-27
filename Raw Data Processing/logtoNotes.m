@@ -181,7 +181,13 @@ for f = 1:length(logfiles)
             VOG_time.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
             VOG_times = [VOG_time-seconds(VOG_data{end,1}) VOG_time];
             date = char(VOG_times(1),'yyyyMMdd-HHmmss');
-            gog = 'NL2'; %Changed from NKI1 to NL2 on 2022/07/28
+            if VOG_times(1) > datetime(2024,01,31)
+                gog = 'NL3'; %Changed from NL2 to NL3 before testing on 2024/01/31 
+            elseif VOG_times(1) > datetime(2022,07,28)
+                gog = 'NL2'; %Changed from NKI1 to NL2 on 2022/07/28
+            else
+                gog = 'NL1';
+            end
             ang = '0';
             %Load items for plotting
             Time_Eye = VOG_data.EyeTime;
@@ -265,8 +271,8 @@ for f = 1:length(logfiles)
                     elseif any(contains(col_labs,'Frequency'))
                         ax_vec = str2double(stim_tab(2:end,2:4));
                         stim_axis = cell(size(ax_vec,1),1);
-                        %Round to nearest 10 for continuity
-                        amp_mat = round(sqrt(ax_vec(:,1).^2+ax_vec(:,2).^2+ax_vec(:,3).^2),-1);
+                        %Round to the nearest 5 for continuity
+                        amp_mat = 5*round(sqrt(ax_vec(:,1).^2+ax_vec(:,2).^2+ax_vec(:,3).^2)/5,0);
                         amp_vec = strrep(cellstr(num2str(amp_mat)),' ','');
                         stim_axis(amp_mat==ax_vec(:,1)) = {'LARP'};
                         stim_axis(amp_mat==ax_vec(:,2)) = {'RALP'};

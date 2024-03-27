@@ -8,13 +8,14 @@ tic;
 Path = cd;
 Seg_Path = [Path,filesep,'Segmented Files'];
 Cyc_Path = [Path,filesep,'Cycle Averages'];
-% Cyc Avg Files
+%Cyc Avg Files
 progress_tab = assessProgress(Path);
 for j = 1:size(progress_tab,1)    
     fname = progress_tab{j,1}{:};
     load([Seg_Path,filesep,fname],'Data');
     try
-        [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'},1);   
+        [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'},1);
+        exportgraphics(gcf,'CycleAverages.pdf','Append',true)
         MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed,1);
     catch
         disp(fname)
@@ -24,6 +25,6 @@ end
 MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);
 %Make Summary Figure
 VOGA__makePlots('Parameterized');
-%AutoscanParamSelection;
+AutoscanParamSelection;
 disp(toc)
 end
