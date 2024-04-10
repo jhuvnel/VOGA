@@ -1,84 +1,121 @@
 %% CRF Component Creator
-% CRFs for eeVOR, Rotary Chair and vHIT need Cycle Average Figures and
-% tables with the components of each test
+% Edited on 2024-04-10 to make the VOR and vHIT CRFs (v2024-03-29).
+%
+% Expects you to be in a Visit path that may have "Rotary Chair", "aHIT",
+% "eeVOR", "Autoscan", and "vHIT" folders.
+% This script requires the "Raw Files" folder to have been created for each
+% of these directories already.
+%
+% Outputs PDFs in the directory it's run from. These will need to be moved
+% manually.
 
-%This script will make:
-%(1) .txt file with the information needed underneath the header
-%(2) .xlsx file with the table of results
-
-%This script requres a Results.mat table to have already been made and
-%Cycle Average Figures to already have been generated to fully function. It
-%will create some of the files depending on availability of data.
-
-function VOGA__CRF(Path,examiner)
+function VOGA__CRF(Path)
 %% Initialize
 if nargin < 1
     Path = cd;
 end
-if ~VOGA__makeFolders(Path,0,0)
-    disp('Expected file structure missing.')
+if isempty(dir(strrep([Path,'\*\Raw Files'],'\',filesep)))
+    disp('No "Raw Files" folders found. Check that you are on a path that includes VOG and vHIT files.')
     return;
 end
-if nargin < 2 | isempty(examiner) | ~ischar(examiner)
-    examiner = inputdlg('Name of Experimenter(s): ','Name of Experimenter(s): ',1,{'EOV,RS'});
-    examiner = examiner{:};
+default_vHIT_experimenter = 'CFB, MRC';
+default_VOG_experimenter = 'EOV';
+% Make the figure that will be used for the PDFs (single page)
+fig = figure(1);
+set(fig,'Units','inches','Position',[1 1 8.5 11],'Color','w');
+% Figure out subject and visit
+subject = strrep(char(extract(Path,'MVI'+digitsPattern(3)+'_R'+digitsPattern)),'_','');
+visit = char(extract(Path,'Visit '+alphanumericsPattern(1,3)));
+switch subject
+    case {'MVI011R031','MVI012R897','MVI013R864'}
+        fold = 'IRB00335294 NIDCD';
+    case {'MVI014R1219','MVI015R1209','R164','R1054'}
+        fold = 'IRB00346924 NIA';
+    otherwise %old protocol for MVI1-10 and R205
+        fold = 'NA_00051349';
 end
-CRF_Path = [Path,filesep,'CRFs'];
-MakeCycleSummaryTable(cd,[cd,filesep,'Cycle Averages'],0);
-VOGA__makePlots('Parameterized',Path)
-rel_tab = extractfield(dir([Path,filesep,'*Results.mat']),'name');
-load([Path,filesep,rel_tab{end}],'all_results')
-all_results(cellfun(@(x) all(x==0),all_results.StimAxis),:) = []; %Remove any "rest" experiments
-all_results.RawFile(:) = {''};
-for i = 1:size(all_results,1)
-    load([Path,filesep,'Cycle Averages',filesep,all_results.File{i}],'CycAvg')
-    rawfile = split(strrep(strrep(CycAvg.info.rawfile,'\',filesep),'/',filesep),filesep);
-    all_results.RawFile(i) = rawfile(end);
+protocol = strrep(strrep(fold,' NIA',''),' NIDCD','');
+CRF_path = [Path(1:(strfind(Path,'Study')-1)),'CRFs',filesep];
+visit_fold = extractfield(dir([CRF_path,fold,filesep,subject,filesep,visit,' -*']),'name');
+if isempty(visit_fold) %Non typical visit name found
+    visit_fold = {'Visit Nx - (Day XXX) Monitor - X yrs Post-Act - visit applicable only if device still act'};
 end
-%% Text file
-StimAxStr = strcat('[',strrep(strrep(cellfun(@(x) num2str(x),...
-    all_results.StimAxis,'UniformOutput',false),'  ',' '),' ',','),']');
-StimAxStr(~cellfun(@isempty,all_results.AxisName)) = all_results.AxisName(~cellfun(@isempty,all_results.AxisName));
-date_str = cellstr(all_results.Date,'yyyy-MM-dd');
-sub = strjoin(unique(all_results.Subject),', ');
-date = strjoin(unique(date_str),', ');
-vis = strjoin(unique(all_results.Visit),', ');
-test_name = strjoin(unique(strcat(all_results.Experiment,'-',...
-    all_results.Type,'-',all_results.Condition,'-',StimAxStr),'stable'),newline);
-gog = strjoin(unique(all_results.Goggle),', ');
-raw_files = strjoin(strrep(extractfield(dir([Path,filesep,'Raw Files',filesep,'*-Notes.txt']),'name'),'-Notes',''),newline);
-txt = ['Subject ID: ',sub,newline,...
-    'Date: ',date,newline,...
-    'Visit ID: ',vis,newline,...
-    'Test Name: ',test_name,newline,...
-    'Goggle ID: ',gog,newline,...
-    'Raw Filename(s): ',raw_files,newline,...
-    'Examiner(s): ',examiner];
-fid = fopen([CRF_Path,filesep,'SubjectInfo.txt'],'w');
-fprintf(fid,'%s',txt);
-fclose(fid);
-%% Xlsx Tables
-test_cond = strcat(all_results.Subject,'-',all_results.Visit,'-',date_str,'-',...
-    all_results.Experiment,'-',all_results.Type,'-',all_results.Condition,'-',StimAxStr);
-vel_labs = {'Test Condition','LE: Vel Max [deg/s]','LE: Vel STD [deg/s]',...
-    'LE: # Cycles','RE: Vel Max [deg/s]','RE: Vel STD [deg/s]','RE: # Cycles'};
-nc = length(vel_labs);
-info_labs = {'Test Condition','Raw File Name','Processed File Name','Examiner(s)'};
-info_cell = cell(length(test_cond),nc);
-info_cell(:,1:4) = [test_cond,all_results.RawFile,all_results.File,...
-    repmat({examiner},length(test_cond),1)];
-%Round these all the the nearest 0.1 dps
-tab_labs = {'MaxVel_L&','MaxVel_L&_sd','Cycles','MaxVel_R&','MaxVel_R&_sd','Cycles'};
-CRF_cell = [{'LHRH Component'},cell(1,nc-1);vel_labs;...
-    test_cond,num2cell(round(all_results{:,strrep(tab_labs,'&','Z')},1));...
-    {'LARP Component'},cell(1,nc-1);vel_labs;...
-    test_cond,num2cell(round(all_results{:,strrep(tab_labs,'&','L')},1));...
-    {'RALP Component'},cell(1,nc-1);vel_labs;...
-	test_cond,num2cell(round(all_results{:,strrep(tab_labs,'&','R')},1));...
-    {'Other Info'},cell(1,nc-1);info_labs,cell(1,nc-length(info_labs));...
-    info_cell];
-%Make the output cell
-writecell(CRF_cell,[CRF_Path,filesep,'CRF_Table.xlsx']);
-%% End
-disp('Items now in the CRFs folder')
+%% vHIT
+out_path = [CRF_path,fold,filesep,subject,filesep,visit_fold{:},filesep,'14_05 vHIT',filesep,'14_05_CRF_vHIT_',subject,'_',visit,'.pdf'];
+examiner = char(inputdlg('Name of vHIT Experimenter(s): ','Name of vHIT Experimenter(s): ',1,{default_vHIT_experimenter}));
+source_path = [Path,filesep,'vHIT'];
+%Find the first date
+GNO_files = extractfield(dir(strrep([Path,filesep,'vHIT\GNO\Raw Files\*.txt'],'\',filesep)),'name');
+if ~isempty(GNO_files)
+    GNO_times = datetime(extract(GNO_files,digitsPattern(4)+'_'+digitsPattern(2)+'_'+digitsPattern+'_'+digitsPattern+'_'+digitsPattern),'Format','yyyy_MM_dd_HH_mm');
+    file_times = sort(datetime(GNO_times,'Format','yyyy-MM-dd HH:mm'));
+    % Make text
+    CRF_txt = ['Case Report Form Protocol: ',protocol,newline,...
+        'Case Report Form Version: 2024-03-29',newline,...
+        'Case Report Form Test: Video Head Impulse Testing',newline,...
+        'Subject ID: ',subject,newline,'Visit: ',visit,newline,'vHIT: Completed',newline,...
+        'Examiners: ',examiner,newline,'Times: ',char(file_times(1)),newline,'Source Data: ',source_path];
+    %Save as pdf
+    clf;
+    annotation('textbox','Position',[0 0 1 1],'EdgeColor','none','String',CRF_txt,'FitBoxToText','on','Interpreter', 'none')
+    saveas(fig,out_path)
+else
+    disp('NO GNO files found. Add and rerun or manually make CRF with deviation.')
+end
+%% VOR
+out_path = [CRF_path,fold,filesep,subject,filesep,visit_fold{:},filesep,'14_04 VOR',filesep,'14_04_CRF_VOR_',subject,'_',visit,'.pdf'];
+examiner = char(inputdlg('Name of VOG Experimenter(s): ','Name of VOG Experimenter(s): ',1,{default_VOG_experimenter}));
+exps = {'Rotary Chair','Autoscan','eeVOR','aHIT'};
+exp_times = cell(1,length(exps));
+for j = 1:length(exps)
+    LDVOG = extractfield(dir(strrep([Path,filesep,exps{j},'\Raw Files\SESSION*.txt'],'\',filesep)),'name');
+    NL = extractfield(dir(strrep([Path,filesep,exps{j},'\Raw Files\*.dat'],'\',filesep)),'name');
+    if ~isempty(LDVOG)
+        LDVOG = datetime(extract(LDVOG,digitsPattern(4)+lettersPattern(3)+digitsPattern(2)+'-'+digitsPattern(6)),'Format','yyyyMMMdd-HHmmSS');
+    end
+    if ~isempty(NL)
+        NL = datetime(extract(NL,digitsPattern+'_'+digitsPattern+'_'+digitsPattern+'_'+digitsPattern+'_'+digitsPattern+'_'+lettersPattern(2)),'Format','M_d_yyyy_h_mm_a');
+    end
+    if ~isempty([LDVOG;NL])
+        file_times = sort(datetime([LDVOG;NL],'Format','yyyy-MM-dd HH:mm'));
+        exp_times{j} = char(file_times(1));
+    end
+end
+missing_exp = cellfun(@isempty,exp_times);
+if ~all(missing_exp)
+    source_path = char(join(strcat([Path,filesep],exps(~missing_exp)),[',',newline]));
+    datestr = char(join(exp_times(~missing_exp),', '));
+    messages = {'Collected','Collected','Collected','Collected'};
+    if missing_exp(1)
+        messages{1} = char(inputdlg('Explain missing rotary chair data: ','Explain missing rotary chair data: ',1,{'Not collected; protocol deviation'}));
+    end
+    if strcmp(visit,'Visit 0')
+        messages{2} = 'Not collected; test not in protocol for this visit';
+        messages{3} = 'Not collected; test not in protocol for this visit';
+    else
+        if missing_exp(2)
+            messages{2} = 'Not collected; test optional--not a protocol deviation';
+        end
+        if missing_exp(3)
+            messages{3} = char(inputdlg('Explain missing eeVOR data: ','Explain missing eeVOR data: ',1,{'Not collected; protocol deviation'}));
+        end
+    end
+    if missing_exp(4)
+        messages{4} = 'Not collected; test optional--not a protocol deviation';
+    end
+    % Make text
+    CRF_txt = ['Case Report Form Protocol: ',protocol,newline,...
+        'Case Report Form Version: 2024-03-29',newline,...
+        'Case Report Form Test: Vestibulo-ocular Reflex (VOR) Testing',newline,...
+        'Subject ID: ',subject,newline,'Visit: ',visit,newline,...
+        'Rotary Chair: ',messages{1},newline,'Autoscan: ',messages{2},newline,...
+        'eeVOR: ',messages{3},newline,'aHIT Sinusoids: ',messages{4},newline,...
+        'Examiners: ',examiner,newline,'Times: ',datestr,newline,'Source Data: ',source_path];
+    %Save as pdf
+    clf;
+    annotation('textbox','Position',[0 0 1 1],'EdgeColor','none','String',CRF_txt,'FitBoxToText','on','Interpreter', 'none')
+    saveas(fig,out_path)
+else
+    disp('No VOG files found. Add and rerun or manually make CRF with deviation.')
+end
 end

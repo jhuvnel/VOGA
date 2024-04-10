@@ -8,13 +8,13 @@
 % and Cycle Average folders and then run "VOGA." Click cancel to end the
 % loop.
 %Current version of VOGA - Changed with each GitHub commit
-current_ver = 'v5.7.3';
+current_ver = 'v5.8.0';
 %VOGA Menu Options
 opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average',...
-    'CRF','Generate Figures','Advanced'};
+    'Parameterize and Plot','Advanced'};
 advanced_opts = {'Automatic VOG Analysis','Recalibrate LDVOG',...
     'Fix Raw VOG Trigger','Combine Segments','Trim Segment','Rename Files',...
-    'Summary Table','Set Version'};
+    'CRF','Set Version','Summary Table','Generate Figures'};
 %Run the start procedure first--will make the files needed if they don't
 %exist yet
 VOGA__setVersion(current_ver,0);
@@ -37,10 +37,8 @@ while tf
             VOGA__Segment;
         case 'Cycle Average'
             VOGA__CycAvg;
-        case 'CRF'
-            VOGA__CRF;
-        case 'Generate Figures'
-            VOGA__makePlots;        
+        case 'Parameterize and Plot'
+            VOGA__makePlots('Parameterized')     
         case 'Automatic VOG Analysis'
             VOGA__automaticAnalysis;
         case 'Fix Raw VOG Trigger'
@@ -56,7 +54,11 @@ while tf
         case 'Summary Table'
             VOGA__SummaryTable;
         case 'Set Version'
-            VOGA__setVersion(current_ver,1);                         
+            VOGA__setVersion(current_ver,1); 
+        case 'CRF'
+            VOGA__CRF;
+        case 'Generate Figures'
+            VOGA__makePlots;  
     end
     if ismember(resp,advanced_opts) %Stay in advanced menu if started in advanced menu
         resp = 'Advanced';

@@ -9,7 +9,7 @@ Raw_Path = [Path,filesep,'Raw Files'];
 %% Handle folders in the main path
 fold_Path = extractfield(dir(Path),'name',extractfield(dir(Path),'isdir'));
 fold_Path(contains(lower(fold_Path),{'archive','trash','.'})) = [];
-fold_Path(contains(fold_Path,{'Raw Files','Segmented Files','Cycle Averages','Figures','CRFs'})) = []; %Expected folders
+fold_Path(contains(fold_Path,{'Raw Files','Segmented Files','Cycle Averages','Figures'})) = []; %Expected folders
 for i = 1:length(fold_Path)
     if contains(lower(fold_Path{i}),'video') %GNO videos, move the videos in Raw Files
         movefile([Path,filesep,fold_Path{i},filesep,'*'],Raw_Path)

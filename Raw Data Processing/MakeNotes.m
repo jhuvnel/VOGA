@@ -127,8 +127,21 @@ if any(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'})) %GNO
             plotRawVOG([Raw_Path,filesep,fname])
         end
         %Try to load the xml file and automatically make the notes
-        try
-            fdata = cellstr(readlines([Raw_Path,filesep,fname(1:end-4),'.xml']));
+        exp_info = '(No File)';
+        gog = 'GNO';
+        xml_file = [];
+        all_xml = extractfield(dir([Raw_Path,filesep,'*.xml']),'name');
+        if isfile([Raw_Path,filesep,fname(1:end-4),'.xml'])
+            xml_file = [Raw_Path,filesep,fname(1:end-4),'.xml'];
+        elseif ~isempty(all_xml) %Look for a file with a small time delay
+            xml_time = datetime(extract([all_xml;fname],digitsPattern(4)+'_'+digitsPattern(2)+'_'+digitsPattern(2)+'_'+digitsPattern(2)+'_'+digitsPattern(2)+'_'+digitsPattern(2)),'Format','yyyy_MM_dd_HH_mm_ss');
+            if any(abs(seconds(xml_time(1:end-1)-xml_time(end)))<120)
+                [~,ind] = min(abs(seconds(xml_time(1:end-1)-xml_time(end))));
+                xml_file = all_xml{ind};
+            end
+        end
+        if ~isempty(xml_file)
+            fdata = cellstr(readlines([Raw_Path,filesep,xml_file]));
             exp_info = strrep(extractXMLdataline(fdata{contains(fdata,'<Remarks>')}),' ','');
             if contains(lower(exp_info),'ahit')
                 type = 'aHIT';
@@ -145,10 +158,7 @@ if any(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'})) %GNO
             gog_line = fdata{contains(fdata,'GogglesSN')};
             gog_num = gog_line(ismember(gog_line,'0123456789'));
             gog_detect = find(ismember(GNO_SerialNums,gog_num));
-            gog = ['GNO',num2str(gog_detect)];            
-        catch
-            exp_info = '(No File)';
-            gog = 'GNO';
+            gog = ['GNO',num2str(gog_detect)]; 
         end
         exp = [type,'-Impulse-',cond,'-',canal,'-150dps'];
         w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];['Experiment ',exp]};

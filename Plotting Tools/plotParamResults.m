@@ -22,9 +22,7 @@ Ears = sub_info.Ear;
 % Load table in question
 res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 if isempty(res_file)
-    disp('No table with cycle parameters found on this path. Creating one now.')
-    rerun = ~strcmp(questdlg('If a parameter table already exists, use that one or rerun?','','Use existing table','Rerun','Rerun'),'Use existing table');
-    MakeCycleSummaryTable(Path,Cyc_Path,rerun);
+    MakeCycleSummaryTable(Path,Cyc_Path,0);
     res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 end
 load([Path,filesep,res_file{end}],'all_results')
@@ -554,7 +552,7 @@ if isfolder(Cyc_Path) %Otherwise, skip these and go to the parameterized version
         fig = plotGroupCycAvg(plot_info,params);
         fig_name = strrep(strrep(plot_info.Name{1},' ','-'),'\mu','u');
         savefig(fig,[Path,filesep,'Figures',filesep,fig_name,'.fig'])
-        saveas(fig,[Path,filesep,'CRFs',filesep,fig_name,'.png'])
+        saveas(fig,[Path,filesep,'Figures',filesep,fig_name,'.svg'])
         close;
     end
 end
@@ -564,7 +562,7 @@ for k = 1:size(all_maxvel_plots,1)
     fig = plotMaxVelAllEyeComp(plot_info,params);
     fig_name = strrep(strrep(plot_info.Name{1},' ','-'),'\mu','u');
     savefig(fig,[Path,filesep,'Figures',filesep,fig_name,'.fig'])
-    saveas(fig,[Path,filesep,'CRFs',filesep,fig_name,'.png'])
+    saveas(fig,[Path,filesep,'Figures',filesep,fig_name,'.svg'])
     close;
 end
 % Parameterized Figures
@@ -573,7 +571,7 @@ for k = 1:size(all_param_plots,1)
     fig = plotTabParam(plot_info,params);
     fig_name = strrep(strrep(plot_info.Name{1},' ','-'),'\mu','u');
     savefig(fig,[Path,filesep,'Figures',filesep,fig_name,'.fig'])
-    saveas(fig,[Path,filesep,'CRFs',filesep,fig_name,'.png'])
+    saveas(fig,[Path,filesep,'Figures',filesep,fig_name,'.svg'])
     close;
 end
 end

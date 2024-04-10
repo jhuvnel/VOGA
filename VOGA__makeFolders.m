@@ -27,7 +27,7 @@ if isfolder([Path,filesep,'Cyc_Avg'])
 end
 %Now look for missing folders and prompt the user to create them
 path_folders = extractfield(dir(Path),'name',find(extractfield(dir(Path),'isdir')));
-folders = {'Raw Files','Segmented Files','Cycle Averages','Figures','CRFs'};
+folders = {'Raw Files','Segmented Files','Cycle Averages','Figures'};
 if ~all(ismember(folders,path_folders))&&opt_make_fold %Check for folders
     if prompt_user
         make_fold = questdlg('This directory is missing one or more expected folders.','','Make Them','Exit','Make Them');
