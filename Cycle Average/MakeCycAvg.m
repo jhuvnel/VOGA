@@ -97,15 +97,14 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             Data.info.TriggerShift2 = 0;
             filt = filt1;
             filt.t_interp = [];
-            ha = [];
             Data = MakeCycAvg__alignCycles(Data); % Cycle Align
             filt.keep_tr = true(1,size(Data.keep_inds,2));
             filt = MakeCycAvg__autoFilter(Data,filt,plot_info); %First pass at filter params
-            CycAvg = MakeCycAvg__filterTraces(Data,filt);            
+            CycAvg = MakeCycAvg__filterTraces(Data,filt); 
+            [CycAvg,filt] = MakeCycAvg__selectCycles([],CycAvg,plot_info,'Automatic');
             if has_fig %Only should not happen during autoscan analysis
-                ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
-            end
-            [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Automatic'); 
+                ha = MakeCycAvg__plotFullCycAvg([],CycAvg,plot_info);
+            end           
         case {'Filter Position','Filter Velocity'}
             %Load either filt.pos or filt.vel and make a prompt with each
             %of the filters and traces in the table.
