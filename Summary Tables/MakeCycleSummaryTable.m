@@ -32,7 +32,9 @@ disp([num2str(length(files)),' files found.'])
 tabs = cell(length(files),1);
 cyc_params = cell(length(files),2);
 for i = 1:length(files)
-   disp([num2str(i),'/',num2str(length(files)),': ',files{i}])
+   if rerun
+    disp([num2str(i),'/',num2str(length(files)),': ',files{i}])
+   end
    a = load(files{i});
    b = fieldnames(a);
    CycAvg = a.(b{1});

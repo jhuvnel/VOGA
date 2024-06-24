@@ -32,7 +32,7 @@ while tf
             trac_cyc = vertcat(all_trac{:});
             ind = [];
             val = Inf;
-            while val > 1
+            while val > 1 && sum(keep_tr)>3
                 keep_tr(ind) = false;
                 trac_cyc(:,~keep_tr) = NaN;
                 sd_comp = std(trac_cyc,[],2,'omitnan');
@@ -48,7 +48,7 @@ while tf
             end
             %Recalculate and plot
             CycAvg.keep_tr = keep_tr;
-            CycAvg = MakeCycAvg__filterTraces([],[],CycAvg);
+            CycAvg = MakeCycAvg__filterTraces([],[],[],CycAvg);
             if ~isempty(ha)
                 MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
             end
@@ -68,9 +68,9 @@ while tf
             if all(size(Data_cyc.stim) > 1)
                 all_trac(:,:,end) = Data_cyc.stim;
             end
-            uiwait(msgbox(['Click near an erroneous trace on the aligned cycle graph.',newline,...
-                'Use the up and down arrows to pan through traces.',newline,...
-                'Press Enter to delete a trace and ESC to finish the process.']))
+            % uiwait(msgbox(['Click near an erroneous trace on the aligned cycle graph.',newline,...
+            %     'Use the up and down arrows to pan through traces.',newline,...
+            %     'Press Enter to delete a trace and ESC to finish the process.']))
             [x,y] = ginput(1); %Assume this is on a cycle graph
             t_ind = find(Data_cyc.t>x,1,'first');
             traces = reshape(all_trac(t_ind,:,:),length(keep_tr),[])';
@@ -80,7 +80,6 @@ while tf
             axes(ha(4))
             hold on
             h = plot(Data_cyc.t,reshape(all_trac(:,trace_i(ind),:),length(Data_cyc.t),[]),'c','LineWidth',2);
-            clc;
             k = waitforbuttonpress;
             value = double(get(gcf,'CurrentCharacter'));
             while value ~= 27  %Enter key=13 or ESC = 27, run until time to stop
@@ -88,7 +87,7 @@ while tf
                     hold off
                     keep_tr(trace_i(ind)) = false;
                     CycAvg.keep_tr = keep_tr;
-                    CycAvg = MakeCycAvg__filterTraces([],[],CycAvg);
+                    CycAvg = MakeCycAvg__filterTraces([],[],[],CycAvg);
                     MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
                     axes(ha(4))
                     hold on
@@ -115,8 +114,6 @@ while tf
             end
             delete(h)
             hold off
-            disp('Cycles Manually Removed:')
-            disp(find(keep_tr1&~keep_tr))
         case 'List'
             cyc_num = 1:length(keep_tr);
             [ind2,tf] = nmlistdlg('PromptString','Select cycles:',...
@@ -131,13 +128,13 @@ while tf
             keep_tr(ind2) = true;
             %Recalculate and plot
             CycAvg.keep_tr = keep_tr;
-            CycAvg = MakeCycAvg__filterTraces([],[],CycAvg);
+            CycAvg = MakeCycAvg__filterTraces([],[],[],CycAvg);
             MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
         case 'Restart'
             keep_tr = true(1,length(keep_tr));
             %Recalculate and plot
             CycAvg.keep_tr = keep_tr;
-            CycAvg = MakeCycAvg__filterTraces([],[],CycAvg);
+            CycAvg = MakeCycAvg__filterTraces([],[],[],CycAvg);
             MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
     end
     if ~isempty(in_opt)

@@ -6,10 +6,10 @@
 function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,in_opts,has_fig)
 %% General Setup
 %Loop parameters
-opts = {'Filter Position','Filter Velocity','Select Cycles','Advanced','Start Over','Save'};
-advanced_opts = {'Set Y-Limit','Set Position View','Set Velocity View',...
-    'Shift Trigger','Shorten Segment','Manual QPR',...
-    'Load from Selected File','Not Analyzeable','Auto Rerun'};
+opts = {'Set Y-Limit','Set Velocity View','Filter Position',...
+    'Filter Velocity','Select Cycles','Advanced','Start Over','Save'};
+advanced_opts = {'Set Position View','Shift Trigger','Shorten Segment',...
+    'Manual QPR','Load from Selected File','Not Analyzeable','Auto Rerun'};
 sel = 'Start Over'; %Run the start procedure first
 % Input handling
 if nargin < 4
@@ -40,8 +40,6 @@ end
 fname = Data.info.name;
 % Load default filters
 filt_params = VOGA__saveLastUsedParams;
-filt1 = filt_params.filt1;
-YLim = filt_params.YLim; 
 %For speed during autoscan analysis, do not make cycle average figures
 buffer_pix = [25,50,450,100]; %left, bottom, right, and top # of pixel buffer
 plot_info.screen_size = get(0,"ScreenSize");
@@ -93,16 +91,18 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
         case 'Start Over'
             plot_info.traces_pos = traces_pos1;
             plot_info.traces_vel = traces_vel1;
-            plot_info.YLim = YLim;
+            plot_info.YLim.Pos = [NaN NaN];
+            plot_info.YLim.Vel = [NaN NaN];
             Data.info.TriggerShift2 = 0;
-            filt = filt1;
+            Data = MakeCycAvg__alignCycles(Data); % Cycle Align            
+            filt = MakeCycAvg__autoFilter(Data,filt_params,plot_info); %First pass at filter params
             filt.t_interp = [];
-            Data = MakeCycAvg__alignCycles(Data); % Cycle Align
             filt.keep_tr = true(1,size(Data.keep_inds,2));
-            filt = MakeCycAvg__autoFilter(Data,filt,plot_info); %First pass at filter params
-            CycAvg = MakeCycAvg__filterTraces(Data,filt); 
-            [CycAvg,filt] = MakeCycAvg__selectCycles([],CycAvg,plot_info,'Automatic');
-            if has_fig %Only should not happen during autoscan analysis
+            [CycAvg,filt,plot_info] = MakeCycAvg__filterTraces(Data,filt,plot_info); 
+            if length(filt.keep_tr)>5
+                [CycAvg,filt] = MakeCycAvg__selectCycles([],CycAvg,plot_info,'Automatic');
+            end
+            if has_fig 
                 ha = MakeCycAvg__plotFullCycAvg([],CycAvg,plot_info);
             end           
         case {'Filter Position','Filter Velocity'}
@@ -123,7 +123,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             %Keep running until the user selects "Done" (the Cancel Button renamed)
             while ~isempty(temp_filt)
                 filt.(pos_vel){:,:} = reshape(temp_filt,length(traces),[]);
-                CycAvg = MakeCycAvg__filterTraces(Data,filt);
+                CycAvg = MakeCycAvg__filterTraces(Data,filt,plot_info);
                 CycAvg = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Restart');
                 [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Automatic');
                 ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
@@ -153,7 +153,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             if type ~= 3
                 [ind3,tf] = nmlistdlg('PromptString','Select position traces:',...
                     'InitialValue',find(ismember(all_traces,plot_info.traces_pos)),...
-                    'ListString',all_traces,'ListSize',round(0.9*plot_info.menu_space(3:4)),...
+                    'ListString',all_traces,'ListSize',round(0.8*plot_info.menu_space(3:4)),...
                     'Units','pixels','Position',plot_info.menu_space);
                 if tf
                     plot_info.traces_pos = all_traces(ind3);
@@ -163,7 +163,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
         case 'Set Velocity View'
             [ind2,tf] = nmlistdlg('PromptString','Select velocity traces:',...
                 'InitialValue',find(ismember(all_traces,plot_info.traces_vel)),...
-                'ListString',all_traces,'ListSize',round(0.9*plot_info.menu_space(3:4)),...
+                'ListString',all_traces,'ListSize',round(0.8*plot_info.menu_space(3:4)),...
                 'Units','pixels','Position',plot_info.menu_space);
             if tf
                 plot_info.traces_vel = all_traces(ind2);
@@ -181,7 +181,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                 elseif size(Data.keep_inds,2) < length(CycAvg.keep_tr)
                     filt.keep_tr = CycAvg.keep_tr(1:size(Data.keep_inds,2));
                 end
-                [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt);
+                [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt,plot_info);
                 ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
             end                
         case 'Shorten Segment'
@@ -190,7 +190,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                 save([strrep(Cyc_Path,'Cycle Averages','Segmented Files'),filesep,fname],'Data')
                 Data = MakeCycAvg__alignCycles(Data); % Cycle Align
                 filt.keep_tr = true(1,size(Data.keep_inds,2));
-                CycAvg = MakeCycAvg__filterTraces(Data,filt);
+                CycAvg = MakeCycAvg__filterTraces(Data,filt,plot_info);
                 ha = MakeCycAvg__plotFullCycAvg([],CycAvg,plot_info);
                 [CycAvg,filt] = MakeCycAvg__selectCycles(ha,CycAvg,plot_info,'Automatic');
             end
@@ -215,7 +215,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                     if isfield(CycAvg2,'t_interp')
                         filt.t_interp = CycAvg2.t_interp;
                     end
-                    [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt);
+                    [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt,plot_info);
                     ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
                 else
                     disp('Not a compatible CycAvg file: unequal number of cycles detected.')
@@ -235,7 +235,7 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             end
             if strcmp(good_rng,'Keep')
                 filt.t_interp = find(Data.t_snip>=t_spline(1)&Data.t_snip<=t_spline(2));
-                [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt);
+                [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt,plot_info);
                 ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
             end
             hold off    
@@ -244,24 +244,47 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             analyzed = 0;
             return;
         case 'Auto Rerun'
-            a = load([Cyc_Path,filesep,'CycAvg_',fname]);
-            CycAvg2 = a.CycAvg;
-            if isfield(CycAvg2.info,'TriggerShift2')
-                 Data.info.TriggerShift2 = Data.info.TriggerShift2;     
+            if isfile([Cyc_Path,filesep,'CycAvg_',fname])
+                a = load([Cyc_Path,filesep,'CycAvg_',fname]);
+                CycAvg2 = a.CycAvg;
+                if isfield(CycAvg2.info,'TriggerShift2')
+                     Data.info.TriggerShift2 = Data.info.TriggerShift2;     
+                end
+                Data = MakeCycAvg__alignCycles(Data);
+                pos_filt = filt.pos.Properties.VariableNames;
+                vel_filt = filt.vel.Properties.VariableNames;
+                %Remove unused filters
+                CycAvg2.filt.pos = CycAvg2.filt.pos(:,any(~isnan(CycAvg2.filt.pos{:,:})));
+                CycAvg2.filt.vel = CycAvg2.filt.vel(:,any(~isnan(CycAvg2.filt.vel{:,:})));
+                %Adjust for new Savitsky Golay nomenclature
+                if contains(CycAvg2.filt.pos.Properties.VariableNames,'sgolay2')
+                    CycAvg2.filt.pos.sgolay = CycAvg2.filt.pos.sgolay2;
+                    CycAvg2.filt.pos = removevars(CycAvg2.filt.pos,["sgolay1","sgolay2"]);
+                end
+                if contains(CycAvg2.filt.vel.Properties.VariableNames,'sgolay2')
+                    CycAvg2.filt.vel.sgolay = CycAvg2.filt.vel.sgolay2;
+                    CycAvg2.filt.vel = removevars(CycAvg2.filt.vel,["sgolay1","sgolay2"]);
+                end
+                pos_filt2 = CycAvg2.filt.pos.Properties.VariableNames;
+                vel_filt2 = CycAvg2.filt.vel.Properties.VariableNames;
+                %Only run if right number of cycles detected and filter types match
+                if size(Data.keep_inds,2)==length(CycAvg2.keep_tr)&&...
+                        all(ismember(pos_filt2,pos_filt))&&all(ismember(vel_filt2,vel_filt)) 
+                    filt.pos(:,pos_filt2) = CycAvg2.filt.pos(:,pos_filt2);
+                    filt.vel(:,vel_filt2) = CycAvg2.filt.vel(:,vel_filt2);
+                    filt.keep_tr = CycAvg2.keep_tr;
+                    if isfield(CycAvg2,'t_interp')
+                        filt.t_interp = CycAvg2.t_interp;
+                    end
+                    [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt,plot_info);
+                    MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info); 
+                    break;
+                end
             end
-            Data = MakeCycAvg__alignCycles(Data);
-            filt = CycAvg2.filt;
-            filt.keep_tr = CycAvg2.keep_tr;
-            if isfield(CycAvg2,'t_interp')
-                filt.t_interp = CycAvg2.t_interp;
-            end
-            [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt);
-            MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info); 
-            break;
     end    
     if ~isempty(in_opts) %Run the next input command
         sel = in_opts{1};
-        in_opts{1} = [];
+        in_opts(1) = [];
     else
         [ind,tf2] = nmlistdlg('PromptString','Select an action:','ListString',opts,...
             'SelectionMode','single','ListSize',round(0.9*plot_info.menu_space(3:4)),...
@@ -276,8 +299,8 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
 end
 %% Create to Save
 CycAvg = ParameterizeCycAvg(CycAvg);
-filt_params.filt1.pos = filt.pos;
-filt_params.filt1.vel = filt.vel;
+filt_params.filt.pos = filt.pos;
+filt_params.filt.vel = filt.vel;
 filt_params.YLim = plot_info.YLim;
 VOGA__saveLastUsedParams(filt_params);
 analyzed = 1;

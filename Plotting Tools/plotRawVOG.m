@@ -42,9 +42,9 @@ function plotRawVOG(Raw_Path,plot_eyes,lrz_xyz)
             RZ = -data.RightHoriz;
             RY = -data.RightVert;
             RX = data.RightTorsion;
-            GyroX = data.GyroY - median(data.GyroY);
-            GyroY = -(data.GyroX- median(data.GyroX));
-            GyroZ = -(data.GyroZ- median(data.GyroZ));
+            GyroX = data.GyroY - median(data.GyroY,'omitnan');
+            GyroY = -(data.GyroX- median(data.GyroX,'omitnan'));
+            GyroZ = -(data.GyroZ- median(data.GyroZ,'omitnan'));
             GyroL = (GyroX - GyroY)/sqrt(2);
             GyroR = (GyroX + GyroY)/sqrt(2);
             if any(strcmp(lrz_xyz,{'xyz','XYZ'}))

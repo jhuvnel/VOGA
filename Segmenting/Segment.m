@@ -40,7 +40,7 @@ elseif length(info.exp_date)==8 %Just date, add time
         if ~isempty(underscore)
             rawfile = rawfile(1:underscore(1));
         end
-        rawparts = split(rawfile,'-');
+        rawparts = split(strrep(rawfile,'_','-'),'-');
         VOG_time = rawparts{3};
     elseif contains(info.goggle_ver,'GNO')
         VOG_time = strrep(rawfile(underscore(5)+1:underscore(8)-1),'_','');
@@ -55,7 +55,7 @@ if contains(info.goggle_ver,{'NKI','NL'})
     %Suppress the warning that one of the columns is not a proper column name for a MATLAB table so it got renamed
     warning('off')
     data = readtable(In_Path,'ReadVariableNames',true); %.dat file with uncalibrated eye data
-    data2 = table2array(readtable(strrep(In_Path,'.dat','.csv'))); %.csv with calibrated eye data
+    data2 = table2array(readtable(strrep(info.rawnotes,'-Notes.txt','.csv'))); %.csv with calibrated eye data
     warning('on')
     len = min([size(data,1),size(data2,1)]);
     data = data(1:len,:);
@@ -559,32 +559,43 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
             start = 1;
             ends = length(Time_Eye);
         end
-    elseif any(contains(stim_info,{'VelStep','MultiVector'}))
+    elseif any(contains(stim_info,'MultiVector'))
         %These files have trigger toggles for the "ramp" of every cycle
         if Stim(1)==1 %If Stim started "high", the first ramp is missing so add it back in
             temp = diff(find(abs(diff(Stim))==1));
             ramp_dur = temp(2);
             Stim(1:(find(diff(Stim)==-1,1,'first')-ramp_dur)) = 0;
         end
-        temp = find(diff(Stim)==1)-1;
+        temp = [find(diff(Stim)==1)-1;length(Stim)];
+        temp2 = diff(temp);
+        [~,ind] = sort(temp2,'descend');
+        ind2 = sort(ind(1:length(stim_info)));
+        start = temp([0;ind2(1:end-1)]+1)-1;
+        ends = temp(ind2)+sum(temp2(ind2-(1:2)),2);
+    elseif any(contains(stim_info,'VelStep'))
+        %These files have trigger toggles for the "ramp" of every cycle
+        if Stim(1)==1 %If Stim started "high", the first ramp is missing so add it back in
+            temp = diff(find(abs(diff(Stim))==1));
+            ramp_dur = temp(2);
+            Stim(1:(find(diff(Stim)==-1,1,'first')-ramp_dur)) = 0;
+        end
+        temp = [find(diff(Stim)==1)-1;length(Stim)];
         all_starts = temp(1:2:end);
         all_ends = [temp(3:2:end);length(Stim)];
         temp2 = all_ends-all_starts;
         [~,ind] = sort(temp2,'descend');
         ind2 = sort(ind(1:length(stim_info)));
         start = all_starts([1;ind2(1:end-1)+1]);
-        ends = all_ends(ind2);
+        ends = all_ends(ind2);  
     elseif any(contains(stim_info,'Sine'))
         %Every trigger toggle is a cycle
         thresh_tol = Fs*0.4; %tolerance for differences in cyc length (always at least 400ms of break)
         temp = find(abs(diff(Stim))==1);
         temp2 = diff(diff(temp));
-        all_ends = temp([find(temp2>thresh_tol)+1;end]);
-        all_starts = temp([1;find(temp2>thresh_tol)+2]);        
+        all_ends = unique(temp([find(temp2<-thresh_tol);find(temp2>thresh_tol)+1;end]));
+        all_starts = unique(temp([1;find(temp2<-thresh_tol)+1;find(temp2>thresh_tol)+2]));        
         start = all_starts-5;
-        ends = all_ends+5;
-        start(start<0) = 1;
-        ends(ends>length(Time_Stim)) = length(Time_Stim);
+        ends = all_ends+5;        
     else %Pulse Train and Autoscan--high period is stimulation and low is break.
         temp = find(diff(Stim)==1)-1;
         temp2 = diff(temp);
@@ -596,6 +607,8 @@ elseif all(contains(stim_info,{'eeVOR','trash'})) %Good for all externally trigg
         ends = all_ends([ind2;end])+round(0.5*median(diff(temp)));
     end
     stim = Stim;
+    start(start<0) = 1;
+    ends(ends>length(Time_Stim)) = length(Time_Stim);
     start = round(start);
     ends = round(ends);
     plot(Time_Stim,stim,'k',Time_Stim(start),stim(start),'r*',Time_Stim(ends),stim(ends),'b*')
@@ -742,9 +755,9 @@ if ~isempty(stim_info)
                 Data.RE_Position_X = Torsion_RE_Position(i1:i2);
                 Data.RE_Position_Y = Vertical_RE_Position(i1:i2);
                 Data.RE_Position_Z = Horizontal_RE_Position(i1:i2);
-                Data.HeadVel_X = XAxisVelHead(i1:i2);
-                Data.HeadVel_Y = YAxisVelHead(i1:i2);
-                Data.HeadVel_Z = ZAxisVelHead(i1:i2);
+                Data.HeadVel_X = GyroX(i1:i2);
+                Data.HeadVel_Y = GyroY(i1:i2);
+                Data.HeadVel_Z = GyroZ(i1:i2);
                 Data.HeadAccel_X = XAxisAccelHead(i1:i2);
                 Data.HeadAccel_Y = YAxisAccelHead(i1:i2);
                 Data.HeadAccel_Z = ZAxisAccelHead(i1:i2);

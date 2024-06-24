@@ -12,7 +12,7 @@ load('VNELcolors.mat','colors')
 all_canals = {'LA';'RP';'LP';'RA';'LH';'RH';'-X';'+X';'-Y';'+Y'};
 all_canals(:,2) = reshape(repmat({'LARP','RALP','LHRH','X','Y'},2,1),[],1);
 all_canals(:,3) = reshape(repmat({'l','r','z','x','y'},2,1),[],1);
-all_markers = split('o d ^ p > h < s v _ * | .');
+all_markers = split('o d ^ p > h < s v _ * | . o d ^ p > h < s v _ * | . o d ^ p > h < s v _ * | .');
 %Process arguements from params input
 Path = params.Path;
 Cyc_Path = params.Cyc_Path;
@@ -44,8 +44,10 @@ if any(contains(all_results.Type,'Sine'))
     %Isolate relevant table entries and put them in order for plotting by amplitude and frequency
     tab = sortrows(sortrows(all_results(contains(all_results.Type,'Sine')&contains(all_results.AxisName,all_canals(:,1)),:),'Amplitude','ascend'),'Frequency','ascend');
     fn = size(tab,1);
-    YMax = 5*ceil(max(reshape(tab{:,{'MaxVel_LL','MaxVel_LR','MaxVel_LZ','MaxVel_RL','MaxVel_RR','MaxVel_RZ'}}+...
-        tab{:,{'MaxVel_LL_sd','MaxVel_LR_sd','MaxVel_LZ_sd','MaxVel_RL_sd','MaxVel_RR_sd','MaxVel_RZ_sd'}},[],1))/5);
+    LRZtrac = {'MaxVel_LL','MaxVel_LR','MaxVel_LZ','MaxVel_RL','MaxVel_RR','MaxVel_RZ'};
+    XYZtrac = {'MaxVel_LX','MaxVel_LY','MaxVel_LZ','MaxVel_RX','MaxVel_RY','MaxVel_RZ'};
+    YMax = 5*ceil(max(min([sqrt(sum((tab{:,LRZtrac}+tab{:,strcat(LRZtrac,'_sd')}).^2,2)),...
+        sqrt(sum((tab{:,XYZtrac}+tab{:,strcat(XYZtrac,'_sd')}).^2,2))],[],2))/5);
     GainMax = 0.1*ceil(max(tab.Gain+tab.Gain_sd)/0.1);
     %Make one figure for each group of cycle averages (same subject, visit,
     %date, condition, goggle, axis, across frequency, and/or amplitude)
@@ -539,7 +541,7 @@ if any(contains(all_results.Condition,'Autoscan'))
     all_plot_tabs.MaxVel{'PulseTrain'} = maxvel_plots;
     all_plot_tabs.Param{'PulseTrain'} = param_plots;
     %Save data for later
-    save('AutoscanParameters.mat','dat')
+    save([cd,filesep,'AutoscanParameters.mat'],'dat')
 end
 %% Make all plots
 all_cycavg_plots = vertcat(all_plot_tabs.CycAvg{:});

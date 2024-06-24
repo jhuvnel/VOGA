@@ -55,9 +55,9 @@ if contains(info.dataType,'Impulse')
     %Consisitent with GNO's csv, take a 175 sample trace with max at sample 48
     starts = spike_i-floor(0.195*Fs);
     ends = starts+floor(0.71*Fs);       
-elseif contains(info.dataType,{'RotaryChair','aHIT'})||...
-        contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
+elseif contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,'Moogles') %Align based on real/virtual motion traces
     if contains(info.dataType,'Sine')
+        stim = medfilt1(stim,3);
         pos_stim = (abs(stim)+stim)/2; %Pos half-cycle only
         freq = str2double(strrep(fparts{contains(fparts,'Hz')},'Hz',''));
         amp = str2double(strrep(fparts{contains(fparts,'dps')},'dps',''));
@@ -71,6 +71,10 @@ elseif contains(info.dataType,{'RotaryChair','aHIT'})||...
         end
         snip_len = round(median(diff(starts)));
         ends = starts + snip_len - 1;
+        if ends(end)>length(stim)&&(length(stim)-starts(end))/snip_len>0.99
+            snip_len = length(stim)-starts(end);
+            ends = starts + snip_len - 1;
+        end
     elseif contains(info.dataType,'Step')
         stims = stim;
         starts = 1;

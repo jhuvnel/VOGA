@@ -1,6 +1,6 @@
 %% Filter position and velocity
-function [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt,CycAvg)
-if nargin < 3
+function [CycAvg,filt,plot_info] = MakeCycAvg__filterTraces(Data,filt,plot_info,CycAvg)
+if nargin < 4
     %% Feed in variables from "Data" struct
     te = Data.te;
     ts = Data.ts;
@@ -11,20 +11,14 @@ if nargin < 3
     keep_inds = Data.keep_inds;
     keep_tr = filt.keep_tr;
     %% Validate Parameters
-    %Make sure all expected table columns are there
-    pos_labs = {'tvd','median','sgolay','spline'};
-    vel_labs = {'tvd','sgolay','irlssmooth','spline'};    
-    missing_pos_labs = pos_labs(~ismember(pos_labs,filt.pos.Properties.VariableNames));
-    missing_vel_labs = vel_labs(~ismember(vel_labs,filt.vel.Properties.VariableNames));
-    for i = 1:length(missing_pos_labs)
-        filt.pos.(missing_pos_labs{i})(:) = NaN;
-    end
-    for i = 1:length(missing_vel_labs)
-        filt.vel.(missing_vel_labs{i})(:) = NaN;
-    end
+    pos_labs = filt.pos.Properties.VariableNames;
+    vel_labs = filt.vel.Properties.VariableNames;
     %Set the "ALL" values
-    filt.pos(:,~isnan(filt.pos{'ALL',:})) = repmat(filt.pos(end,~isnan(filt.pos{'ALL',:})),11,1);
-    filt.vel(:,~isnan(filt.vel{'ALL',:})) = repmat(filt.vel(end,~isnan(filt.vel{'ALL',:})),11,1);  
+    filt.pos(plot_info.traces_pos,~isnan(filt.pos{'ALL',:})) = repmat(filt.pos(end,~isnan(filt.pos{'ALL',:})),length(plot_info.traces_pos),1); 
+    filt.vel(plot_info.traces_vel,~isnan(filt.vel{'ALL',:})) = repmat(filt.vel(end,~isnan(filt.vel{'ALL',:})),length(plot_info.traces_vel),1);  
+    %Clear the 'ALL' value on the filter
+    filt.pos{end,:} = NaN; 
+    filt.vel{end,:} = NaN; 
     %Check the parameters for valid values
     filt.pos = MakeCycAvg__filterParameterCheck(filt.pos);
     filt.vel = MakeCycAvg__filterParameterCheck(filt.vel);
@@ -71,7 +65,11 @@ if nargin < 3
             var_n = [traces{i}(1),'E_Position_',traces{i}(2:end)];
             if isfield(Data,var_n)
                 rel_trace = Data_pos.(var_n);
-                temp = interp1(te(~isnan(rel_trace)),rel_trace(~isnan(rel_trace)),te);
+                if sum(~isnan(Data.(var_n)))>2               
+                    temp = interp1(te(~isnan(rel_trace)),rel_trace(~isnan(rel_trace)),te);
+                else
+                    temp = rel_trace;
+                end
                 temp(isnan(temp)) = 0;    
                 for f = 1:length(pos_labs)
                     temp = filterTrace(pos_labs{f},temp,filt.pos.(pos_labs{f})(i),te,ts);
@@ -90,6 +88,18 @@ if nargin < 3
         Data_vel.t = ts;
         Data_vel.stim = stim;
     end
+    if ~isempty(Data_pos_filt)
+        eye_max = NaN(length(plot_info.traces_pos),2);
+        for t = 1:length(plot_info.traces_pos)
+            tr = strrep(strrep([plot_info.traces_pos{t}(1),'E_Position_',plot_info.traces_pos{t}(2)],'_L','_LARP'),'_R','_RALP');
+            if isfield(Data_pos_filt,tr)
+                eye_max(t,:) = [min(Data_pos_filt.(tr)),max(Data_pos_filt.(tr))];
+            end
+        end
+        eye_max(eye_max<0) = 10*floor(eye_max(eye_max<0)/10);
+        eye_max(eye_max>=0) = 10*ceil(eye_max(eye_max>=0)/10);
+        plot_info.YLim.Pos = [min(eye_max(:,1)),max(eye_max(:,2))];
+    end
     %% Filter Velocity
     traces = filt.vel.Properties.RowNames;   
     Data_vel_filt.t = ts;
@@ -102,7 +112,8 @@ if nargin < 3
         Data_vel_filt.stim_cond = stim(reshape(keep_inds,[],1));
     end
     Data_cyc.t = t_snip;
-    Data_cyc.stim = stims;  
+    Data_cyc.stim = stims; 
+    Data_cyc.keep_inds = keep_inds;
     for i = 1:length(traces)            
         var_n = [traces{i}(1),'E_Vel_',traces{i}(2:end)];
         if isfield(Data_vel,var_n)&&any(~isnan(Data_vel.(var_n)))
@@ -136,10 +147,23 @@ if nargin < 3
             end
         end
     end  
-    Data_cyc.keep_inds = keep_inds;
-    %Clear the 'ALL' value on the filter
-    filt.pos{end,:} = NaN; 
-    filt.vel{end,:} = NaN; 
+    %Set Velocity YLim
+    eye_max = NaN(length(plot_info.traces_vel),2);
+    for t = 1:length(plot_info.traces_vel)
+        tr = strrep(strrep([plot_info.traces_vel{t}(1),'E_Vel_',plot_info.traces_vel{t}(2)],'_L','_LARP'),'_R','_RALP');
+        if isfield(Data_cyc,tr)
+            eye_max(t,:) = [min(median(Data_cyc.(tr),2)),max(median(Data_cyc.(tr),2))];
+        end
+    end
+    if contains(Data.info.name,'Impulse')
+        eye_max(t+1,:) = [min(Data_vel_filt.stim),max(Data_vel_filt.stim)];
+    end
+    eye_max(eye_max<0) = 25*floor(eye_max(eye_max<0)/25);
+    eye_max(eye_max>=0) = 25*ceil(eye_max(eye_max>=0)/25);
+    plot_info.YLim.Vel = [min(eye_max(:,1)),max(eye_max(:,2))];
+    if plot_info.YLim.Vel(1)==plot_info.YLim.Vel(2)
+        plot_info.YLim.Vel(2) = plot_info.YLim.Vel(1)+1;
+    end
     %% Make the CycAvg Struct
     %Data Traces
     CycAvg.t = Data_cyc.t;

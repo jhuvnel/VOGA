@@ -27,8 +27,8 @@ num_labs = [{'Frequency';'Amplitude';'PulseFreq';'PhaseDur';'CurrentAmp';'Cycles
     reshape([sub_num_labs;strcat(sub_num_labs,'_sd')],[],1)]';
 %Load in file name and use to figure out how many rows are needed in the table
 old_fname = CycAvg.name;
-fname = strrep(strrep(strrep(strrep(strrep(strrep(strrep(old_fname,'CurrentFitting','eeVOR'),...
-    'PreAct_ElectrodeAutoscan','eeVOR'),'ElectricalOnly','eeVOR'),'CycAvg_',''),'.mat',''),'_CycleAvg',''),'NA','');
+fname = strrep(strrep(strrep(strrep(strrep(strrep(strrep(strrep(old_fname,'CurrentFitting','eeVOR'),...
+    'PreAct_ElectrodeAutoscan','eeVOR'),'ElectricalOnly','eeVOR'),'ElectricOnly','eeVOR'),'CycAvg_',''),'.mat',''),'_CycleAvg',''),'NA','');
 fname = fname(1:min([strfind(fname,'_'),length(fname)+1])-1);
 fparts = split(strrep(fname,'.mat',''),'-');
 fparts(cellfun(@isempty,fparts)) = [];
@@ -286,18 +286,23 @@ switch type
         [results.Disc(1),results.Disc_sd(1)] = calc_misalignment([CycAvg.ll_cyc(:,I1),CycAvg.lr_cyc(:,I1),CycAvg.lz_cyc(:,I1)],[CycAvg.rl_cyc(:,I1),CycAvg.rr_cyc(:,I1),CycAvg.rz_cyc(:,I1)]);
         [results.Disc(2),results.Disc_sd(2)] = calc_misalignment([CycAvg.ll_cyc(:,I2),CycAvg.lr_cyc(:,I2),CycAvg.lz_cyc(:,I2)],[CycAvg.rl_cyc(:,I2),CycAvg.rr_cyc(:,I2),CycAvg.rz_cyc(:,I2)]);        
         %Put the median analysis in cycle params file
+        if ~isfield(CycAvg,'t')
+            CycAvg.t = 0:1/Fs:(length(Stim_CycAvg)-1)/Fs;
+        end
         cycle_params.t = CycAvg.t;
         cycle_params.stim = CycAvg.stim;
-        Data_med = angpos2angvel(CycAvg.Data);
-        cyc_inds = CycAvg.Data_allcyc.keep_inds;
-        for tr = 1:length(traces)
-            if isfield(CycAvg,[traces{tr},'_cyc'])
-                cycle_params.([traces{tr},'_cycavg']) = CycAvg.([traces{tr},'_cycavg']);
-                cycle_params.([traces{tr},'_cycstd']) = CycAvg.([traces{tr},'_cycstd']);
-                cycle_params.([traces{tr},'_cyc']) = CycAvg.([traces{tr},'_cyc']);
-                long_name = [upper(traces{tr}(1)),'E_Vel_',upper(traces{tr}(2))];   
-                long_name = strrep(strrep(long_name,'_L','_LARP'),'_R','_RALP');
-                cycle_params.([traces{tr},'_cycmed']) = tvd1d(median(Data_med.(long_name)(cyc_inds),2,'omitnan'),2);
+        if isfield(CycAvg,'Data')
+            Data_med = angpos2angvel(CycAvg.Data);
+            cyc_inds = CycAvg.Data_allcyc.keep_inds;
+            for tr = 1:length(traces)
+                if isfield(CycAvg,[traces{tr},'_cyc'])
+                    cycle_params.([traces{tr},'_cycavg']) = CycAvg.([traces{tr},'_cycavg']);
+                    cycle_params.([traces{tr},'_cycstd']) = CycAvg.([traces{tr},'_cycstd']);
+                    cycle_params.([traces{tr},'_cyc']) = CycAvg.([traces{tr},'_cyc']);
+                    long_name = [upper(traces{tr}(1)),'E_Vel_',upper(traces{tr}(2))];   
+                    long_name = strrep(strrep(long_name,'_L','_LARP'),'_R','_RALP');
+                    cycle_params.([traces{tr},'_cycmed']) = median(Data_med.(long_name)(cyc_inds),2,'omitnan');
+                end
             end
         end
     case 2

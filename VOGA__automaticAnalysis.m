@@ -9,20 +9,20 @@ Cyc_Path = [Path,filesep,'Cycle Averages'];
 %Only run when the Cycle Average file doesn't yet exist
 progress_tab = assessProgress(Path);
 rel_files = progress_tab.Segment(~progress_tab.CycAvgFile&~progress_tab.NotAnalyzeable);
-disp('Press "s" for save, "d" for discard/do manually, and "q" for quit.')
+disp('Press "Enter" for save, "m" for discard/do manually, and "l" to leave/quit.')
 for j = 1:length(rel_files)
     fname = rel_files{j};
     load([Seg_Path,filesep,fname],'Data');
     try
         [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'},1);
         user_in = input('Keep automated analysis?: ','s');
-        while ~ismember(lower(user_in),'sdq')
-            disp('Invalid key. Only "s", "d" and "q" are valid entries.')
+        while ~isempty(user_in)&&~ismember(lower(user_in),'ml')
+            disp('Invalid key. Only "Enter", "m" and "l" are valid entries.')
             user_in = input('Keep automated analysis?: ','s');
         end
-        if strcmp(user_in,'q')
+        if strcmp(user_in,'l')
             break;
-        elseif strcmp(user_in,'s')
+        elseif isempty(user_in)
             MakeCycAvg__saveCycAvg(Cyc_Path,strrep(CycAvg.name,'CycAvg_',''),CycAvg,analyzed,1);
         end
     catch
