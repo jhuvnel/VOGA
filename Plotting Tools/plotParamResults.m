@@ -489,7 +489,7 @@ if any(contains(all_results.Condition,'Autoscan'))
     %Initialize the table for MaxVel plots
     [mv_name,mp_i2,maxvel_plot_i] = unique(dat.Cond_noE,'stable');
     maxvel_plots = table();
-    maxvel_plots.Name = strrep(strcat([common_cond,' '],mv_name,' Velocity'),'  ',' ');
+    maxvel_plots.Name = strrep(strcat(common_cond,{' '},mv_name,' Velocity'),'  ',' ');
     for i=1:size(maxvel_plots,1)
         sub_tab = dat(maxvel_plot_i==i,:);
         rel_tab = cell(3,3);

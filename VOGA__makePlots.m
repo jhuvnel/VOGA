@@ -1,7 +1,7 @@
 function VOGA__makePlots(plot_type,Path)
 %Plot Types
 opts = {'Raw VOG','Segment','Cycle Average','Parameterized',...
-    'Across Subjects','Sphere Plot'};
+    'Autoscan DSMB/FDA','Across Subjects','Sphere Plot'};
 % Take in inputs
 if nargin < 2
     Path = cd;
@@ -63,6 +63,8 @@ elseif strcmp(opts{ind},'Parameterized')
     plotParamResults(params);
 elseif strcmp(opts{ind},'Across Subjects')
     plotSummaryFigures(params);
+elseif strcmp(opts{ind},'Autoscan DSMB/FDA')
+    plotActivationElectrodeResponses(params);  
 elseif strcmp(opts{ind},'Sphere Plot')
     plotSpherePlot(params);       
 end

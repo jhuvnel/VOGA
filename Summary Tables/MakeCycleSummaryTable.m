@@ -8,7 +8,9 @@
 
 function [all_results,cyc_params] = MakeCycleSummaryTable(out_path,Cyc_Path,rerun)
 if nargin < 3
-  rerun = 1; 
+    rerun = 1; 
+else
+    rerun = ~strcmpi(rerun,'load');
 end
 if nargin < 1
     out_path = cd;

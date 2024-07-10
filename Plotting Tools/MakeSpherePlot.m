@@ -73,7 +73,7 @@ if nargin<8 || (nargin >=8 && isempty(stim_ear))
         view_ang = [135,-15];
     end
 else
-    if ismember(stim_ear,{'R','r','right','Right'})
+    if ismember(lower(stim_ear),{'r','right'})
         w = [-1,-1,1];
         view_ang = [-45,15];
     else
