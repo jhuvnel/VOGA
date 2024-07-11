@@ -132,7 +132,7 @@ if any(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'})) %GNO
         xml_file = [];
         all_xml = extractfield(dir([Raw_Path,filesep,'*.xml']),'name');
         if isfile([Raw_Path,filesep,fname(1:end-4),'.xml'])
-            xml_file = [Raw_Path,filesep,fname(1:end-4),'.xml'];
+            xml_file = [fname(1:end-4),'.xml'];
         elseif ~isempty(all_xml) %Look for a file with a small time delay
             xml_time = datetime(extract([all_xml;fname],digitsPattern(4)+'_'+digitsPattern(2)+'_'+digitsPattern(2)+'_'+digitsPattern(2)+'_'+digitsPattern(2)+'_'+digitsPattern(2)),'Format','yyyy_MM_dd_HH_mm_ss');
             if any(abs(seconds(xml_time(1:end-1)-xml_time(end)))<120)
