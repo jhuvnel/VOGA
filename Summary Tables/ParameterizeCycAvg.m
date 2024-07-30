@@ -669,7 +669,7 @@ switch type
         % Find maximum velocity (for all directions) and misalignment
         %Find the index with the maximum magnitude in the intended direction on the
         %average trace
-        stim_high  = 1:find(diff(Stim_CycAvg)<0);
+        stim_high  = 1:find(diff(Stim_CycAvg)<0, 1, 'first');
         [~,I] = max(max([-stim_vect*[CycAvg.ll_cycavg(stim_high);CycAvg.lr_cycavg(stim_high);CycAvg.lz_cycavg(stim_high)];...
             -stim_vect*[CycAvg.rl_cycavg(stim_high);CycAvg.rr_cycavg(stim_high);CycAvg.rz_cycavg(stim_high)]]));
         for tr = 1:length(traces)
