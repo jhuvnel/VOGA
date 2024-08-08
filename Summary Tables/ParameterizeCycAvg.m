@@ -360,7 +360,7 @@ switch type
                 dat_high = dat(Stim(sub_i)'==1&~isnan(dat));
                 dat_low = dat(Stim(sub_i)'==0&~isnan(dat));
                 %Stim is high
-                [fitobj_h,gof_h] = fit(t_high,dat_high,'exp2');
+                [fitobj_h,gof_h] = fit(t_high,dat_high,'exp2', 'Lower', [0 0 0 0]);
                 params{1:4,i} = coeffvalues(fitobj_h)';
                 %dconfint_h = mean(abs(confint(fitobj_h)-mean(confint(fitobj_h))));
                 params2{1:2,i} = makefit2(dat_high,t_high);
@@ -374,7 +374,7 @@ switch type
                 %gof_l = gof_h;
                 gof_l.rmse = NaN;
                 if length(t_low)>4
-                    [fitobj_l,gof_l] = fit(t_low,dat_low,'exp2');
+                    [fitobj_l,gof_l] = fit(t_low,dat_low,'exp2', 'Lower', [0 0 0 0]);
                     params{5:8,i} = coeffvalues(fitobj_l)';
                     %dconfint_l = mean(abs(confint(fitobj_l)-mean(confint(fitobj_l))));
                     params2{3:4,i} = makefit2(dat_low,t_low);

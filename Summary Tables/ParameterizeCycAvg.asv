@@ -374,7 +374,7 @@ switch type
                 %gof_l = gof_h;
                 gof_l.rmse = NaN;
                 if length(t_low)>4
-                    [fitobj_l,gof_l] = fit(t_low,dat_low,'exp2');
+                    [fitobj_l,gof_l] = fit(t_low,dat_low,'exp2', 'Lower', [0 0 0 0]);
                     params{5:8,i} = coeffvalues(fitobj_l)';
                     %dconfint_l = mean(abs(confint(fitobj_l)-mean(confint(fitobj_l))));
                     params2{3:4,i} = makefit2(dat_low,t_low);
@@ -669,7 +669,7 @@ switch type
         % Find maximum velocity (for all directions) and misalignment
         %Find the index with the maximum magnitude in the intended direction on the
         %average trace
-        stim_high  = 1:find(diff(Stim_CycAvg)<0, 1, 'fi');
+        stim_high  = 1:find(diff(Stim_CycAvg)<0, 1, 'first');
         [~,I] = max(max([-stim_vect*[CycAvg.ll_cycavg(stim_high);CycAvg.lr_cycavg(stim_high);CycAvg.lz_cycavg(stim_high)];...
             -stim_vect*[CycAvg.rl_cycavg(stim_high);CycAvg.rr_cycavg(stim_high);CycAvg.rz_cycavg(stim_high)]]));
         for tr = 1:length(traces)
