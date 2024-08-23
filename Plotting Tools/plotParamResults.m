@@ -22,7 +22,7 @@ Ears = sub_info.Ear;
 % Load table in question
 res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 if isempty(res_file)
-    MakeCycleSummaryTable(Path,Cyc_Path,0);
+    MakeCycleSummaryTable(Path,Cyc_Path,'Load');
     res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 end
 load([Path,filesep,res_file{end}],'all_results')
