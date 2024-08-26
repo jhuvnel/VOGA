@@ -5,11 +5,11 @@
 % "eeVOR", "Autoscan", and "vHIT" folders.
 % This script requires the "Raw Files" folder to have been created for each
 % of these directories already.
-%
-% Outputs PDFs in the directory it's run from. These will need to be moved
-% manually.
 
 function VOGA__CRF(Path)
+%% Defaults
+default_vHIT_experimenter = 'CFB';
+default_VOG_experimenter = 'EOV';
 %% Initialize
 if nargin < 1
     Path = cd;
@@ -18,30 +18,38 @@ if isempty(dir(strrep([Path,'\*\Raw Files'],'\',filesep)))
     disp('No "Raw Files" folders found. Check that you are on a path that includes VOG and vHIT files.')
     return;
 end
-default_vHIT_experimenter = 'CFB, MRC';
-default_VOG_experimenter = 'EOV';
+VOGA_VerInfo = rows2vars(readtable([userpath,filesep,'VOGA_VerInfo.txt'],...
+    'ReadVariableNames',false,'ReadRowNames',true));
+if ~isfile([char(VOGA_VerInfo.Path),filesep,'MVI_Information.xlsx'])
+    error('No MVI_Information.xlsx file found on the MVI Path in VOGA_VerInfo.txt.')
+end
+sub_info = readtable([char(VOGA_VerInfo.Path),filesep,'MVI_Information.xlsx']);
 % Make the figure that will be used for the PDFs (single page)
 fig = figure(1);
 set(fig,'Units','inches','Position',[1 1 8.5 11],'Color','w');
 % Figure out subject and visit
 subject = strrep(char(extract(Path,'MVI'+digitsPattern(3)+'_R'+digitsPattern)),'_','');
 visit = char(extract(Path,'Visit '+alphanumericsPattern(1,3)));
-switch subject
-    case {'MVI011R031','MVI012R897','MVI013R864'}
+ind = find(ismember(sub_info.Subject,subject),1);
+if ~isempty(ind)
+    protocol = char(sub_info.Protocol(ind));
+    if strcmp(protocol,'IRB00335294')
         fold = 'IRB00335294 NIDCD';
-    case {'MVI014R1219','MVI015R1209','R164','R1054'}
-        fold = 'IRB00346924 NIA';
-    otherwise %old protocol for MVI1-10 and R205
-        fold = 'NA_00051349';
-end
-protocol = strrep(strrep(fold,' NIA',''),' NIDCD','');
-CRF_path = [Path(1:(strfind(Path,'Study')-1)),'CRFs',filesep];
-visit_fold = extractfield(dir([CRF_path,fold,filesep,subject,filesep,visit,' -*']),'name');
-if isempty(visit_fold) %Non typical visit name found
-    visit_fold = {'Visit Nx - (Day XXX) Monitor - X yrs Post-Act - visit applicable only if device still act'};
+    elseif strcmp(protocol,'IRB00346924')
+        fold = 'IRB00346924 NIA';    
+    else
+        fold = protocol;
+    end
+    visit_fold = extractfield(dir([Path(1:(strfind(Path,'Study')-1)),'CRFs',filesep,fold,filesep,subject,filesep,visit,' -*']),'name');
+    if isempty(visit_fold) %Non typical visit name found
+        visit_fold = {'Visit Nx - (Day XXX) Monitor - X yrs Post-Act - visit applicable only if device still act'};
+    end
+    CRF_path = [Path(1:(strfind(Path,'Study')-1)),'CRFs',filesep,fold,filesep,subject,filesep,visit_fold{:},filesep];
+else
+    CRF_path = [Path,filesep,'CRFs',filesep];
 end
 %% vHIT
-out_path = [CRF_path,fold,filesep,subject,filesep,visit_fold{:},filesep,'14_05 vHIT',filesep,'14_05_CRF_vHIT_',subject,'_',visit,'.pdf'];
+out_path = [CRF_path,'14_05 vHIT',filesep,'14_05_CRF_vHIT_',subject,'_',visit,'.pdf'];
 examiner = char(inputdlg('Name of vHIT Experimenter(s): ','Name of vHIT Experimenter(s): ',1,{default_vHIT_experimenter}));
 source_path = [Path,filesep,'vHIT'];
 %Find the first date
@@ -63,7 +71,7 @@ else
     disp('NO GNO files found. Add and rerun or manually make CRF with deviation.')
 end
 %% VOR
-out_path = [CRF_path,fold,filesep,subject,filesep,visit_fold{:},filesep,'14_04 VOR',filesep,'14_04_CRF_VOR_',subject,'_',visit,'.pdf'];
+out_path = [CRF_path,'14_04 VOR',filesep,'14_04_CRF_VOR_',subject,'_',visit,'.pdf'];
 examiner = char(inputdlg('Name of VOG Experimenter(s): ','Name of VOG Experimenter(s): ',1,{default_VOG_experimenter}));
 exps = {'Rotary Chair','Autoscan','eeVOR','aHIT'};
 exp_times = cell(1,length(exps));

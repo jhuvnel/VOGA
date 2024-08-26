@@ -50,13 +50,8 @@ if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected
     elseif ismember(MVI_num,ImplantSide{2})
         ear = 'R';
     else
-        disp('Remember to update the implantation side for this MVI Subject in MakeNotes.m')
-        ear = inputdlg('Implanted Ear: (L/R) ','Implanted Ear: (L/R) ');
-        ear = ear{:};
-        while ~strcmp(ear,'L')&~strcmp(ear,'R')
-            ear = inputdlg('Implanted Ear: (L/R) ','Implanted Ear: (L/R) ');
-            ear = ear{:};
-        end        
+        open('MakeNotes.m')
+        error('Remember to update the implantation side for this MVI Subject in MakeNotes.m')
     end
 end
 if any(contains(path_parts,'Visit'))

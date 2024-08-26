@@ -1,9 +1,8 @@
 function updateRawVOGTrigger(Raw_Path,In_Path,TEMP_In_Path)
 if nargin < 1
+    Raw_Path = cd;
     if isfolder([cd,filesep,'Raw Files'])
         Raw_Path = [cd,filesep,'Raw Files'];
-    else
-        Raw_Path = cd;
     end
 end
 all_files = extractfield(dir(Raw_Path),'name',find(~extractfield(dir(Raw_Path),'isdir')));
@@ -19,26 +18,21 @@ screen_size = fig.Position;
 fig.Position = screen_size - [0 0 6 0];
 %% Get file names
 if nargin < 2
-    [ind1,tf1] = nmlistdlg('PromptString','Select a file to fix:',...
-                       'SelectionMode','single',...
-                       'ListSize',[300 150],...
-                       'ListString',VOG_files,...
-                       'Position',[screen_size(3)-6,screen_size(4)-3.75,5,3.75]); 
+    [ind1,tf1] = nmlistdlg('PromptString','Select a file to fix:','SelectionMode','single',...
+               'ListSize',[300 150],'ListString',VOG_files,'Position',[screen_size(3)-6,screen_size(4)-3.75,5,3.75]); 
     if ~tf1
         return;
     end
     In_Path = [Raw_Path,filesep,VOG_files{ind1}];
+elseif ~contains(In_Path,Raw_Path)
+    In_Path = [Raw_Path,filesep,In_Path];
 end
 if nargin < 3
-    [ind2,tf2] = nmlistdlg('PromptString','Select a template file:',...
-                       'SelectionMode','single',...
-                       'ListSize',[300 150],...
-                       'ListString',VOG_files,...
-                       'Position',[screen_size(3)-6,screen_size(4)-3.75,5,3.75]); 
+    [ind2,tf2] = nmlistdlg('PromptString','Select a template file:','SelectionMode','single','ListSize',[300 150],...
+                       'ListString',VOG_files,'Position',[screen_size(3)-6,screen_size(4)-3.75,5,3.75]); 
+    TEMP_In_Path = [];
     if tf2
         TEMP_In_Path = [Raw_Path,filesep,VOG_files{ind2}];
-    else
-        TEMP_In_Path = [];
     end
 end    
 %% Load in files
