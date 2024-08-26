@@ -98,7 +98,7 @@ if nargin < 4
         end
         eye_max(eye_max<0) = 10*floor(eye_max(eye_max<0)/10);
         eye_max(eye_max>=0) = 10*ceil(eye_max(eye_max>=0)/10);
-        plot_info.YLim.Pos = [min(eye_max(:,1)),max(eye_max(:,2))];
+        plot_info.YLim.Pos = [max([min(eye_max(:,1)),-40]),min([max(eye_max(:,2)),40])]; %Keep bounded by ±40
     end
     %% Filter Velocity
     traces = filt.vel.Properties.RowNames;   
@@ -152,7 +152,7 @@ if nargin < 4
     for t = 1:length(plot_info.traces_vel)
         tr = strrep(strrep([plot_info.traces_vel{t}(1),'E_Vel_',plot_info.traces_vel{t}(2)],'_L','_LARP'),'_R','_RALP');
         if isfield(Data_cyc,tr)
-            eye_max(t,:) = [min(median(Data_cyc.(tr),2)),max(median(Data_cyc.(tr),2))];
+            eye_max(t,:) = [min(1.2*median(Data_cyc.(tr),2)),max(1.2*median(Data_cyc.(tr),2))];
         end
     end
     if contains(Data.info.name,'Impulse')

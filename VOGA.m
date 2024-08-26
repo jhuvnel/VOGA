@@ -8,7 +8,7 @@
 % and Cycle Average folders and then run "VOGA." Click cancel to end the
 % loop.
 %Current version of VOGA - Changed with each GitHub commit
-current_ver = 'v5.11.1';
+current_ver = 'v5.11.3';
 %VOGA Menu Options
 opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average',...
     'Parameterize and Plot','Advanced'};
@@ -38,6 +38,7 @@ while tf
         case 'Cycle Average'
             VOGA__CycAvg;
         case 'Parameterize and Plot'
+            VOGA__SummaryTable('Folder (Load)')
             VOGA__makePlots('Parameterized')     
         case 'Automatic VOG Analysis'
             VOGA__automaticAnalysis;
