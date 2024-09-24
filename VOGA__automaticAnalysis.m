@@ -14,7 +14,7 @@ for j = 1:length(rel_files)
     fname = rel_files{j};
     load([Seg_Path,filesep,fname],'Data');
     try
-        [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,{'Save'},1);
+        [CycAvg,analyzed] = AutomatedFiltering(Data,0);
         user_in = input('Keep automated analysis?: ','s');
         while ~isempty(user_in)&&~ismember(lower(user_in),'ml')
             disp('Invalid key. Only "Enter", "m" and "l" are valid entries.')
