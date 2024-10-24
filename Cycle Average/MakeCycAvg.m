@@ -77,6 +77,10 @@ type_logic = [contains(fname,{'GNO','ESC'})&&~contains(fname,'ESC3'),...
     contains(fname,'Impulse'),contains(fname,{'Activation','Step'}),true];
 type = type_ord(find(type_logic,1,'first'));
 Data.info.type = type;
+TriggerShift = 0;
+if isfield(Data.info,'TriggerShift2')
+    TriggerShift = Data.info.TriggerShift2;
+end
 %% The Main Loop
 while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
     if strcmp(sel,'Advanced') %Give the advanced menu and run that selection
@@ -88,12 +92,12 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
         end
     end
     switch sel
-        case 'Start Over'
+        case 'Start Over'            
             plot_info.traces_pos = traces_pos1;
             plot_info.traces_vel = traces_vel1;
             plot_info.YLim.Pos = [NaN NaN];
             plot_info.YLim.Vel = [NaN NaN];
-            Data.info.TriggerShift2 = 0;
+            Data.info.TriggerShift2 = TriggerShift;
             Data = MakeCycAvg__alignCycles(Data); % Cycle Align            
             filt = MakeCycAvg__autoFilter(Data,filt_params,plot_info); %First pass at filter params
             filt.t_interp = [];
@@ -173,16 +177,19 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
             position = [plot_info.menu_space(1),sum(plot_info.menu_space([2,4]))-300,plot_info.menu_space(3),300];
             new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ',...
                 'Shift',[1 15],{num2str(Data.info.TriggerShift2)},'on',1,position,[],'pixels'));
-            if ~isempty(new_TrigShift)
+            while ~isempty(new_TrigShift)
                 Data.info.TriggerShift2 = round(new_TrigShift);
                 Data = MakeCycAvg__alignCycles(Data);
                 if size(Data.keep_inds,2) > length(CycAvg.keep_tr)
-                    filt.keep_tr = [CycAvg.keep_tr;true(1,size(Data.keep_inds,2)-length(CycAvg.keep_tr))];
+                    filt.keep_tr = [CycAvg.keep_tr,true(1,size(Data.keep_inds,2)-length(CycAvg.keep_tr))];
                 elseif size(Data.keep_inds,2) < length(CycAvg.keep_tr)
                     filt.keep_tr = CycAvg.keep_tr(1:size(Data.keep_inds,2));
                 end
                 [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt,plot_info);
                 ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
+                position = [plot_info.menu_space(1),sum(plot_info.menu_space([2,4]))-300,plot_info.menu_space(3),300];
+                new_TrigShift = cellfun(@str2double,inputdlgcol('Trigger Shift (samples): ',...
+                    'Shift',[1 15],{num2str(Data.info.TriggerShift2)},'on',1,position,[],'pixels'));
             end                
         case 'Shorten Segment'
             [Data,good_rng] = MakeCycAvg__shortenSegment(ha,Data,plot_info);

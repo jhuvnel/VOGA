@@ -71,23 +71,45 @@ if contains(info.goggle_ver,{'NKI','NL'})
     Time_Stim = data2(:,1);
     Stim = zeros(length(Time_Eye),1);
     Stim(data.EventCode ~= 0) = 1;
-    % Load Gyroscope and accelerometer readings
-    XAxisVelHead = data.GyroY - median(data.GyroY);
-    YAxisVelHead = -(data.GyroX - median(data.GyroX));
-    ZAxisVelHead = -(data.GyroZ - median(data.GyroZ));
-    XAxisAccelHead = data.AccelY - median(data.AccelY);
-    YAxisAccelHead = -(data.AccelX - median(data.AccelX));
-    ZAxisAccelHead = -(data.AccelZ - median(data.AccelZ));
     Fs = 1/median(abs(diff(Time_Eye)));
-    % Load raw eye position data in Fick coordinates [degrees] but
-    % adjust for the reverse of the X/Y/Z axes direction. This is validated by
-    % experiments done on the aHIT in light on normal subjects:
+    % Load gyroscope, acceleration, and raw eye position data in Fick
+    % coordinates [degrees].
+    % adjust for the camera values being reversed. This is validated by
+    % Experiments done on the aHIT in light on normal subjects can be found here:
     % https://docs.google.com/document/d/1euk4V0fbnbhg_paUZOaO32s_FEhStmtCbrHJV6WQLu8/edit
+    % Shows that camera Y and Z values are both mirrored.
+    % Shows that gryo/accelerometers are oriented with the left hand rule
+    % and therefore a passive rotation cannot not be used to compensate
+    % unless we already switch the gyros/accelerometers labeled "X" and "Y"
+    % XAxisVelHead = data.GyroY - median(data.GyroY);
+    % YAxisVelHead = -(data.GyroX - median(data.GyroX));
+    % ZAxisVelHead = -(data.GyroZ - median(data.GyroZ));
+    % XAxisAccelHead = data.AccelY - median(data.AccelY);
+    % YAxisAccelHead = -(data.AccelX - median(data.AccelX));
+    % ZAxisAccelHead = -(data.AccelZ - median(data.AccelZ));
+    XvelHeadRaw = data.GyroY - median(data.GyroY);
+    YvelHeadRaw = data.GyroX - median(data.GyroX);
+    ZvelHeadRaw = data.GyroZ - median(data.GyroZ);
+    XaccelHeadRaw = data.AccelY - median(data.AccelY);
+    YaccelHeadRaw = data.AccelX - median(data.AccelX);
+    ZaccelHeadRaw = data.AccelZ - median(data.AccelZ);
+    psi = 180; %Based on +y pointing out of the right ear and +z pointing down
+    Rotation_Head = [1,0,0;0,cosd(psi),-sind(psi);0,sind(psi),cosd(psi)];
+    % NOTE: We are transposing the rotation matrix in order to apply a
+    % PASSIVE (i.e., a coordinate system) transformation
+    A = Rotation_Head' * [XvelHeadRaw' ; YvelHeadRaw' ; ZvelHeadRaw'];
+    XAxisVelHead = A(1,:);
+    YAxisVelHead = A(2,:);
+    ZAxisVelHead = A(3,:);
+    B = Rotation_Head' * [XaccelHeadRaw' ; YaccelHeadRaw' ; ZaccelHeadRaw'];
+    XAxisAccelHead = B(1,:);
+    YAxisAccelHead = B(2,:);
+    ZAxisAccelHead = B(3,:);
     Horizontal_LE_Position = -data2(:,HLeftIndex);
     Vertical_LE_Position = -data2(:,VLeftIndex);
-    Torsion_LE_Position = data2(:,TLeftIndex);
     Horizontal_RE_Position = -data2(:,HRightIndex);
     Vertical_RE_Position = -data2(:,VRightIndex);
+    Torsion_LE_Position = data2(:,TLeftIndex);
     Torsion_RE_Position = data2(:,TRightIndex);
     %Remove repeated values in torsion
     [gr,gc] = groupcounts(diff(find(diff([Torsion_LE_Position;Torsion_RE_Position])~=0&...

@@ -46,12 +46,9 @@ if strcmp(In_Path(end-2:end),'dat')%NKI
     data.Properties.VariableNames{1} = 'EyeTime';
     Time_Eye = data.EyeTime;        
     %Transform coordinates to be in standard canal coordinates (X,Y,Z)
-    GX = data.GyroX - median(data.GyroX);
-    GY = data.GyroY - median(data.GyroY);
-    GZ = data.GyroZ - median(data.GyroZ);
-    GyroX = GY; 
-    GyroY = -GX; 
-    GyroZ = -GZ; 
+    GyroX = data.GyroY - median(data.GyroY); 
+    GyroY = -(data.GyroX - median(data.GyroX)); 
+    GyroZ = -(data.GyroZ - median(data.GyroZ)); 
     Stim = zeros(length(Time_Eye),1); 
     Stim(data.EventCode ~= 0) = 1;
     LZ = -data.LeftHoriz;
@@ -130,7 +127,7 @@ while ~strcmp(opts{ind},'Save')
         plot(Time_Eye,LY,'Color',colors.l_y);plot(Time_Eye,RY,'Color',colors.r_y);
         plot(Time_Eye,LZ,'Color',colors.l_z);plot(Time_Eye,RZ,'Color',colors.r_z);
         plot(Time_Eye,GyroX,'k:',Time_Eye,GyroY,'k--',Time_Eye,GyroZ,'k-')
-        h1 = plot(Time_Eye,Stim,'b');
+        h1 = plot(Time_Eye,Stim,'b*');
         h2 = plot(Time_Eye,template,'g');
         hold off
         xlabel('Time (s)')
