@@ -1,10 +1,10 @@
 % Batch trigger fixing
-trigger_shift = 15;
+trigger_shift = -15;
 Path = cd;
 Seg_Path = [Path,filesep,'Segmented Files'];
 Cyc_Path = [Path,filesep,'Cycle Averages'];
 progress_tab = assessProgress(Path);
-%progress_tab(contains(progress_tab.Segment,{'NKI','NL'}),:) = []; %Don't updated the Neurolign files
+progress_tab(contains(progress_tab.Segment,{'NKI','NL'}),:) = []; %Don't updated the Neurolign files
 all_seg = progress_tab.Segment;
 for j = 1:length(all_seg)
     fname = all_seg{j};

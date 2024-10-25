@@ -57,7 +57,7 @@ res_files = [dir([out_path,filesep,'*Results.mat']);dir([out_path,filesep,'*CycP
 for i = 1:length(res_files)
     delete([res_files(i).folder,filesep,res_files(i).name])
 end
-out_fname = [out_path,filesep,char(datetime("now"),'yyyyMMdd_HHmmSS'),'_VOG'];
+out_fname = [out_path,filesep,char(datetime("now"),'yyyyMMdd_HHmmss'),'_VOG'];
 save([out_fname,'Results.mat'],'all_results')
 save([out_fname,'CycParam.mat'],'cyc_params')
 end

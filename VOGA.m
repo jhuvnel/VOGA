@@ -8,7 +8,7 @@
 % and Cycle Average folders and then run "VOGA." Click cancel to end the
 % loop.
 %Current version of VOGA - Changed with each GitHub commit
-current_ver = 'v5.14.0';
+current_ver = 'v5.14.1';
 %VOGA Menu Options
 opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average',...
     'Parameterize and Plot','Advanced'};
