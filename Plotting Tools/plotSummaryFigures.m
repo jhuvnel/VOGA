@@ -282,6 +282,7 @@ elseif contains(sel,'vHIT')
     NC = size(cond_logic,2);
     canals = {'Horizontal','Anterior','Posterior'};
     gain = NaN(NC,length(canals),length(all_subs));
+    lat = NaN(NC,length(canals),length(all_subs));
     for c = 1:NC
         for i = 1:length(all_subs)
             for j = 1:length(canals)
@@ -289,6 +290,7 @@ elseif contains(sel,'vHIT')
                     &contains(val_results.Canal,canals{j}(1))&cond_logic(:,c),:),'Type','ascend');
                 if ~isempty(subtab)
                     gain(c,j,i) = subtab.Gain(end);
+                    lat(c,j,i) = subtab.Lat(end);
                 end
             end
         end
@@ -296,6 +298,9 @@ elseif contains(sel,'vHIT')
     dgain = gain-gain(1,:,:);
     dgain_mean = mean(dgain,3,'omitnan');
     dgain_std = std(dgain,[],3,'omitnan');
+    dlat = lat-lat(1,:,:);
+    dlat_mean = mean(dlat,3,'omitnan');
+    dlat_std = std(dlat,[],3,'omitnan');
     %% Visit 0 Gain Values and Candidate values
     if contains(sel,'Candidate')
         if ~isfile(strrep([params.MVIPath,filesep,candidate,'/Visit 0/vHIT/GNO_Summary.mat'],'/',filesep))
@@ -338,7 +343,7 @@ elseif contains(sel,'vHIT')
         savefig(fig1,fname1)
         saveas(fig1,strrep(fname1,'.fig','.png'))
     end
-    %% Implanted Canals Over Time with all Subjects
+    %% Implanted Canals Gain Over Time with all Subjects
     titles = {'Treatment Mode','Placebo Mode'};
     fig1 = figure;
     set(fig1,'Units','inches','Position',[1 1 6 4],'Color',[1 1 1])
@@ -388,6 +393,59 @@ elseif contains(sel,'vHIT')
     leg1.ItemTokenSize(1) = 10;   
     fname1 = ['Summary Figures',filesep,char(datetime('now','Format','yyyyMMdd')),'_SummaryGNOvHITGain_AllSub.fig'];
     savefig(fig1,fname1)
-    saveas(fig1,strrep(fname1,'.fig','.png'))
+    saveas(fig1,strrep(fname1,'.fig','.svg'))
+
+    %% Implanted Canals Latency Over Time with all Subjects
+    titles = {'Treatment Mode','Placebo Mode'};
+    fig2 = figure;
+    set(fig2,'Units','inches','Position',[1 1 6 4],'Color',[1 1 1])
+    %Set figure and axes sizing
+    nr = length(canals);
+    nc = length(titles);
+    x_spac = 0.01;
+    x_min = 0.10;
+    x_max = 1-x_spac;
+    y_min = 0.17;
+    y_max = 0.95;
+    y_spac = 0.02;
+    y_wid = (y_max-y_min-y_spac*(nr-1))/nr;
+    x_wid = (x_max-x_min-x_spac*(nc-1))/nc;
+    x_pos = x_min:(x_wid+x_spac):x_max;
+    y_pos = fliplr(y_min:(y_wid+y_spac):y_max);
+    spread = 0.1;
+    ha = gobjects(nr,nc);
+    h1 = gobjects(2,1);
+    for i = 1:nr
+        for j = 1:nc
+            ha(i,j) = subplot(nr,nc,sub2ind([nc,nr],j,i));
+            h1(1) = plot(NaN,NaN,'k-','LineWidth',1.5);
+            hold on
+            h1(2) = plot([0,6],[0,0],'k:','LineWidth',2);
+            errorbar(1:5,dlat_mean([1,(-2:1)+4*j],i),dlat_std([1,(-2:1)+4*j],i),'k-','LineWidth',1.5);
+            for s = 1:length(all_subs)
+                text((1:5)+(rand-1.5)*spread,dlat([1,(-2:1)+4*j],i,s),char(64+s),'FontSize',7)
+            end
+            hold off
+        end
+        ylabel(ha(i,1),{'\Delta vHIT Latency [ms]',canals{i}})
+    end
+    for j = 1:nc
+        for i = 1:nr
+            ha(i,j).Position = [x_pos(j),y_pos(i),x_wid,y_wid];
+        end
+        title(ha(1,j),titles{j})
+    end
+    % set axis properties (including inverting y axis so up (lower/negative
+    % latency) is better
+    set(ha,'xminortick','off','XTick',1:5,'XTickLabels',{'0','0.5','1','2','most recent'},...
+        'box','on','XLim',[0.75 5.25],'YLim',[-150 150],'Layer','top', 'YDir', 'reverse')
+    set(ha(:,2:end),'YTickLabel',[])
+    set(ha(1:end-1,:),'XTickLabel',[])
+    xlabel(ha(end,:),'Years Since Implantation')
+    leg1 = legend(ha(1,end),h1,{'Mean±SD Change','No Change'},'Location','north','NumColumns',length(h1));
+    leg1.ItemTokenSize(1) = 10;   
+    fname2 = ['Summary Figures',filesep,char(datetime('now','Format','yyyyMMdd')),'_SummaryGNOvHITLatency_AllSub.fig'];
+    savefig(fig2,fname2)
+    saveas(fig2,strrep(fname2,'.fig','.svg'))
 end
 end
