@@ -21,7 +21,8 @@ traces = {'lz','rz','ll','rl','lr','rr','lx','rx','ly','ry'};
 cell_labs = {'File','Subject','Visit','Date','Goggle','Experiment',...
     'Type','Condition','AxisName','AxisLetter','StimAxis','Electrode'};
 param_tr = {'MaxVel','Gain','Tau','Latency','Phase','RMSE'};
-sub_num_labs = [reshape(strcat(repmat(param_tr,length(traces),1),'_',repmat(upper(traces)',1,length(param_tr))),[],1)',...
+sub_num_labs = [reshape(strcat(repmat(param_tr,length(traces),1),'_',...
+    repmat(upper(traces)',1,length(param_tr))),[],1)',...
     {'Align_L','Align_R','Disc'},param_tr,{'Align'}];
 num_labs = [{'Frequency';'Amplitude';'PulseFreq';'PhaseDur';'CurrentAmp';'Cycles'};...
     reshape([sub_num_labs;strcat(sub_num_labs,'_sd')],[],1)]';
@@ -32,15 +33,11 @@ fname = strrep(strrep(strrep(strrep(strrep(strrep(strrep(strrep(old_fname,'Curre
 fname = fname(1:min([strfind(fname,'_'),length(fname)+1])-1);
 fparts = split(strrep(fname,'.mat',''),'-');
 fparts(cellfun(@isempty,fparts)) = [];
-if contains(lower(fname),{'sin','velstep','activation'}) %Pos/Neg Half-cycles;
-    N = 2;
-else
-    N = 1;
-end
-results = [cell2table(cell(N,length(cell_labs)),'VariableNames',cell_labs),...
+N = double(contains(lower(fname),{'sin','velstep','activation'}))+1; %Pos/Neg Half-cycles;
+results = [cell2table(repmat({''},N,length(cell_labs)),'VariableNames',cell_labs),...
     array2table(NaN(N,length(num_labs)),'VariableNames',num_labs)];
 results.Date = NaT(N,1); %Fix date into a datetime
-results.Properties.VariableUnits = repmat({''},size(results,2),1);
+results.Properties.VariableUnits = repmat({''},1,length(results.Properties.VariableNames));
 results.Properties.VariableUnits(contains(results.Properties.VariableNames,'StimAxis')) = {'[L,R,Z] Normalized rotation vector'};
 results.Properties.VariableUnits(contains(results.Properties.VariableNames,'Frequency')) = {'Hz'};
 results.Properties.VariableUnits(contains(results.Properties.VariableNames,'PulseFreq')) = {'pulse/s'};
@@ -54,19 +51,17 @@ results.Properties.VariableUnits(contains(results.Properties.VariableNames,{'Pha
 results.File(:) = {old_fname};
 % Subject
 sub_pat = "R"+digitsPattern(3);
+ind = 1;
 if contains(fname,sub_pat)
     ind = contains(fparts,extract(fname,sub_pat));
-else
-    ind = 1;
 end
 results.Subject(:) = fparts(ind);
 fparts(ind) = [];
 % Visit
+results.Visit(:) = {'NA'};
 if any(contains(fparts,'Visit'))
     results.Visit(:) = strrep(fparts(contains(fparts,'Visit')),' ','');
     fparts(contains(fparts,'Visit')) = [];
-else
-    results.Visit(:) = {'NA'};
 end
 % Date
 date_ind = find(cellfun(@str2double,fparts)>20160000);
@@ -119,10 +114,9 @@ if any(contains(fparts,{'ua','uA'}))
     fparts(contains(fparts,{'ua','uA'})) = [];
 end
 %Stim Vector and Axis Name
-if contains(fname,{'LA','LP','RH'})&&~contains(fname,{'LARP','LHRH','RALP','X','Y'})
+n = [1,2];
+if contains(fname,{'LA','LP','RH'})&&~contains(fname,{'LARP','LHRH','RALP','X','Y'}) %Negative
     n = [2,1];
-else 
-    n = [1,2];
 end
 Rotations = table();
 Rotations.Name1 = {{'RP','LA'},{'RA','LP'},{'LH','Rotary','RH'},'X','Y'}';
@@ -130,6 +124,7 @@ Rotations.Name2 = {{'RP','LA'},{'RA','LP'},{'LH','RH'},{'+X','-X'},{'+Y','-Y'}}'
 Rotations.AxisLetter = {'L','R','Z','X','Y'}';
 Rotations.Val = [1 0 0;0 1 0;0 0 1;0.707 0.707 0;-0.707 0.707 0];
 is_common_vect = find(cellfun(@(x) contains(fname,x),Rotations.Name1),1,'first');
+results.StimAxis(:) = {[0,0,0]};
 if ~isempty(is_common_vect)    
     rel_names = Rotations.Name2{is_common_vect}(n);
     rel_vals = [Rotations.Val(is_common_vect,:);-1*Rotations.Val(is_common_vect,:)];
@@ -141,26 +136,14 @@ if ~isempty(is_common_vect)
     results.AxisLetter(:) = Rotations.AxisLetter(is_common_vect);
 elseif contains(fname,'[')&&contains(fname,']') %MultiVector, SineMultivector
     results.StimAxis(:) = {str2double(split(fname(strfind(fname,'[')+1:strfind(fname,']')-1),','))'};
-    results.AxisName(:) = {''};
-    results.AxisLetter(:) = {''};
 elseif contains(fname,'Activation')&&contains(fname,{'LA','LP','LH'})
     results.StimAxis(:) = {[-1,-1,1]/sqrt(3)};
-    results.AxisName(:) = {''};
-    results.AxisLetter(:) = {''};
 elseif contains(fname,'Activation')&&contains(fname,{'RA','RP','RH'})
     results.StimAxis(:) = {[1,1,-1]/sqrt(3)};
-    results.AxisName(:) = {''};
-    results.AxisLetter(:) = {''};
-else 
-    results.StimAxis(:) = {[0,0,0]};
-    results.AxisName(:) = {''};
-    results.AxisLetter(:) = {''};
 end
 % Electrode #
 if contains(fname,{'LAE','LHE','LPE','RAE','RHE','RPE'})
     results.Electrode(:) = fparts(contains(fparts,{'LAE','LHE','LPE','RAE','RHE','RPE'}));
-else
-    results.Electrode(:) = {''};
 end
 fparts(contains(fparts,{'LA','LH','LP','RA','RH','RP','['})) = [];
 % Type/Condition
@@ -215,11 +198,15 @@ switch type
         nc2 = size(CycAvg.rz_cyc,1);
         nc = max([nc1,nc2]);
         results.Cycles(:) = nc;
+        %Figure out which traces are used
+        rm_tr = true(1,length(traces));
         for tr = 1:length(traces)
-            if isfield(CycAvg,[traces{tr},'_cyc'])
+            if isfield(CycAvg,[traces{tr},'_cyc'])&&all(any(~isnan(CycAvg.([traces{tr},'_cyc']))))
                 CycAvg.([traces{tr},'_cyc']) = [CycAvg.([traces{tr},'_cyc']);NaN(nc-size(CycAvg.([traces{tr},'_cyc']),1),nt)];
+                rm_tr(tr) = 0;
             end
         end
+        traces = traces(~rm_tr);
         %Make sure stim trace is time points long (1 x nt)
         if ismember(size(CycAvg.stim,2),[1,nc1,nc2])
             CycAvg.stim = CycAvg.stim';
@@ -237,72 +224,67 @@ switch type
         ChairAmp = (max(Stim_CycAvg) - min(Stim_CycAvg))/2;
         Fs = CycAvg.Fs;
         tt = 0:1/Fs:(length(Stim_CycAvg)-1)/Fs;
-        if length(tt) > 100
-            t = tt(round(linspace(1,length(Stim_CycAvg),100)));
-        else
-            t = tt;
+        if ~isfield(CycAvg,'t')
+            CycAvg.t = tt;
         end
+        t = tt(unique(round(linspace(1,length(Stim_CycAvg),100))));
         % Find gain, phase, and misalignment for each trace
-        makefit = @(trace) fminsearchbnd(@(p) sum((sine_fit(t,freqs,p)-trace).^2,'omitnan'),[abs(min(trace));abs(max(trace));0],[-inf;-inf;-180],[inf,inf,180],options);
+        makefit = @(trace) fminsearchbnd(@(p) sum((sine_fit(t,freqs,p)-trace).^2,'omitnan'),...
+            [min(trace)-median(trace);max(trace)-median(trace);0;median(trace)],...
+            [-inf;-inf;-180;-inf],[inf;inf;180;inf],options);        
+        % Find index of interest for maximum and minimum
+        L_Eye = permute(reshape([CycAvg.ll_cyc,CycAvg.lr_cyc,CycAvg.lz_cyc],nc,[],3),[3,2,1]);
+        R_Eye = permute(reshape([CycAvg.rl_cyc,CycAvg.rr_cyc,CycAvg.rz_cyc],nc,[],3),[3,2,1]);
+        [~,I1] = max(max([-results.StimAxis{1}*mean(L_Eye,3,'omitnan');-results.StimAxis{1}*mean(R_Eye,3,'omitnan')]));
+        [~,I2] = max(max([-results.StimAxis{2}*mean(L_Eye,3,'omitnan');-results.StimAxis{2}*mean(R_Eye,3,'omitnan')]));
         for tr = 1:length(traces)
-            if isfield(CycAvg,[traces{tr},'_cyc'])&&all(any(~isnan(CycAvg.([traces{tr},'_cyc']))))
-                cyc_param = NaN(nc,3);
-                cyc_fit = NaN(nc,length(tt));
-                for i = 1:nc
-                    if sum(~isnan(CycAvg.([traces{tr},'_cyc'])(i,:))) > 2
-                        cyc_param(i,:) = makefit(spline(tt,CycAvg.([traces{tr},'_cyc'])(i,:),t));
-                        cyc_fit(i,:) = sine_fit(tt,freqs,makefit(spline(tt,CycAvg.([traces{tr},'_cyc'])(i,:),t)));
-                    end
+            cyc_param = NaN(nc,4);
+            cyc_fit = NaN(nc,length(tt));
+            cyc_tr = CycAvg.([traces{tr},'_cyc']); 
+            cyc_avg = mean(cyc_tr,1,'omitnan');
+            for i = 1:nc
+                if sum(~isnan(cyc_tr(i,:))) > 2
+                    cyc_param(i,:) = makefit(spline(tt,cyc_tr(i,:),t));
+                    cyc_fit(i,:) = sine_fit(tt,freqs,cyc_param(i,:));
                 end
-                tr_fit = sine_fit(tt,freqs,mean(cyc_param,1));
-                err_tr_fit = (tr_fit-CycAvg.([traces{tr},'_cycavg'])).^2;
-                RMSE_pos = sqrt(mean(err_tr_fit(:,Stim_CycAvg>0),'omitnan'));
-                RMSE_neg = sqrt(mean(err_tr_fit(:,Stim_CycAvg<0),'omitnan'));
-                err_cyc_fit = (cyc_fit - CycAvg.([traces{tr},'_cyc'])).^2;
-                RMSE_cyc_pos = sqrt(mean(err_cyc_fit(:,Stim_CycAvg>0),2,'omitnan'));
-                RMSE_cyc_neg = sqrt(mean(err_cyc_fit(:,Stim_CycAvg<0),2,'omitnan')); 
-                results.(['MaxVel_',upper(traces{tr})]) = [max(abs(CycAvg.([traces{tr},'_cycavg'])(Stim_CycAvg>0)));mean(max(abs(CycAvg.([traces{tr},'_cycavg'])(Stim_CycAvg<0))),'omitnan')];
-                results.(['MaxVel_',upper(traces{tr}),'_sd']) = [std(max(abs(CycAvg.([traces{tr},'_cyc'])(:,Stim_CycAvg>0)),[],2),'omitnan');std(max(abs(CycAvg.([traces{tr},'_cyc'])(:,Stim_CycAvg<0)),[],2),'omitnan')];
-                results.(['Gain_',upper(traces{tr})]) = [mean(cyc_param(:,1),'omitnan');mean(cyc_param(:,2),'omitnan')]/ChairAmp;
-                results.(['Gain_',upper(traces{tr}),'_sd']) = [std(cyc_param(:,1),'omitnan');std(cyc_param(:,2),'omitnan')]/ChairAmp;
-                results.(['Phase_',upper(traces{tr})])(:) = mean(cyc_param(:,3),'omitnan');
-                results.(['Phase_',upper(traces{tr}),'_sd'])(:) = std(cyc_param(:,3),'omitnan');
-                results.(['RMSE_',upper(traces{tr})])(:) = [RMSE_pos;RMSE_neg];
-                results.(['RMSE_',upper(traces{tr}),'_sd'])(:) = [std(RMSE_cyc_pos,'omitnan');std(RMSE_cyc_neg,'omitnan')];
-                CycAvg.([traces{tr},'_cyc_fit']) = cyc_fit;
-                CycAvg.([traces{tr},'_cycavg_fit']) = tr_fit;
-            end
+            end            
+            cycavg_param = makefit(spline(tt,cyc_avg,t));
+            tr_fit = sine_fit(tt,freqs,cycavg_param);
+            err_tr_fit = (tr_fit-cyc_avg).^2;
+            err_cyc_fit = (cyc_fit-cyc_tr).^2;
+            t0 = sin(2*pi*freqs*t+cycavg_param(3)*pi/180)>=0; %pos half-cycle
+            results.(['MaxVel_',upper(traces{tr})]) = [max(abs(cyc_avg(t0)));max(abs(cyc_avg(~t0)))];
+            results.(['MaxVel_',upper(traces{tr}),'_sd']) = [std(max(abs(cyc_tr(:,t0)),[],2),'omitnan');std(max(abs(cyc_tr(:,~t0)),[],2),'omitnan')];
+            results.(['Gain_',upper(traces{tr})]) = [-1;1].*cycavg_param(1:2)/ChairAmp;
+            results.(['Gain_',upper(traces{tr}),'_sd']) = [std(cyc_param(:,1),'omitnan');std(cyc_param(:,2),'omitnan')]/ChairAmp;
+            results.(['Phase_',upper(traces{tr})])(:) = cycavg_param(3);
+            results.(['Phase_',upper(traces{tr}),'_sd'])(:) = std(cyc_param(:,3),'omitnan');
+            results.(['RMSE_',upper(traces{tr})])(:) = [sqrt(mean(err_tr_fit(:,t0),'omitnan'));sqrt(mean(err_tr_fit(:,~t0),'omitnan'))];
+            results.(['RMSE_',upper(traces{tr}),'_sd'])(:) = [std(sqrt(mean(err_cyc_fit(:,t0),2,'omitnan')),'omitnan');std(sqrt(mean(err_cyc_fit(:,~t0),2,'omitnan')),'omitnan')];
+            CycAvg.([traces{tr},'_cyc_fit']) = cyc_fit;
+            CycAvg.([traces{tr},'_cycavg_fit']) = tr_fit;
         end
         % Misalignment
-        [~,I1] = max(max([-results.StimAxis{1}*[CycAvg.ll_cycavg;CycAvg.lr_cycavg;CycAvg.lz_cycavg];...
-            -results.StimAxis{1}*[CycAvg.rl_cycavg;CycAvg.rr_cycavg;CycAvg.rz_cycavg]]));
-        [~,I2] = max(max([-results.StimAxis{2}*[CycAvg.ll_cycavg;CycAvg.lr_cycavg;CycAvg.lz_cycavg];...
-            -results.StimAxis{2}*[CycAvg.rl_cycavg;CycAvg.rr_cycavg;CycAvg.rz_cycavg]]));
-        [results.Align_L(1),results.Align_L_sd(1)] = calc_misalignment(-results.StimAxis{1},[CycAvg.ll_cyc(:,I1),CycAvg.lr_cyc(:,I1),CycAvg.lz_cyc(:,I1)]);
-        [results.Align_R(1),results.Align_R_sd(1)] = calc_misalignment(-results.StimAxis{1},[CycAvg.rl_cyc(:,I1),CycAvg.rr_cyc(:,I1),CycAvg.rz_cyc(:,I1)]);
-        [results.Align_L(2),results.Align_L_sd(2)] = calc_misalignment(-results.StimAxis{2},[CycAvg.ll_cyc(:,I2),CycAvg.lr_cyc(:,I2),CycAvg.lz_cyc(:,I2)]);
-        [results.Align_R(2),results.Align_R_sd(2)] = calc_misalignment(-results.StimAxis{2},[CycAvg.rl_cyc(:,I2),CycAvg.rr_cyc(:,I2),CycAvg.rz_cyc(:,I2)]);
+        [results.Align_L(1),results.Align_L_sd(1)] = calc_misalignment(-results.StimAxis{1},permute(L_Eye(:,I1,:),[3,1,2]));
+        [results.Align_R(1),results.Align_R_sd(1)] = calc_misalignment(-results.StimAxis{1},permute(R_Eye(:,I1,:),[3,1,2]));
+        [results.Align_L(2),results.Align_L_sd(2)] = calc_misalignment(-results.StimAxis{2},permute(L_Eye(:,I2,:),[3,1,2]));
+        [results.Align_R(2),results.Align_R_sd(2)] = calc_misalignment(-results.StimAxis{2},permute(R_Eye(:,I2,:),[3,1,2]));
         %Disconjugacy
-        [results.Disc(1),results.Disc_sd(1)] = calc_misalignment([CycAvg.ll_cyc(:,I1),CycAvg.lr_cyc(:,I1),CycAvg.lz_cyc(:,I1)],[CycAvg.rl_cyc(:,I1),CycAvg.rr_cyc(:,I1),CycAvg.rz_cyc(:,I1)]);
-        [results.Disc(2),results.Disc_sd(2)] = calc_misalignment([CycAvg.ll_cyc(:,I2),CycAvg.lr_cyc(:,I2),CycAvg.lz_cyc(:,I2)],[CycAvg.rl_cyc(:,I2),CycAvg.rr_cyc(:,I2),CycAvg.rz_cyc(:,I2)]);        
+        [results.Disc(1),results.Disc_sd(1)] = calc_misalignment(permute(L_Eye(:,I1,:),[3,1,2]),permute(R_Eye(:,I1,:),[3,1,2]));
+        [results.Disc(2),results.Disc_sd(2)] = calc_misalignment(permute(L_Eye(:,I2,:),[3,1,2]),permute(R_Eye(:,I2,:),[3,1,2]));        
         %Put the median analysis in cycle params file
-        if ~isfield(CycAvg,'t')
-            CycAvg.t = 0:1/Fs:(length(Stim_CycAvg)-1)/Fs;
-        end
         cycle_params.t = CycAvg.t;
         cycle_params.stim = CycAvg.stim;
         if isfield(CycAvg,'Data')
             Data_med = angpos2angvel(CycAvg.Data);
             cyc_inds = CycAvg.Data_allcyc.keep_inds;
             for tr = 1:length(traces)
-                if isfield(CycAvg,[traces{tr},'_cyc'])
-                    cycle_params.([traces{tr},'_cycavg']) = CycAvg.([traces{tr},'_cycavg']);
-                    cycle_params.([traces{tr},'_cycstd']) = CycAvg.([traces{tr},'_cycstd']);
-                    cycle_params.([traces{tr},'_cyc']) = CycAvg.([traces{tr},'_cyc']);
-                    long_name = [upper(traces{tr}(1)),'E_Vel_',upper(traces{tr}(2))];   
-                    long_name = strrep(strrep(long_name,'_L','_LARP'),'_R','_RALP');
-                    cycle_params.([traces{tr},'_cycmed']) = median(Data_med.(long_name)(cyc_inds),2,'omitnan');
-                end
+                cycle_params.([traces{tr},'_cycavg']) = CycAvg.([traces{tr},'_cycavg']);
+                cycle_params.([traces{tr},'_cycstd']) = CycAvg.([traces{tr},'_cycstd']);
+                cycle_params.([traces{tr},'_cyc']) = CycAvg.([traces{tr},'_cyc']);
+                long_name = [upper(traces{tr}(1)),'E_Vel_',upper(traces{tr}(2))];   
+                long_name = strrep(strrep(long_name,'_L','_LARP'),'_R','_RALP');
+                cycle_params.([traces{tr},'_cycmed']) = median(Data_med.(long_name)(cyc_inds),2,'omitnan');
             end
         end
     case 2
@@ -347,6 +329,10 @@ switch type
         params = array2table(NaN(8,length(traces)),'VariableNames',traces,'RowNames',{'K1_High','Tau1_High','K2_High','Tau2_High','K1_Low','Tau1_Low','K2_Low','Tau2_Low'});
         params2 = array2table(NaN(4,length(traces)),'VariableNames',traces,'RowNames',{'K_High','Tau_High','K_Low','Tau_Low'});
         params3 = array2table(NaN(6,length(traces)),'VariableNames',traces,'RowNames',{'K_High','Tau_High','C_High','K_Low','Tau_Low','C_Low'});
+        mult = [-1;1];
+        if contains(results.AxisName(1),{'RH','LA','LP'}) %Negative directions
+            mult = [1;-1];
+        end        
         for i = 1:length(traces)
             if isfield(CycAvg,[traces{i},'_cyc'])
                 results.(['RMSE_',upper(traces{i}),'_sd'])(:) = 0; %Only 1 cyc
@@ -387,18 +373,7 @@ switch type
                 results.(['RMSE_',upper(traces{i})]) = [gof_h.rmse;gof_l.rmse];
                 results.(['MaxVel_',upper(traces{i})]) = params2{[1,3],i};
                 results.(['Tau_',upper(traces{i})]) = params2{[2,4],i};
-                results.(['Gain_',upper(traces{i})]) = results.(['MaxVel_',upper(traces{i})])./(results.Amplitude(1)*[-1;1]);                               
-                %OLD WAY using the 2nd order exponential, decommissioned on
-                %2023-03-24                                 
-%                 results.(['MaxVel_',upper(traces{i})]) = abs(sum([params{[1,3],i}';params{[5,7],i}'],2,'omitnan'));
-%                 results.(['MaxVel_',upper(traces{i}),'_sd']) = sum(dconfint(:,[1,3]),2,'omitnan');
-%                 tau = -([params{[1,3],i}';params{[5,7],i}']).^-1;
-%                 tau(tau<0) = NaN;
-%                 tau_dCI = ([dconfint_h(:,[2,4]);dconfint_l(:,[2,4])).^-1;
-%                 tau_dCI(isnan(tau)) = NaN;
-%                 [~,tau_i] = min(tau,[],2);
-%                 results.(['Tau_',upper(traces{i})]) = min(tau,[],2);
-%                 results.(['Tau_',upper(traces{i}),'_sd']) =  [tau_dCI(1,tau_i(1));tau_dCI(2,tau_i(2))];    
+                results.(['Gain_',upper(traces{i})]) = results.(['MaxVel_',upper(traces{i})])./(results.Amplitude(1)*mult);                                 
                 CycAvg.([traces{i},'_cycavg_fit']) = all_fits2(i,:);
                 CycAvg.([traces{i},'_cyc_fit']) = all_fits2(i,:);
             end
@@ -708,9 +683,11 @@ end
 %response in the intended canal if applicable.
 eyes = {'L','R'};
 all_canals = {'LA','LP','LH','RP','RA','RH','+X','-X','+Y','-Y'}; %Canals
+var = 'MaxVel';
 for i = 1:size(results,1)
     if ismember(results.AxisName(i),all_canals)
-        [results.MaxVel(i),eye] = max(abs([results.(['MaxVel_L',results.AxisLetter{i}])(i),results.(['MaxVel_R',results.AxisLetter{i}])(i)]));
+        [~,eye] = max(abs([results.([var,'_L',results.AxisLetter{i}])(i),results.([var,'_R',results.AxisLetter{i}])(i)]));
+        results.MaxVel(i) = results.(['MaxVel_',eyes{eye},results.AxisLetter{i}])(i);
         results.MaxVel_sd(i) = results.(['MaxVel_',eyes{eye},results.AxisLetter{i},'_sd'])(i);
         results.Phase(i) = results.(['Phase_',eyes{eye},results.AxisLetter{i}])(i);
         results.Phase_sd(i) = results.(['Phase_',eyes{eye},results.AxisLetter{i},'_sd'])(i);

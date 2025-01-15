@@ -666,71 +666,21 @@ if ~isempty(stim_info)
         for i = 1:length(start)
             info.dataType = stim_info{i};
             %Fix this to be more general for pulse trains
-            if contains(stim_info{i},'65Vector') %stim vec in the info file
+            info.stim_axis = double([contains(stim_info{i},{'LA','RP'}),contains(stim_info{i},{'RA','LP'}),contains(stim_info{i},{'LH','RH'})]);            
+            if contains(stim_info{i},{'65Vector','MultiVector'}) %stim vec in the info file
                 info.stim_axis = str2double(info.dataType(strfind(info.dataType,'['):strfind(info.dataType,']')));
-            elseif contains(stim_info{i},{'Impulse','Gaussian'})
-                %Add code here
-                if contains(stim_info{i},'LH')
-                    info.stim_axis = [0,0,1];
-                elseif contains(stim_info{i},'RH')
-                    info.stim_axis = [0,0,-1];
-                elseif contains(stim_info{i},'RP')
-                    info.stim_axis = [1,0,0];
-                elseif contains(stim_info{i},'LA')
-                    info.stim_axis = [-1,0,0];
-                elseif contains(stim_info{i},'RA')
-                    info.stim_axis = [0,1,0];
-                elseif contains(stim_info{i},'LP')
-                    info.stim_axis = [0,-1,0];
+            elseif contains(stim_info{i},'X')
+                info.stim_axis = [0.707,0.707,0];
+            elseif contains(stim_info{i},'Y')
+                info.stim_axis = [-0.707,0.707,0];
+            elseif contains(stim_info{i},{'Impulse','Gaussian','PulseTrain','Autoscan'})               
+                if contains(stim_info{i},{'Impulse','Gaussian'})&&contains(stim_info{i},'L')||...
+                        contains(stim_info{i},{'PulseTrain','Autoscan'})&&strcmp(info.ear,'L')
+                    mult = [-1,-1,1]; %L
                 else
-                    info.stim_axis = [0,0,0];
+                    mult = [1,1,-1]; %R
                 end
-            elseif contains(stim_info{i},'RotaryChair') %horizontal only
-                info.stim_axis = [0,0,1]; %Moves to the left first
-            elseif contains(stim_info{i},{'PulseTrain','Autoscan'})
-                if contains(stim_info{i},{'RALP','LP','RA'})
-                    if strcmp(info.ear,'L')
-                        info.stim_axis = [0,-1,0];
-                    elseif strcmp(info.ear,'R')
-                        info.stim_axis = [0,1,0];
-                    else
-                        info.stim_axis = [0,0,0];
-                    end
-                elseif contains(stim_info{i},{'LARP','LA','RP'})
-                    if strcmp(info.ear,'L')
-                        info.stim_axis = [-1,0,0];
-                    elseif strcmp(info.ear,'R')
-                        info.stim_axis = [1,0,0];
-                    else
-                        info.stim_axis = [0,0,0];
-                    end
-                elseif contains(stim_info{i},{'LHRH','LH','RH'})
-                    if strcmp(info.ear,'L')
-                        info.stim_axis = [0,0,1];
-                    elseif strcmp(info.ear,'R')
-                        info.stim_axis = [0,0,-1];
-                    else
-                        info.stim_axis = [0,0,0];
-                    end
-                else
-                    info.stim_axis = [0,0,0];
-                end
-            elseif contains(stim_info{i},'Sine')
-                if contains(stim_info{i},'RALP')
-                    info.stim_axis = [0,1,0];
-                elseif contains(stim_info{i},'LHRH')
-                    info.stim_axis = [0,0,1];
-                elseif contains(stim_info{i},'LARP')
-                    info.stim_axis = [1,0,0];
-                elseif contains(stim_info{i},'X')
-                    info.stim_axis = [0.707,0.707,0];
-                elseif contains(stim_info{i},'Y')
-                    info.stim_axis = [-0.707,0.707,0];
-                else
-                    info.stim_axis = [0,0,0];
-                end    
-            else
-                info.stim_axis = [0,0,0];
+                info.stim_axis = info.stim_axis.*mult;           
             end
             i1 = start(i);
             i2 = ends(i);

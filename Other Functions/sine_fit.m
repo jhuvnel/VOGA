@@ -1,16 +1,15 @@
 %% sine_fit 
-%This function creates a sine wave with different amplitudes for each
-%half-cycle. It also works for sums of sine waves (which each have their
-%own amplitude and phase parameters).
-%This is a function that is used in fminsearch to find parameters that give
+%This is a function that is used with fminsearch to find parameters that give
 %an optimal fit.
-%For n frequencies, p will need to be 3*n x 1.
-
+%This function creates a sine wave with different half-cycle amplitudes and phase with offset. 
+%It can accommadate multiple frequencies. For n frequencies, p will need to be (3*n+1) x 1.
 function vals = sine_fit(t,freq,p)
+    p0 = reshape(p(1:end-1),3,length(freq)); %reshape for each frequency
     all_vals = zeros(length(freq),length(t));
     for i = 1:length(freq)
-        all_vals(i,:) = min(p(3*i-2)*sin(2*pi*freq(i)*t+p(3*i)*pi/180+pi),0)+...
-        	max(p(3*i-1)*sin(2*pi*freq(i)*t+p(3*i)*pi/180+pi),0);
+        t0 = sin(2*pi*freq(i)*t+p0(3,i)*pi/180)>=0; %pos half-cycle
+        all_vals(i,t0) = p0(1,i)*sin(2*pi*freq(i)*t(t0)+p0(3,i)*pi/180);
+        all_vals(i,~t0) = p0(2,i)*sin(2*pi*freq(i)*t(~t0)+p0(3,i)*pi/180+pi);
     end
-    vals = sum(all_vals,1);
+    vals = sum(all_vals,1)+p(end);
 end
