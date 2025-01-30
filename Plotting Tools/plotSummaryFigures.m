@@ -210,7 +210,6 @@ if contains(sel,'Rotary')
         fname1 = [candidate,filesep,'Visit 0',filesep,candidate,'_',char(datetime('now','Format','yyyyMMdd')),'_SummaryRotaryChairGainPhase_AllSub_9x.fig'];
         savefig(fig1,fname1)
         saveas(fig1,strrep(fname1,'.fig','.png'))
-        return;
     end
     fname1 = ['Summary Figures',filesep,char(datetime('now','Format','yyyyMMdd')),'_SummaryRotaryChairGainPhase_AllSub_9x.fig'];
     savefig(fig1,fname1)
