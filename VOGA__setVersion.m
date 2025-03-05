@@ -1,4 +1,5 @@
 function VOGA__setVersion(current_ver,user_prompt)
+%test
 if nargin < 2
     user_prompt = 1;
 end
