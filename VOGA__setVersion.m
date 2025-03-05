@@ -1,4 +1,5 @@
 function VOGA__setVersion(current_ver,user_prompt)
+%%20230305 CFB test
 if nargin < 2
     user_prompt = 1;
 end
