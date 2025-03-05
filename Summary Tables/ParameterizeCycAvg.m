@@ -90,7 +90,7 @@ end
 results.Goggle(:) = goggle;
 fparts(contains(fparts,goggle)) = [];
 % Experiment
-known_exps = {'RotaryChair','aHIT','eeVOR','Manual'};
+known_exps = {'RotaryChair','aHIT','eeVOR','Manual','Moogles'};
 if contains(fname,known_exps)
     experiment = known_exps(cellfun(@(x) contains(fname,x),known_exps));
     results.Experiment(:) = experiment;

@@ -10,7 +10,7 @@
 %Current version of VOGA - Changed with each GitHub commit
 current_ver = 'v5.13.0';
 %VOGA Menu Options
-opts = {'Generate Folders','Process Raw Data','Segment','Cycle Average',...
+opts = {'Generate Folders','Process Raw Data','Segment SINE from EMAOutput','Cycle Average',...
     'Parameterize and Plot','Advanced'};
 advanced_opts = {'Automatic VOG Analysis','Recalibrate LDVOG',...
     'Fix Raw VOG Trigger','Combine Segments','Trim Segment','Rename Files',...
@@ -33,7 +33,7 @@ while tf
             VOGA__makeFolders(cd,1,0);
         case 'Process Raw Data'
             VOGA__ProcessRawData;
-        case 'Segment'
+        case 'Segment SINE from EMAOutput'
             VOGA__Segment;
         case 'Cycle Average'
             VOGA__CycAvg;

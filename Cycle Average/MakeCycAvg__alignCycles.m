@@ -60,7 +60,11 @@ elseif contains(info.dataType,{'RotaryChair','aHIT'})||contains(info.goggle_ver,
         stim = medfilt1(stim,3);
         pos_stim = (abs(stim)+stim)/2; %Pos half-cycle only
         freq = str2double(strrep(fparts{contains(fparts,'Hz')},'Hz',''));
-        amp = str2double(strrep(fparts{contains(fparts,'dps')},'dps',''));
+        try
+            amp = str2double(strrep(fparts{contains(fparts,'dps')},'dps',''));
+        catch
+            amp = str2double(strrep(fparts{contains(fparts,'uA')},'uA',''));
+        end
         [vals,spike_i,widths] = findpeaks(pos_stim,'MinPeakProminence',amp/2,...
         'MinPeakDistance',round(0.3*Fs/freq),'Annotate','extents'); %Impulses will be at least 1 second apart
         spike_i(isoutlier(vals,"mean")|isoutlier(widths,"mean")) = [];

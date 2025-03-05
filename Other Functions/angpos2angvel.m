@@ -7,6 +7,9 @@ function [Data,Data_In] = angpos2angvel(Data_In)
 %% Extract and process the raw data
 % LD VOG Goggles - MVI Trial
 Fs = Data_In.Fs;
+L_cam_theta = Data_In.info.theta_L_cam;
+R_cam_theta = Data_In.info.theta_R_cam;
+ 
 %Has Left Eye Data
 if isfield(Data_In,'LE_Position_Z')&&isfield(Data_In,'LE_Position_Y')&&isfield(Data_In,'LE_Position_X')
     Data_In.LE_Position_X = reshape(Data_In.LE_Position_X,[],1);
@@ -21,9 +24,14 @@ if isfield(Data_In,'LE_Position_Z')&&isfield(Data_In,'LE_Position_Y')&&isfield(D
     psi = rawData(:,1);
     phi = rawData(:,2);
     theta = rawData(:,3);
-    angvel_dps_b = [(gradient(psi)*Fs.*cosd(theta).*cosd(phi)) - (gradient(phi)*Fs.*sind(theta)) ...
+    
+    angvel_dps_a = [(gradient(psi)*Fs.*cosd(theta).*cosd(phi)) - (gradient(phi)*Fs.*sind(theta)) ...
         (gradient(psi)*Fs.*sind(theta).*cosd(phi)) + (gradient(phi)*Fs.*cosd(theta)) ...
-        (gradient(theta)*Fs) - (gradient(psi)*Fs.*sind(phi))];            
+        (gradient(theta)*Fs) - (gradient(psi)*Fs.*sind(phi))];      
+
+    Lcamrotmatrix = [cosd(L_cam_theta) -sind(L_cam_theta) 0;sind(L_cam_theta) cosd(L_cam_theta) 0;0 0 1];
+    angvel_dps_b = (Lcamrotmatrix*angvel_dps_a')';
+
     % We want to rotate our data from an [X,Y,Z] coordinate system,
     % into a [LARP,RALP,LHRH] coordinate system, where Z = LHRH. To
     % accomplish this, we will perform a PASSIVE (i.e., 'alias' or
@@ -32,7 +40,7 @@ if isfield(Data_In,'LE_Position_Z')&&isfield(Data_In,'LE_Position_Y')&&isfield(D
     % RIGHT multiple our data by the TRANSPOSE of this rotation
     % matrix. Note that rotation matrices are orthonormal, and
     % their inverses are equivalent to their transpose. -PJB
-    angvel_dps_c = (rotZ3deg(-45)'*angvel_dps_b')';            
+    angvel_dps_c = (rotZ3deg(-45)'*angvel_dps_b')';  
     % Store Data
     Data.LE_Vel_X = angvel_dps_b(:,1);
     Data.LE_Vel_Y = angvel_dps_b(:,2);
@@ -59,9 +67,11 @@ if isfield(Data_In,'RE_Position_Z')&&isfield(Data_In,'RE_Position_Y')&&isfield(D
     psi = rawData(:,1);
     phi = rawData(:,2);
     theta = rawData(:,3);
-    angvel_dps_b = [(gradient(psi)*Fs.*cosd(theta).*cosd(phi)) - (gradient(phi)*Fs.*sind(theta)) ...
+    angvel_dps_a = [(gradient(psi)*Fs.*cosd(theta).*cosd(phi)) - (gradient(phi)*Fs.*sind(theta)) ...
         (gradient(psi)*Fs.*sind(theta).*cosd(phi)) + (gradient(phi)*Fs.*cosd(theta)) ...
-        (gradient(theta)*Fs) - (gradient(psi)*Fs.*sind(phi))];            
+        (gradient(theta)*Fs) - (gradient(psi)*Fs.*sind(phi))];    
+    Rcamrotmatrix = [cosd(R_cam_theta) -sind(R_cam_theta) 0;sind(R_cam_theta) cosd(R_cam_theta) 0;0 0 1];
+    angvel_dps_b = (Rcamrotmatrix*angvel_dps_a')';
     % We want to rotate our data from an [X,Y,Z] coordinate system,
     % into a [LARP,RALP,LHRH] coordinate system, where Z = LHRH. To
     % accomplish this, we will perform a PASSIVE (i.e., 'alias' or
@@ -70,7 +80,7 @@ if isfield(Data_In,'RE_Position_Z')&&isfield(Data_In,'RE_Position_Y')&&isfield(D
     % RIGHT multiple our data by the TRANSPOSE of this rotation
     % matrix. Note that rotation matrices are orthonormal, and
     % their inverses are equivalent to their transpose. -PJB
-    angvel_dps_c = (rotZ3deg(-45)'*angvel_dps_b')';            
+    angvel_dps_c = (rotZ3deg(-45)'*angvel_dps_b')';  
     % Store Data
     Data.RE_Vel_X = angvel_dps_b(:,1);
     Data.RE_Vel_Y = angvel_dps_b(:,2);

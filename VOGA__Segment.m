@@ -1,45 +1,70 @@
-function VOGA__Segment(Path,seg_all)
-if nargin < 1
-    Path = cd;
+%% Segment Data
+%This script calls the ChinDataSineSegmentation file to batch segment all
+%of the data. 
+
+%Written by Celia Fernandez Brillet based on code from Andrianna Ayiotis
+
+function SegmentData
+%% Find names of all files that need to be segmented
+%Assuming you're in the folder with the script (Sinusoids)
+cd EMAOutput
+files=dir(fullfile(cd,'*.csv'));
+cd ../
+%If a folder called Segmented does not already exist
+if ~isfolder('Segmented Files')
+    mkdir 'Segmented Files'
+    MakePath;
 end
-if nargin < 2
-    seg_all = 0;
+cd 'Segmented Files'
+fname = {files(:).name}';
+fname(contains(fname,'STEP'))=''; % This is so that we only process SINE data, no STEP yet
+%% Segment all the files at once
+save_data = true;
+for i = 1:length(fname)
+    SineData = table2array(readtable(fname{i}));
+    chin = files(1).name(10:14);
+    date = files(1).name(1:8);
+    rawfile = [files.folder filesep files.name];
+    ChinDataSineSegmentation(date, rawfile, chin,fname{i},SineData,save_data)
 end
-if ~VOGA__makeFolders(Path)
-    return;
-end
-Raw_Path = [Path,filesep,'Raw Files'];
-Seg_Path = [Path,filesep,'Segmented Files'];
-VOG_fname_pat = {'SESSION','Lateral.txt','LARP.txt','RALP.txt','.dat','.mat','ImuData'};
-rel_dir = dir(Raw_Path);
-rel_dir(extractfield(rel_dir,'isdir')) = [];
-if isempty(rel_dir)
-    disp(['No files in this path: ',Raw_Path])
-    return;
-end
-file_names = extractfield(rel_dir,'name');
-Notes_ind = contains(file_names,'-Notes.txt');
-VOG_ind = contains(file_names,VOG_fname_pat)&~Notes_ind&~contains(file_names,{'Raw','LDHP','LDPC'});
-VOG_ind_num = find(VOG_ind);
-has_notes = contains(file_names(VOG_ind),strrep(file_names(Notes_ind),'-Notes.txt',''));
-VOG_files = file_names(VOG_ind_num(has_notes));
-if ~any(VOG_ind)
-    disp(['No LDVOG, NL, GNO, or ESC VOG files have been detected: ',Raw_Path])
-    return;
-elseif isempty(VOG_files)
-    disp(['No Notes files detected in: ',Raw_Path])
-    return;
-end
-if seg_all
-    sel_files = VOG_files;
-else
-    indx = nmlistdlg('PromptString','Select files to segment:','ListSize',[300 300],'ListString',VOG_files);
-    sel_files = VOG_files(indx);
-end
-%% Loop over each file
-for i = 1:length(sel_files)
-    In_Path = [Raw_Path,filesep,sel_files{i}];
-    disp([num2str(i),'/',num2str(length(sel_files)),': ',sel_files{i}])
-    Segment(In_Path,Seg_Path)
-end
+% %% Deal with multiple versions 
+% %Only for case of v2 because no v3 files were created
+% %Combine into one file
+% dup = dir('*v2.mat');
+% dup_name = {dup(:).name}';
+% for i = 1:length(dup)
+%     f1 = dup_name{i};
+%     v2 = load(f1);
+%     f2 = [f1(1:end-7),'.mat'];
+%     v1 = load(f2);
+%     SegDat.info = v1.SegDat.info;
+%     SegDat.info2 = v2.SegDat.info;
+%     SegDat.t = v2.SegDat.t;
+%     %Align the chair traces
+%     Chair1 = v1.SegDat.Chair;
+%     Chair2 = v2.SegDat.Chair;
+%     L1 = v1.SegDat.LEye;
+%     L2 = v2.SegDat.LEye;
+%     R1 = v1.SegDat.REye;
+%     R2 = v2.SegDat.REye;
+%     C1 = mean(Chair1);
+%     C2 = mean(Chair2);
+%     alig = zeros(1,length(C1));
+%     for j = 1:length(C1)
+%         C = [C1(j:end),C1(1:j-1)];
+%         alig(1,j) = sum(abs(C - C2));
+%     end
+%     [~,i1] = min(alig);
+%     [r,c] = size(Chair1);
+%     Chair1 = [[Chair1(r,i1:c);Chair1(1:r-1,i1:c)],Chair1(:,1:i1-1)];
+%     L1 = [[L1(r,i1:c);L1(1:r-1,i1:c)],L1(:,1:i1-1)];
+%     R1 = [[R1(r,i1:c);R1(1:r-1,i1:c)],R1(:,1:i1-1)];
+%     
+%     SegDat.Chair = [Chair1;Chair2];
+%     SegDat.LEye = [L1;L2];
+%     SegDat.REye = [R1;R2];
+%     save(f2,'SegDat')
+% end
+% delete *v2.mat
+% cd ../
 end

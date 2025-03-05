@@ -84,6 +84,7 @@ if nargin < 4
         Data_pos_filt.t = ts;
         Data_pos_filt.Fs = Data.Fs;
         Data_pos_filt.stim = stim;
+        Data_pos_filt.info = Data.info;
         [Data_vel,Data_pos_filt] = angpos2angvel(Data_pos_filt); %Only uses X, Y, Z data right now
         Data_vel.t = ts;
         Data_vel.stim = stim;
