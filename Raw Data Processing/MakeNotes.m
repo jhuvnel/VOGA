@@ -13,7 +13,7 @@
 % eeVOR-Activation-Light/Dark#
 
 function flag = MakeNotes(Raw_Path)
-ImplantSide = {[1,2,3,4,7,9,11,13,14,15],[5,6,8,10,12,16,17]}; %Update MVI# for new subjects {L,R}
+ImplantSide = {[1,2,3,4,7,9,11,13,14,15,19],[5,6,8,10,12,16,17,18]}; %Update MVI# for new subjects {L,R}
 %% Input
 if nargin < 1
     if isfolder([cd,filesep,'Raw Files'])

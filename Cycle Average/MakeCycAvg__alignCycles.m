@@ -127,7 +127,13 @@ elseif contains(info.dataType,'eeVOR') %align using the trigger signal
         snip_len = round(median(diff(starts)));
         ends = starts + snip_len - 1;
         stims = 0*stim(starts(1):ends(1));
-        stims(2:round(median(find(trig==-1,length(starts),'first')-starts))) = 50;
+        temp = find(trig==-1,length(starts),'first');
+        l2 = min([length(temp),length(starts)]);
+        len2 = round(median(temp(1:l2)-starts(1:l2)));
+        if len2 < 0 %cycle not counted
+            len2 = round(median(temp(2:end)-starts(1:end-1)));
+        end
+        stims(2:len2) = 50;
     elseif contains(info.dataType,'Activation')
         % for activation data low = dark, high = light but don't cycle average here
         stims = 50*stim;
