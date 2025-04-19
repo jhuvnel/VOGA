@@ -99,7 +99,9 @@ if nargin < 4
         end
         eye_max(eye_max<0) = 10*floor(eye_max(eye_max<0)/10);
         eye_max(eye_max>=0) = 10*ceil(eye_max(eye_max>=0)/10);
-        plot_info.YLim.Pos = [max([min(eye_max(:,1)),-40]),min([max(eye_max(:,2)),40])]; %Keep bounded by ±40
+        plot_info.YLim.Pos = [max([min(eye_max(:,1)),-60]),min([max(eye_max(:,2)),60])]; %Keep bounded by ±40
+        plot_info.YLim.Pos = [max([min(eye_max(:,1)),-60]),min([max(eye_max(:,2)),60])]; %Keep bounded by ±40
+%         plot_info.YLim.Pos = get(gca,'YLim');
     end
     %% Filter Velocity
     traces = filt.vel.Properties.RowNames;   

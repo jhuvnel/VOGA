@@ -7,23 +7,25 @@
 function SegmentData
 %% Find names of all files that need to be segmented
 %Assuming you're in the folder with the script (Sinusoids)
-cd EMAOutput
-files=dir(fullfile(cd,'*.csv'));
+cd 'Presegmented Files'
+files=dir(fullfile(cd,'*.mat'));
 cd ../
 %If a folder called Segmented does not already exists
 if(exist('Segmented Files','dir')~=1) 
     mkdir 'Segmented Files'
-    MakePath;
+    addpath(genpath(pwd))
 end
-cd 'Segmented Files'
 fname = {files(:).name}';
 %% Segment all the files at once
 save_data = true;
 for i = 1:length(fname)
-    SineData = table2array(readtable(fname{i}));
+    cd 'Presegmented Files'
+    load(fname{i});
     chin = files(1).name(10:14);
     date = files(1).name(1:8);
     rawfile = [files.folder filesep files.name];
+    cd ../
+    cd 'Segmented Files'
     ChinDataSineSegmentation(date, rawfile, chin,fname{i},SineData,save_data)
 end
 %% Deal with multiple versions 

@@ -16,7 +16,8 @@ all_markers = split('o d ^ p > h < s v _ * | . o d ^ p > h < s v _ * | . o d ^ p
 %Process arguements from params input
 Path = params.Path;
 Cyc_Path = params.Cyc_Path;
-sub_info = params.sub_info;
+sub_info = params.Cyc_Path(29:33);
+% sub_info = params.sub_info;
 Subs = sub_info.Subject;
 Ears = sub_info.Ear;
 % Load table in question
@@ -25,16 +26,16 @@ if isempty(res_file)
     MakeCycleSummaryTable(Path,Cyc_Path,'Load');
     res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 end
-load([Path,filesep,res_file{end}],'all_results')
+% load([Path,filesep,res_file{end}],'all_results')
 % Confirm there is only one subject (can be mulitple visits)
-if length(unique(all_results.Subject))>1
-    disp('More than one subject detected from the table on the path provided. Run a different plotting script.')
-    return;
-end
+% if length(unique(all_results.Subject))>1
+%     disp('More than one subject detected from the table on the path provided. Run a different plotting script.')
+%     return;
+% end
 %Find the implanted canals for this subject
-imp_canals = strcat(Ears{ismember(unique(all_results.Subject),Subs)},{'A','P','H'});
-all_results.ImpCanal = contains(all_results.AxisName,imp_canals);
-all_results.DateStr = cellstr(all_results.Date,'yyyyMMdd');
+imp_canals = 'LA';
+% all_results.ImpCanal = contains(all_results.AxisName,imp_canals);
+% all_results.DateStr = cellstr(all_results.Date,'yyyyMMdd');
 %Set up the plot tables
 exp_types = {'Sine','HIT','Exp','PulseTrain'};
 plot_types = {'CycAvg','MaxVel','Param'};

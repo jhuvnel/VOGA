@@ -18,23 +18,24 @@ disp(in_fname)
 % from EMA)
 theta_L_cam = SineData(1,1);
 theta_R_cam = SineData(1,2);
-idx_missing=find(isnan(SineData(8,:))&isnan(SineData(9,:))&isnan(SineData(10,:))&isnan(SineData(19,:))&isnan(SineData(20,:))&isnan(SineData(21,:)));
-SineData(:,idx_missing)=[];
+% idx_missing=find(isnan(SineData(6,:))&isnan(SineData(7,:))&isnan(SineData(8,:))&isnan(SineData(9,:))&isnan(SineData(10,:))&isnan(SineData(11,:)));
+% SineData(:,idx_missing)=[];
 % Now save different arrays from table and (linearly) interpolate across missing data
+% time_L = SineData(2,:);
+% time = time - time(1);
 time = SineData(2,:);
-time = time - time(1); 
-Lx = SineData(8,:);
-Lx_interp = interp1(time(~isnan(Lx)),Lx(~isnan(Lx)),time);
-Ly = SineData(9,:);
-Ly_interp = interp1(time(~isnan(Ly)),Ly(~isnan(Ly)),time);
-Lz = SineData(10,:);
-Lz_interp = interp1(time(~isnan(Lz)),Lz(~isnan(Lz)),time);
-Rx = SineData(19,:);
-Rx_interp = interp1(time(~isnan(Rx)),Rx(~isnan(Rx)),time);
-Ry = SineData(20,:);
-Ry_interp = interp1(time(~isnan(Ry)),Ry(~isnan(Ry)),time);
-Rz = SineData(21,:);
-Rz_interp = interp1(time(~isnan(Rz)),Rz(~isnan(Rz)),time);
+Lx = SineData(6,:);
+% Lx_interp = interp1(time(~isnan(Lx)),Lx(~isnan(Lx)),time);
+Ly = SineData(7,:);
+% Ly_interp = interp1(time(~isnan(Ly)),Ly(~isnan(Ly)),time);
+Lz = SineData(8,:);
+% Lz_interp = interp1(time(~isnan(Lz)),Lz(~isnan(Lz)),time);
+Rx = SineData(9,:);
+% Rx_interp = interp1(time(~isnan(Rx)),Rx(~isnan(Rx)),time);
+Ry = SineData(10,:);
+% Ry_interp = interp1(time(~isnan(Ry)),Ry(~isnan(Ry)),time);
+Rz = SineData(11,:);
+% Rz_interp = interp1(time(~isnan(Rz)),Rz(~isnan(Rz)),time);
 if contains(lower(in_fname),'dps')
     original_stim = SineData(4,:);
 elseif contains(lower(in_fname),'ua')
@@ -54,12 +55,12 @@ maxamp = max(stim);
 % Rx = fick_R(:,1);
 % Ry = fick_R(:,2);
 % Rz = fick_R(:,3);
-Lx = Lx_interp;
-Ly = Ly_interp;
-Lz = Lz_interp;
-Rx = Rx_interp;
-Ry = Ry_interp;
-Rz = Rz_interp;
+% Lx = Lx_interp;
+% Ly = Ly_interp;
+% Lz = Lz_interp;
+% Rx = Rx_interp;
+% Ry = Ry_interp;
+% Rz = Rz_interp;
 %% Segment into different frequencies using the chair velocity
 l = length(time);
 % This accounts for whether there is zero padding at the beginning of the
@@ -140,13 +141,13 @@ ylabel('Deg/s')
 axis([0 time(end) -1.1*maxamp 1.1*maxamp])
 pause;
 % plot(time(segs(2,1):segs(2,2)),15*sin(2*pi*1*(time(segs(2,1):segs(2,2))-time(segs(2,1)))),'r','LineWidth',3)
-%% Analyze the data separately and save each alligned segment
+%% Analyze the data separately and save each aligned segment
 slen = size(segs,1);
 %Ensure t vector is rounded correctly (artifact of data input)
 dt = mean(diff(time));
-time = (0:dt:(length(time)-1)*dt)';
+% time = (0:dt:(length(time)-1)*dt)';
 for i = 1:slen
-    t = time(segs(i,1):segs(i,2),1);
+    t = time(segs(i,1):segs(i,2));
     cdat = stim(segs(i,1):segs(i,2));
     lxdat = Lx(segs(i,1):segs(i,2));
     lydat = Ly(segs(i,1):segs(i,2));
@@ -197,28 +198,32 @@ for i = 1:slen
     end
     cdats_c = spline(t,cdat,tt_c);
     cdats_c = spline(t,original_stim(segs(i,1):segs(i,2)),tt_c);
-    %% Catch multiple versions (up to 3)
+     %% Catch multiple versions (up to 3)
     if contains(lower(in_fname),'dps')
         expt_unit = 'dps';
     elseif contains(lower(in_fname),'ua')
         expt_unit = 'uA';
     end
     in_fname_elements = split(string(in_fname(1:end-4)),'_');
-    if strcmp (char(in_fname_elements(end)),'SINE')
-        out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented.mat'];
+    if sum(contains(in_fname_elements,'SINE'))
+        expt_type = 'SINE';
+        if sum(contains(in_fname_elements,'REDO')) % should improve coding this so it's not hardcoded and can accept more arguments
+            expt_type = 'SINE-REDO';
+        end
+        out_file = [date,'-',chin,'-Moogles-',expt_type,'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented.mat'];
         if isfile(out_file)
-            out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented_v2.mat'];
-            if(exist(out_file,'file'))
-                out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented_v3.mat'];
+            out_file = [date,'-',chin,'-Moogles-',expt_type,'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented_v2.mat'];
+            if isfile(out_file)
+                out_file = [date,'-',chin,'-Moogles-',expt_type,'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented_v3.mat'];
                 disp('Now three versions of this file exist. More versions will write over v3.')
             end
         end
         info.dataType = ['Sine-DC-LARP-',num2str(round_freq),'Hz-',num2str(maxamp),expt_unit];
-    elseif strcmp (char(in_fname_elements(end)),'STEP')
+    elseif sum(contains(in_fname_elements,'STEP'))
         out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','Segmented.mat'];
         if isfile(out_file)
             out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','Segmented_v2.mat'];
-            if(exist(out_file,'file'))
+            if isfile(out_file)
                 out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','Segmented_v3.mat'];
                 disp('Now three versions of this file exist. More versions will write over v3.')
             end
@@ -244,7 +249,6 @@ for i = 1:slen
 %     info.true_freq = freq;
 %     info.maxvel = maxamp;
 %     info.fname = out_file;
-
     Data.Fs = Fs; 
     Data.Time_Eye = tt_c';
     Data.Time_Stim = tt_c';
@@ -270,4 +274,5 @@ for i = 1:slen
        save(out_file,'Data') 
     end
 end
+cd ../
 end

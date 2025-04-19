@@ -60,7 +60,7 @@ else
     ind = 1;
 end
 results.Subject(:) = fparts(ind);
-fparts(ind) = [];
+% fparts(ind) = [];
 % Visit
 if any(contains(fparts,'Visit'))
     results.Visit(:) = strrep(fparts(contains(fparts,'Visit')),' ','');
@@ -165,7 +165,7 @@ end
 fparts(contains(fparts,{'LA','LH','LP','RA','RH','RP','['})) = [];
 % Type/Condition
 Types = {'Sine','Exponential','Impulse','PulseTrain'};
-is_known_type = [contains(fname,'Sin'),contains(fname,{'VelStep','Activation'}),...
+is_known_type = [contains(lower(fname),'sin'),contains(fname,{'VelStep','Activation'}),...
     contains(fname,{'Impulse','Gaussian'}),contains(fname,'eeVOR')];
 if ~any(is_known_type)
     error(['Unknown experiemnt type. Cannot parameterize and assign experiment type to: ',old_fname])

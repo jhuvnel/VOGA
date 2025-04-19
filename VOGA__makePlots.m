@@ -18,9 +18,9 @@ else
 end
 %Error handle expected foldered tree not there. Not needed for summary
 %figures made in "Across Subjects"
-if ~contains(opts{ind},'Across Subjects')&&~VOGA__makeFolders(Path,0) 
-    error('Expected folder structure not present. Navigate to appropriate folder before trying again.')
-end
+% if ~contains(opts{ind},'Across Subjects')&&~VOGA__makeFolders(Path,0) 
+%     error('Expected folder structure not present. Navigate to appropriate folder before trying again.')
+% end
 %% Set up for each figure type
 params.code_Path = [userpath,filesep,'VOGA'];
 % Get version and experimenter info from the file
@@ -28,13 +28,13 @@ VOGA_VerInfo = rows2vars(readtable([userpath,filesep,'VOGA_VerInfo.txt'],...
     'ReadVariableNames',false,'ReadRowNames',true));
 params.version = VOGA_VerInfo.Version{:};
 params.Experimenter = VOGA_VerInfo.Experimenter{:};
-params.MVIPath = VOGA_VerInfo.Path{:};
+% params.MVIPath = VOGA_VerInfo.Path{:};
 %Check that the MVI Path is valid
-if ~isfolder(params.MVIPath)
-    error('Invalid MVI "Study Subject" folder path.')
-end
+% if ~isfolder(params.MVIPath)
+%     error('Invalid MVI "Study Subject" folder path.')
+% end
 %Get subject info
-params.sub_info = readtable([params.MVIPath,filesep,'MVI_Information.xlsx']);
+% params.sub_info = readtable([params.MVIPath,filesep,'MVI_Information.xlsx']);
 %Add the plot parameters
 params.Path = Path;
 params.Raw_Path = [Path,filesep,'Raw Files'];
