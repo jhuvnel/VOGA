@@ -17,7 +17,7 @@ disp(in_fname)
 % First get rid of rows where all traces have nan values (oversampled data
 % from EMA)
 theta_L_cam = SineData(1,1);
-theta_R_cam = SineData(1,2);
+theta_R_cam = SineData(1,5);
 % idx_missing=find(isnan(SineData(6,:))&isnan(SineData(7,:))&isnan(SineData(8,:))&isnan(SineData(9,:))&isnan(SineData(10,:))&isnan(SineData(11,:)));
 % SineData(:,idx_missing)=[];
 % Now save different arrays from table and (linearly) interpolate across missing data
