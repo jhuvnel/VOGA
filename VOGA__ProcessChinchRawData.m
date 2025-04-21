@@ -9,7 +9,7 @@ for numfiles = 1:length(chairfiles)
     chair_data(:,1:2) = chair_data(:,1:2)/16; %CDS122917 for EMAv66; this change accounts for the fact that Dale and Peter Boutros changed the line count/rev on May 2015
     
     vog_data = table2array(readtable([filepaths strrep(chairfiles{numfiles},'CHAIR','VOG')]));
-    vog_data = [zeros(7,26); vog_data];
+    vog_data = [zeros(size(vog_data,1),size(vog_data,2)); vog_data];
 
     fprintf('\n:::::::::::::::::::::::::::::::::::::::\n%s\n%s',[filepaths chairfiles{numfiles}],[filepaths strrep(chairfiles{numfiles},'CHAIR','VOG')])
     
@@ -409,7 +409,7 @@ for numfiles = 1:length(chairfiles)
         % Now export data
         SineData = nan(11,length(interp_time));
         SineData(1,1:4) = [Lthetad cal_data(1,1) cal_data(1,2) Lrefindx];
-        SineData(2,1:4) = [Rthetad cal_data(2,1) cal_data(2,2) Rrefindx];
+        SineData(1,5:8) = [Rthetad cal_data(2,1) cal_data(2,2) Rrefindx];
         SineData(2,:) = interp_time;
         SineData(3,:) = interp_chairpos; % first col of chair data, chair pos
         SineData(4,:) = interp_chairvel; % second col of chair data, chair vel
