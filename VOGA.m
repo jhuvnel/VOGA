@@ -32,7 +32,7 @@ while tf
         case 'Generate Folders'
             VOGA__makeFolders(cd,1,0);
         case 'Process Chinch Raw Data'
-            ChinchVOGProcess_v3c;
+            VOGA__ProcessChinchRawData;
         case 'Segment Chinch Sinusoids'
             VOGA__Segment;
         case 'Cycle Average'
