@@ -18,7 +18,7 @@ for numfiles = 1:length(chairfiles)
     fieldsize = [1 45; 1 45];
     try
         try
-            load(dir([strrep(chairfiles{numfiles},'CHAIR','') '_CAL']).name,'cal_data')
+            load(dir([strrep(chairfiles{numfiles},'CHAIR','') '_CAL.mat']).name,'cal_data')
         catch
             if exist('cal_data','var')
                 definput = {num2str(cal_data(1,3)),num2str(cal_data(1,1)),num2str(cal_data(1,2)),num2str(cal_data(2,3)),num2str(cal_data(2,1)),num2str(cal_data(2,2)),};
@@ -36,9 +36,7 @@ for numfiles = 1:length(chairfiles)
     dlganswer = inputdlgcol(prompt,dlgtitle,1,definput,'on',2,[],[],opts);
     
     cal_data = [str2num(dlganswer{2}) str2num(dlganswer{3}) str2num(dlganswer{1}); str2num(dlganswer{5}) str2num(dlganswer{6}) str2num(dlganswer{4})];
-    if savefile
-        save([strrep(chairfiles{numfiles},'CHAIR','') '_CAL'],'cal_data')
-    end
+
     fprintf('\n%s',[num2str(cal_data(1,:)) ' ' num2str(cal_data(2,:))])
 
     % Subtract y0, z0
@@ -164,6 +162,7 @@ for numfiles = 1:length(chairfiles)
 
     Rrefval = RE_time(Rrefindx);
     RE_Points = [RE_Point1; RE_Point2; RE_Point3];
+    
     %% Now calculate position
     % Left eye
     LE_eyeball_pix = eyeball_mm*min([sqrt(sum((LE_Point1(:,Lrefindx)-LE_Point3(:,Lrefindx)).^2)) sqrt(sum((LE_Point2(:,Lrefindx)-LE_Point3(:,Lrefindx)).^2))])/dots_dist;
