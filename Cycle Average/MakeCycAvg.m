@@ -7,9 +7,9 @@ function [CycAvg,analyzed] = MakeCycAvg(Data,Cyc_Path,in_opts,has_fig)
 %% General Setup
 %Loop parameters
 opts = {'Set Y-Limit','Set Velocity View','Filter Position',...
-    'Filter Velocity','Select Cycles','Advanced','Start Over','Save'};
+    'Filter Velocity','Select Cycles','Advanced','Start Over','Load from Selected File','Save'};
 advanced_opts = {'Set Position View','Shift Trigger','Shorten Segment',...
-    'Manual QPR','Load from Selected File','Not Analyzeable','Auto Rerun'};
+    'Manual QPR','Not Analyzeable','Auto Rerun'};
 sel = 'Start Over'; %Run the start procedure first
 % Input handling
 if nargin < 4
@@ -216,11 +216,12 @@ while ~strcmp(sel,'Save') %Run until it's ready to save or just hopeless
                         filt.t_interp = CycAvg2.t_interp;
                     end
                     [CycAvg,filt] = MakeCycAvg__filterTraces(Data,filt,plot_info);
+                    CycAvg.cyclist = CycAvg2.cyclist; 
                     ha = MakeCycAvg__plotFullCycAvg(ha,CycAvg,plot_info);
                 else
                     disp('Not a compatible CycAvg file: unequal number of cycles detected.')
                 end
-            end   
+            end     
         case 'Manual QPR'
             clc;
             uiwait(msgbox('Select the start and end time point to linearly interpolate over on the cycle average graph.'))

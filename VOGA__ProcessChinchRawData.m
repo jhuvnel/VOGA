@@ -1,4 +1,5 @@
 function VOGA__ProcessChinchRawData
+warning off
 savefile=1;
 [chairfiles,filepaths] = uigetfile('*CHAIR*','Select Files With Chair Data.','MultiSelect','on');
 if ischar(chairfiles)

@@ -147,14 +147,27 @@ slen = size(segs,1);
 dt = mean(diff(time));
 % time = (0:dt:(length(time)-1)*dt)';
 for i = 1:slen
-    t = time(segs(i,1):segs(i,2));
-    cdat = stim(segs(i,1):segs(i,2));
-    lxdat = Lx(segs(i,1):segs(i,2));
-    lydat = Ly(segs(i,1):segs(i,2));
-    lzdat = Lz(segs(i,1):segs(i,2));
-    rxdat = Rx(segs(i,1):segs(i,2));
-    rydat = Ry(segs(i,1):segs(i,2));
-    rzdat = Rz(segs(i,1):segs(i,2));
+    start_idx = segs(i,1);
+    count = 0;
+    while (start_idx>1) && (count < 10)
+        start_idx = start_idx-1;
+        count = count + 1;
+    end
+    end_idx = segs(i,2);
+    count = 0;
+    while (end_idx<length(time)) && (count < 10)
+        end_idx = end_idx+1;
+        count = count + 1;
+    end
+
+    t = time(start_idx:end_idx);
+    cdat = stim(start_idx:end_idx);
+    lxdat = Lx(start_idx:end_idx);
+    lydat = Ly(start_idx:end_idx);
+    lzdat = Lz(start_idx:end_idx);
+    rxdat = Rx(start_idx:end_idx);
+    rydat = Ry(start_idx:end_idx);
+    rzdat = Rz(start_idx:end_idx);
     %%%%%%%%%%%%%%%%% Uncomment the following and Fs=1/0.001; if I want to
     %%%%%%%%%%%%%%%%% oversample again
     % Interpolate data points to allign
@@ -191,44 +204,108 @@ for i = 1:slen
     else %This should get 0.05 and 0.02 Hz.
         round_freq = round(freq,2);
     end
-    if contains(lower(in_fname),'dps')
-        cdat = -maxamp*sin(2*pi*round_freq*(time(segs(i,1):segs(i,2))-time(segs(i,1))));
-    elseif contains(lower(in_fname),'ua')
-        cdat = maxamp*sin(2*pi*round_freq*(time(segs(i,1):segs(i,2))-time(segs(i,1))));
+
+    if round_freq > 5
+        tt_c = t(1):1/300:t(end);
+        lxdats_c = interp1(t,lxdat,tt_c,'spline');
+        lydats_c = interp1(t,lydat,tt_c,'spline');
+        lzdats_c = interp1(t,lzdat,tt_c,'spline');
+        rxdats_c = interp1(t,rxdat,tt_c,'spline');
+        rydats_c = interp1(t,rydat,tt_c,'spline');
+        rzdats_c = interp1(t,rzdat,tt_c,'spline');
+
+        % This approach should be improved by fitting a sine to the stim
+        % waveform, then figuring out the phase shift between them, then
+        % resampling at 200 Hz and shifting data accordingly to maintain
+        % phase relationships between stim and response
+
+%         tt_c = t;
+%         fitFunc = @(params, t)  maxamp*sin(2*pi*round_freq*t + params(1)) + params(2);
+%         initialGuess = [0, 0];
+%         params = lsqcurvefit(fitFunc, initialGuess, t, cdat);
+% 
+%         fitted_phase = params(1);
+%         fitted_offset = params(2); % should be close to 0
+% 
+%         Fs_new = 200;
+% 
+%         n_start = ceil((0 - fitted_phase)/pi);
+%         first_crossing = (n_start*pi - fitted_phase)/(2*pi*freq);
+% 
+%         t_duration = (t(end)-t(1)) - first_crossing;
+%         num_samples = ceil(t_duration*Fs_new) + 1;
+% 
+%         tt_c = first_crossing + (0:num_samples-1)/Fs_new;
+% 
+%         cdats_c = maxamp*sin(2*pi*round_freq*tt_c + fitted_phase) + fitted_offset;
+%         tt_c = tt_c + t(1);
+%         lxdats_c = interp1(t,lxdat,tt_c,'spline');
+%         lydats_c = interp1(t,lydat,tt_c,'spline');
+%         lzdats_c = interp1(t,lzdat,tt_c,'spline');
+%         rxdats_c = interp1(t,rxdat,tt_c,'spline');
+%         rydats_c = interp1(t,rydat,tt_c,'spline');
+%         rzdats_c = interp1(t,rzdat,tt_c,'spline');
+%         tt_c = t(1):1/500:t(end);
+%         tt_c = %interp1(1:length(t),t,1:1/200:length(t));
+%         cdats_c = interp1(t,cdat,tt_c,'spline');
+%         lxdats_c = interp1(t,lxdat,tt_c,'spline');
+%         lydats_c = interp1(t,lydat,tt_c,'spline');
+%         lzdats_c = interp1(t,lzdat,tt_c,'spline');
+%         rxdats_c = interp1(t,rxdat,tt_c,'spline');
+%         rydats_c = interp1(t,rydat,tt_c,'spline');
+%         rzdats_c = interp1(t,rzdat,tt_c,'spline');
     end
-    cdats_c = spline(t,cdat,tt_c);
-    cdats_c = spline(t,original_stim(segs(i,1):segs(i,2)),tt_c);
+
+%     if contains(lower(in_fname),'dps')
+%         cdat = -maxamp*sin(2*pi*round_freq*(time(start_idx:end_idx)-time(start_idx)));
+%     elseif contains(lower(in_fname),'ua')
+%         cdat = maxamp*sin(2*pi*round_freq*(time(start_idx:end_idx)-time(start_idx)));
+%     end
+%     cdats_c = spline(t,cdat,tt_c);
+    cdats_c = spline(t,original_stim(start_idx:end_idx),tt_c);
+
      %% Catch multiple versions (up to 3)
     if contains(lower(in_fname),'dps')
         expt_unit = 'dps';
+        expt_axis = 'LHRH';
+        info.stim_axis = [0,0,1];
     elseif contains(lower(in_fname),'ua')
         expt_unit = 'uA';
+        expt_axis = 'LARP';
+        info.stim_axis = [-1,0,0];
     end
+    path_sep = strsplit(rawfile,filesep);
+    folder_sep = strsplit(path_sep{end-2},'_');
+    cond = folder_sep{end};
+    expt_cond = [upper(cond(1)) lower(cond(2:end))];
     in_fname_elements = split(string(in_fname(1:end-4)),'_');
-    if sum(contains(in_fname_elements,'SINE'))
-        expt_type = 'SINE';
-        if sum(contains(in_fname_elements,'REDO')) % should improve coding this so it's not hardcoded and can accept more arguments
-            expt_type = 'SINE-REDO';
+    if sum(contains(lower(in_fname_elements),'sine'))
+        expt_type = 'Sine';
+        if sum(contains(lower(in_fname_elements),'redo')) % should improve coding this so it's not hardcoded and can accept more arguments
+            expt_type = 'Sine-Redo';
         end
-        out_file = [date,'-',chin,'-Moogles-',expt_type,'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented.mat'];
+%         out_file = [date,'-',chin,'-Moogles-',expt_type,'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'Hz.mat'];
+        out_file = [chin,'-NA-',date,'-Moogles-',expt_type,'-DC-',expt_cond,'-',expt_axis,'-',strrep(num2str(round_freq),'.','p'),'Hz-',num2str(maxamp),expt_unit,'.mat'];
         if isfile(out_file)
-            out_file = [date,'-',chin,'-Moogles-',expt_type,'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented_v2.mat'];
+            out_file = [chin,'-NA-',date,'-Moogles-',expt_type,'-DC-',expt_cond,'-',expt_axis,'-',strrep(num2str(round_freq),'.','p'),'Hz-',num2str(maxamp),expt_unit,'_v2.mat'];
             if isfile(out_file)
-                out_file = [date,'-',chin,'-Moogles-',expt_type,'-',num2str(maxamp),expt_unit,'-',strrep(num2str(round_freq),'.','p'),'HzSegmented_v3.mat'];
+                out_file = [chin,'-NA-',date,'-Moogles-',expt_type,'-DC-',expt_cond,'-',expt_axis,'-',strrep(num2str(round_freq),'.','p'),'Hz-',num2str(maxamp),expt_unit,'_v3.mat'];
                 disp('Now three versions of this file exist. More versions will write over v3.')
             end
         end
         info.dataType = ['Sine-DC-LARP-',num2str(round_freq),'Hz-',num2str(maxamp),expt_unit];
-    elseif sum(contains(in_fname_elements,'STEP'))
-        out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','Segmented.mat'];
-        if isfile(out_file)
-            out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','Segmented_v2.mat'];
-            if isfile(out_file)
-                out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','Segmented_v3.mat'];
-                disp('Now three versions of this file exist. More versions will write over v3.')
-            end
-        end
-        info.dataType = ['Step-DC-LARP-',num2str(maxamp),'uA'];
+    elseif sum(contains(lower(in_fname_elements),'step'))
+        %%%%%%%%%%%%%%%%%%%%%%%%%%% 20250422 CFB still needs to standardize
+        %%%%%%%%%%%%%%%%%%%%%%%%%%% naming for Steps based on VOGA!!!!
+%         out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','.mat'];
+%         if isfile(out_file)
+%             out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','_v2.mat'];
+%             if isfile(out_file)
+%                 out_file = [date,'-',chin,'-Moogles-',char(in_fname_elements(end)),'-',num2str(maxamp),expt_unit,'-','_v3.mat'];
+%                 disp('Now three versions of this file exist. More versions will write over v3.')
+%             end
+%         end
+%         info.dataType = ['Step-DC-LARP-',num2str(maxamp),'uA'];
     end
     %Make struct to save
     info.rawfile = rawfile;
@@ -241,8 +318,7 @@ for i = 1:slen
     info.goggle_reorient_ang = 0;
     info.TriggerShift = 0;
     %info.dataType = ['Sine-DC-LARP-',num2str(round_freq),'Hz-',num2str(maxamp),'dps'];
-    info.stim_axis = [-1,1,0];
-    info.Name = out_file;
+    info.name = out_file;
     info.theta_L_cam = theta_L_cam;
     info.theta_R_cam = theta_R_cam;
 %     info.round_freq = round_freq;
