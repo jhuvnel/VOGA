@@ -37,7 +37,9 @@ for numfiles = 1:length(chairfiles)
     dlganswer = inputdlgcol(prompt,dlgtitle,1,definput,'on',2,[],[],opts);
     
     cal_data = [str2num(dlganswer{2}) str2num(dlganswer{3}) str2num(dlganswer{1}); str2num(dlganswer{5}) str2num(dlganswer{6}) str2num(dlganswer{4})];
-
+    if savefile
+        save([strrep(chairfiles{numfiles},'CHAIR','') '_CAL'],'cal_data')
+    end
     fprintf('\n%s',[num2str(cal_data(1,:)) ' ' num2str(cal_data(2,:))])
 
     % Subtract y0, z0
@@ -396,6 +398,15 @@ for numfiles = 1:length(chairfiles)
         RE_pos_HVT_head(zero_RE_time,:) = [];
         RE_pos_TVH_head(zero_RE_time,:) = [];
     end
+    
+    LE_pos_HVT_head(isnan(LE_time),:)=[];
+    LE_pos_TVH_head(isnan(LE_time),:)=[];
+    LE_time(isnan(LE_time))=[];
+
+    RE_pos_HVT_head(isnan(RE_time),:)=[];
+    RE_pos_TVH_head(isnan(RE_time),:)=[];
+    RE_time(isnan(RE_time))=[];
+
 
     % Now interpolate data
     interp_time = interp1(chair_data(:,6),chair_data(:,6),0:0.0055:chair_data(end,6)); % First interpolate time array from chair to have fixed sampling frequency -- note this is equivalent to just setting interp_time = 0:0.0055:chair_data(end,6)
