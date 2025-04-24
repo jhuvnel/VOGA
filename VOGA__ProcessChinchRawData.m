@@ -104,6 +104,7 @@ for numfiles = 1:length(chairfiles)
     ylim manual
     ylim(YL)
     existingref = 0;
+    clear Lrefindx
     while button %continue until it is set to zero by case(2), indicating middle button hit
         [xi,~,button] = ginputzp(1);
         switch(button)
@@ -115,7 +116,7 @@ for numfiles = 1:length(chairfiles)
                 refline = plot([xi xi],[-1000 1000],'b-');
                 [~,Lrefindx]=min(abs(LE_time-xi));
             case(2)
-                if ~isempty(Lrefindx)
+                if exist('Lrefindx','var')
                     button=0;
                 else
                     disp('have not yet hit button');
@@ -143,6 +144,7 @@ for numfiles = 1:length(chairfiles)
     ylim manual
     ylim(YL)
     existingref = 0;
+    clear Rrefindx
     while button %continue until it is set to zero by case(2), indicating middle button hit
         [xi,~,button] = ginputzp(1);
         switch(button)
@@ -154,7 +156,7 @@ for numfiles = 1:length(chairfiles)
                 refline = plot([xi xi],[-1000 1000],'b-');
                 [~,Rrefindx]=min(abs(RE_time-xi));
             case(2)
-                if ~isempty(Rrefindx)
+                if exist('Rrefindx','var')
                     button=0;
                 else
                     disp('have not yet hit button');
@@ -409,9 +411,28 @@ for numfiles = 1:length(chairfiles)
 
 
     % Now interpolate data
+    missing_RE = 0;
+    missing_LE = 0;
     interp_time = interp1(chair_data(:,6),chair_data(:,6),0:0.0055:chair_data(end,6)); % First interpolate time array from chair to have fixed sampling frequency -- note this is equivalent to just setting interp_time = 0:0.0055:chair_data(end,6)
-    interp_position_RE = interp1(RE_time, RE_pos_TVH_head,interp_time,'spline');
-    interp_position_LE = interp1(LE_time, LE_pos_TVH_head,interp_time,'spline');
+    try
+        interp_position_RE = interp1(RE_time, RE_pos_TVH_head,interp_time,'spline');
+    catch
+        interp_position_RE = nan(size(RE_pos_TVH_head));
+    end
+    try
+        interp_position_LE = interp1(LE_time, LE_pos_TVH_head,interp_time,'spline');
+    catch
+        interp_position_LE = nan(size(interp_position_RE));
+        fprintf('\nNo L Eye data!!!!!')
+        missing_LE = 1;
+    end
+    try
+        interp_position_RE = interp1(RE_time, RE_pos_TVH_head,interp_time,'spline');
+    catch
+        interp_position_RE = nan(size(interp_position_LE));
+        fprintf('\nNo R Eye data!!!!!')
+        missing_RE = 1;
+    end
     interp_chairpos = interp1(chair_data(:,6), chair_data(:,1),interp_time,'spline');
     interp_chairvel = interp1(chair_data(:,6), chair_data(:,2),interp_time,'spline');
     interp_Rsense = interp1(chair_data(:,6), chair_data(:,3),interp_time,'spline');
