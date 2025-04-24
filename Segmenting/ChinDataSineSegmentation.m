@@ -207,12 +207,27 @@ for i = 1:slen
 
     if round_freq > 5
         tt_c = t(1):1/300:t(end);
-        lxdats_c = interp1(t,lxdat,tt_c,'spline');
-        lydats_c = interp1(t,lydat,tt_c,'spline');
-        lzdats_c = interp1(t,lzdat,tt_c,'spline');
-        rxdats_c = interp1(t,rxdat,tt_c,'spline');
-        rydats_c = interp1(t,rydat,tt_c,'spline');
-        rzdats_c = interp1(t,rzdat,tt_c,'spline');
+        try
+            lxdats_c = interp1(t,lxdat,tt_c,'spline');
+            lydats_c = interp1(t,lydat,tt_c,'spline');
+            lzdats_c = interp1(t,lzdat,tt_c,'spline');
+        catch
+            lxdats_c = nan(size(cdats_c));
+            lydats_c = nan(size(cdats_c));
+            lzdats_c = nan(size(cdats_c));
+            fprintf('No L eye data!!!!!')
+        end
+        try
+            rxdats_c = interp1(t,rxdat,tt_c,'spline');
+            rydats_c = interp1(t,rydat,tt_c,'spline');
+            rzdats_c = interp1(t,rzdat,tt_c,'spline');
+        catch
+            rxdats_c = nan(size(cdats_c));
+            rydats_c = nan(size(cdats_c));
+            rzdats_c = nan(size(cdats_c));
+            fprintf('No R eye data!!!!!')
+        end
+        
 
         % This approach should be improved by fitting a sine to the stim
         % waveform, then figuring out the phase shift between them, then
