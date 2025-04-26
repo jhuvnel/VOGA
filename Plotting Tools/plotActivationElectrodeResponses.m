@@ -27,13 +27,32 @@ if isempty(canal)
     return;
 end
 sel_el = elec_opts(canal);
-rel_results = all_results(ismember(elec_phase,sel_el),:);
+rel_results = all_results(ismember(elec_phase,sel_el) & all_results.PulseFreq == 200,:); % only plot 200 pps scans
+elec_phase = strcat(rel_results.Electrode,{' '},num2str(rel_results.('PhaseDur')),'us');
+rel_ep = unique(elec_phase,'stable');
+% remove duplicate autoscan levels if scan was repeated
+for i = 1:length(rel_ep)
+    % check for repeat scans and keep the most recent one only
+    % also consider if only some current levels were repeated
+    currents = rel_results.CurrentAmp(ismember(elec_phase, rel_ep{i}));
+    rel_currents = unique(currents);
+    if length(unique(rel_results.Date(ismember(elec_phase, rel_ep{i})))) ~= 1
+        for j = 1:length(rel_currents)
+            if sum(currents == rel_currents(j)) > 1 % only throw out this current amplitude level if it was repeated
+                rel_results(ismember(elec_phase, rel_ep{i}) & ...
+                    rel_results.Date ~= max(rel_results.Date(ismember(elec_phase, rel_ep{i}))) ...
+                    & rel_results.CurrentAmp == rel_currents(j), :) = [];
+                elec_phase = strcat(rel_results.Electrode,{' '},num2str(rel_results.('PhaseDur')),'us');
+            end
+        end
+    end
+end
+
 % Make the figure name
 file_parts = [rel_results.Subject,rel_results.Visit,cellstr(datetime(rel_results.Date,'Format','yyyyMMdd')),...
     rel_results.Condition,rel_results.Goggle,strcat(strrep(cellstr(num2str(rel_results.('PulseFreq'))),' ',''),'pps')];
 fig_title = {strjoin([join(unique(file_parts,'stable')),strjoin(elec_opts(canal),'_')])};
-elec_phase = strcat(rel_results.Electrode,{' '},num2str(rel_results.('PhaseDur')),'us');
-rel_ep = unique(elec_phase,'stable');
+
 n_row = length(rel_ep);
 rel_ep_inds = false(size(rel_results,1),n_row);
 rel_ep_s  = NaN(1,n_row);
