@@ -2,10 +2,14 @@ function fig = plotSegment(Data)
     % Standardize Colors
     load('VNELcolors.mat','colors')
     %% Extract and plot raw position data
-    te = Data.Time_Eye - Data.Time_Eye(1);
-    ts = Data.Time_Stim - Data.Time_Stim(1);
     info = Data.info;
     dType = strrep(strrep(info.dataType,'_',' '),'-',' ');
+    te = Data.Time_Eye - Data.Time_Eye(1);
+    ts = Data.Time_Stim - Data.Time_Stim(1);
+    if contains(dType,'Activation')
+        te = Data.Time_Eye;
+        ts = Data.Time_Stim;
+    end    
     if contains(dType,'[')&&contains(dType,']')
         dType(strfind(dType,'['):strfind(dType,']')) = strrep(dType(strfind(dType,'['):strfind(dType,']')),' ','-'); %Put negative signs back in vectors
     end
@@ -49,7 +53,7 @@ function fig = plotSegment(Data)
         plot(te,Data.RE_Vel_Y,'Color',colors.l_y)
         plot(te,Data.RE_Vel_Z,'Color',colors.l_z)
         hold off
-        axis([0 te(end) -300 300])
+        axis([te(1) te(end) -300 300])
         title('Angular Velocity')
         xlabel('Time(s)')
         ylabel('Velocity (dps)')
@@ -62,7 +66,7 @@ function fig = plotSegment(Data)
         plot(te,Data.RE_Position_Y,'Color',colors.r_y)
         plot(te,Data.RE_Position_Z,'Color',colors.r_z)
         hold off
-        axis([0 te(end) -300 300])
+        axis([te(1) te(end) -300 300])
         title('Angular Velocity')
         xlabel('Time(s)')
         ylabel('Velocity (dps)')
@@ -75,7 +79,7 @@ function fig = plotSegment(Data)
         plot(te,Data.LE_Vel_Y,'Color',colors.l_y)
         plot(te,Data.LE_Vel_Z,'Color',colors.l_z)
         hold off
-        axis([0 te(end) -300 300])
+        axis([te(1) te(end) -300 300])
         title('Angular Velocity')
         xlabel('Time(s)')
         ylabel('Velocity (dps)')
@@ -90,7 +94,7 @@ function fig = plotSegment(Data)
         plot(te,Data.RE_Position_Z,'Color',colors.r_z)
         plot(ts,sm*stim,'k')
         hold off
-        axis([0 te(end) -20 20])
+        axis([te(1) te(end) -20 20])
         title('Raw Angular Position')
         xlabel('Time(s)')
         ylabel('Position (deg)')

@@ -34,6 +34,8 @@ fname = fname(1:min([strfind(fname,'_'),length(fname)+1])-1);
 fparts = split(strrep(fname,'.mat',''),'-');
 fparts(cellfun(@isempty,fparts)) = [];
 N = double(contains(lower(fname),{'sin','velstep','activation'}))+1; %Pos/Neg Half-cycles;
+% Initialize table and structure
+cycle_params = struct;
 results = [cell2table(repmat({''},N,length(cell_labs)),'VariableNames',cell_labs),...
     array2table(NaN(N,length(num_labs)),'VariableNames',num_labs)];
 results.Date = NaT(N,1); %Fix date into a datetime
@@ -147,13 +149,16 @@ if contains(fname,{'LAE','LHE','LPE','RAE','RHE','RPE'})
 end
 fparts(contains(fparts,{'LA','LH','LP','RA','RH','RP','['})) = [];
 % Type/Condition
-Types = {'Sine','Exponential','Impulse','PulseTrain'};
-is_known_type = [contains(fname,'Sin'),contains(fname,{'VelStep','Activation'}),...
+Types = {'Sine','Exponential','Impulse','PulseTrain','Activation'};
+is_known_type = [contains(fname,'Sin'),contains(fname,'VelStep'),...
     contains(fname,{'Impulse','Gaussian'}),contains(fname,'eeVOR')];
-if ~any(is_known_type)
+if ~any(is_known_type)&&~contains(fname,'Activation')
     error(['Unknown experiemnt type. Cannot parameterize and assign experiment type to: ',old_fname])
 end
-type = find(is_known_type,1,'first'); %type 4 should be eeVOR is isn't of another type already
+type = 5; %Activation
+if ~contains(fname,'Activation')
+    type = find(is_known_type,1,'first'); %type 4 should be eeVOR is isn't of another type already, type 5 is activation
+end
 if type == 1
     %Frequency
     freqs = strrep(strrep(fparts(contains(fparts,'Hz')),'p','.'),'.mat','');

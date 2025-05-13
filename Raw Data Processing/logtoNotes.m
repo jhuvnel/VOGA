@@ -1,11 +1,21 @@
-%Takes in the Raw Path to LDHP/LDPC Fitting Software log files and makes the appropriate Notes files
-%This ignores VOG files that already have notes files.
-function logtoNotes(Raw_Path,ImplantSide)
-%Update this line to include more extensions as needed
-file_names = extractfield([dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])],'name');
-file_dates = extractfield([dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])],'date');
-if isempty(file_names)
-    file_names = '';
+%% Log to Notes
+%
+% This function expects that all of the VOG files are in the Raw_Path
+% directory and creates files with -Notes.txt appeneded to the name of
+% the VOG file with a description of the experiments containted in the VOG
+% file. These files are automatically created based on the log files 
+% created by the MVI fitting software. This is especially useful for the 
+% eeVOR experiments. The format of these files is described in detail in 
+% the notes of MakeNotes.m. It also ignored VOG files that already have
+% notes files.
+%
+function LogtoNotes(Raw_Path,ImplantSide)
+%Update this line to include more extensions as needed, right now it only
+%looks for .txt for LDVOG files and .dat for NL files.
+files = [dir([Raw_Path,filesep,'*.txt']);dir([Raw_Path,filesep,'*.dat'])];
+file_names = '';
+if ~isempty(files)
+    file_names = extractfield(files,'name'); file_dates = extractfield(files,'date');
 end
 Notes_ind = contains(file_names,'-Notes.txt');
 Log_ind = contains(file_names,{'LDHP','LDPC','TestingLog'});
@@ -39,9 +49,7 @@ plot_notes = annotation('textbox',[0.7 0.1 0.25 0.83],'String','',...
     'FontSize',11,'HorizontalAlignment','left','EdgeColor','none');
 %% Set some parameters that will likely stay the same but can be edited
 path_parts = strsplit(strrep(strrep(Raw_Path,'_',''),' ',''),filesep);
-sub = '';
-ear = '';
-vis = '';
+sub = 'Unknown'; ear = 'U'; vis = 'NA';
 if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected formatting
     sub = path_parts{contains(path_parts,'MVI')&contains(path_parts,'R')};
     MVI_num = str2double(sub((-3:1:-1)+strfind(sub,'R')));
@@ -49,9 +57,6 @@ if any(contains(path_parts,'MVI')&contains(path_parts,'R')) %subject in expected
         ear = 'L';
     elseif ismember(MVI_num,ImplantSide{2})
         ear = 'R';
-    else
-        open('MakeNotes.m')
-        error('Remember to update the implantation side for this MVI Subject in MakeNotes.m')
     end
 end
 if any(contains(path_parts,'Visit'))
@@ -133,6 +138,7 @@ for f = 1:length(logfiles)
     for i = 1:length(VOG_files)
         fname = VOG_files{i};
         if contains(fname,'.txt') %LDVOG
+            gog = 'LDVOG2'; ang = '-170'; %Defualts
             VOG_data = readtable([Raw_Path,filesep,fname]);
             %Make date and other labels
             fname1 = fname;
@@ -149,22 +155,14 @@ for f = 1:length(logfiles)
             end
             VOG_times.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
             date = char(VOG_times(1),'yyyyMMdd-HHmmss');
-            gog = 'LDVOG2';
-            ang = '-170';
             %Load items for plotting
             % Generate Time_Eye vector
             Time = VOG_data{:,2};
             Time_Eye = (0:length(Time)-1)'*median(diff(Time));
-            % Index for the VOG GPIO line
-            StimIndex = 35;
-            XvelHeadIndex = 30;
-            YvelHeadIndex = 29;
-            ZvelHeadIndex = 28;
-            Stim = VOG_data{1:length(Time_Eye),StimIndex};
-            %Transform coordinates to be in standard canal coordinates (X,Y,Z)
-            GyroX = VOG_data{1:length(Time_Eye),XvelHeadIndex};
-            GyroY = VOG_data{1:length(Time_Eye),YvelHeadIndex};
-            GyroZ = -VOG_data{1:length(Time_Eye),ZvelHeadIndex};
+            Stim = VOG_data{1:length(Time_Eye),35};
+            GyroX = VOG_data{1:length(Time_Eye),30};
+            GyroY = VOG_data{1:length(Time_Eye),29};
+            GyroZ = -VOG_data{1:length(Time_Eye),28};
         elseif contains(fname,'.dat') %NKI/NL
             %Load file
             warning('off')
@@ -188,9 +186,9 @@ for f = 1:length(logfiles)
             Time_Eye = VOG_data.EyeTime;
             Stim = zeros(length(Time_Eye),1);
             Stim(VOG_data.EventCode ~= 0) = 1;
-            GyroX = VOG_data.GyroY - median(VOG_data.GyroY); 
-            GyroY = -(VOG_data.GyroX - median(VOG_data.GyroX)); 
-            GyroZ = -(VOG_data.GyroZ - median(VOG_data.GyroZ)); 
+            GyroX = medfilt1(VOG_data.GyroY - median(VOG_data.GyroY),3); 
+            GyroY = medfilt1(-(VOG_data.GyroX - median(VOG_data.GyroX)),3); 
+            GyroZ = medfilt1(-(VOG_data.GyroZ - median(VOG_data.GyroZ)),3); 
         else %Ignore unknown file type
             break;
         end
@@ -213,7 +211,14 @@ for f = 1:length(logfiles)
                 experiments = cell(length(rel_exp),1);
                 for j = 1:length(experiments)
                     line = rel_exp{j};
-                    curr = num2str(round(str2double(strrep(line(strfind(line,':')+1:end),' ','')),0));
+                    % if >1uA rounds to closest uA for file naming else
+                    % have full str
+                    curr = str2double(strrep(line(strfind(line,':')+1:end),' ',''));
+                    if curr > 1
+                        curr = num2str(round(curr,0));
+                    else
+                        curr = num2str(curr);
+                    end
                     electrode = strrep(line(strfind(line,' E')+1:strfind(line,' E')+3),' ','');
                     rate_line = rel_dat{find(contains(rel_dat(1:e_i(j),2),'(pps)'),1,'last'),2};
                     pps = strrep(rate_line(strfind(rate_line,':')+1:end),' ','');
@@ -227,16 +232,14 @@ for f = 1:length(logfiles)
                         case {'E9','E10','E11'}
                             can = 'A';
                     end
-                    if contains(common_notes(2),'L')
-                        canal = ['L',can,electrode];
-                    else
-                        canal = ['R',can,electrode];
-                    end
-                    experiments{j} = [canal,'-',pps,'pps-',us,'us-',curr,'uA']; %rounds to closest uA for file naming
+                    experiments{j} = [ear,can,electrode,'-',pps,'pps-',us,'us-',curr,'uA']; 
                 end
                 notes = strcat({'Experiment eeVOR-Autoscan-'},experiments);
             else 
-                rel_dat(cellfun(@isempty,rel_dat(:,3)),:) = [];
+                rel_dat_full = rel_dat; % needed to check what type of experiment it was
+                rel_dat_stim_inds = ~cellfun(@isempty,rel_dat(:,3)); % find where the stim data is in the log data, throw out extra lines
+                rel_dat(~rel_dat_stim_inds,:) = [];
+                rel_dat_stim_inds = find(rel_dat_stim_inds); % keep a record of which lines in the log file you just pulled out
                 %Adjust for misalignment in stim start and file start
                 %Scrolls up in the log file until it finds a header
                 stim_ind = ~isnan(str2double(rel_dat(:,2)));
@@ -259,7 +262,7 @@ for f = 1:length(logfiles)
                     %Figure out what type of experiment it is
                     if isempty(col_labs)
                         disp([fname,': Experiment type was not detected.'])
-                    elseif any(contains(col_labs,'Depth of Modulation'))&&any(contains(data(rel_inds,2),'VelocityStep-LHRH'))
+                    elseif any(contains(col_labs,'Depth of Modulation'))&&any(contains(rel_dat_full(rel_dat_stim_inds(stim_starts(j))-1,2),'VelocityStep-LHRH')) % checks name of the stim file that was just started
                         experiments(j) = {[{'Experiment eeVOR-VelStep-LH-240dps'};{'Experiment eeVOR-VelStep-RH-240dps'}]};
                     elseif any(contains(col_labs,'Depth of Modulation'))
                         experiments(j) = {strcat('Experiment eeVOR-MultiVector-[',stim_tab(2:end,2),',',stim_tab(2:end,3),',',stim_tab(2:end,4),']')};

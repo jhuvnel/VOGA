@@ -39,7 +39,7 @@ if ~isfield(Data.info,'name')
 end
 fname = Data.info.name;
 % Load default filters
-filt_params = VOGA__saveLastUsedParams;
+filt_params = SaveLastUsedParams;
 %For speed during autoscan analysis, do not make cycle average figures
 buffer_pix = [25,50,450,100]; %left, bottom, right, and top # of pixel buffer
 plot_info.screen_size = get(0,"ScreenSize");
@@ -309,6 +309,6 @@ CycAvg = ParameterizeCycAvg(CycAvg);
 filt_params.filt.pos = filt.pos;
 filt_params.filt.vel = filt.vel;
 filt_params.YLim = plot_info.YLim;
-VOGA__saveLastUsedParams(filt_params);
+SaveLastUsedParams(filt_params);
 analyzed = 1;
 end

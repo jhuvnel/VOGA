@@ -1,4 +1,4 @@
-function splitGNOfile(Path,fname,deidentify)
+function SplitGNOfile(Path,fname,deidentify)
     %Parse relevant file name parts
     fparts = strsplit(fname,'_');
     if length(fparts)~=8

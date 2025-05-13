@@ -3,12 +3,11 @@ fname = Data.info.name;
 info = Data.info;
 Fs = Data.Fs;
 %Set time values
+Data.te = Data.Time_Eye - Data.Time_Eye(1);
+    Data.ts = Data.Time_Stim - Data.Time_Stim(1);
 if contains(fname,'Activation') %Preserve time to rejoin them later
     Data.te = Data.Time_Eye;
-    Data.ts = Data.Time_Stim;
-else %Make 1st point 0
-    Data.te = Data.Time_Eye - Data.Time_Eye(1);
-    Data.ts = Data.Time_Stim - Data.Time_Stim(1);
+    Data.ts = Data.Time_Stim;    
 end
 if isfield(Data,'HeadMPUVel_Z') %True for some rotary chair files
     Data.HeadVel_Z = Data.HeadMPUVel_Z;
@@ -91,7 +90,7 @@ elseif contains(info.dataType,'eeVOR') %align using the trigger signal
         trig = diff(stim);
         starts = find(trig==1)-1;
         starts = starts(1:2:end);
-        if length(starts)==1 %VelStep
+        if isscalar(starts) %VelStep
             ends = length(ts);
             fparts = split(info.dataType,'-');
             amp = str2double(strrep(strrep(fparts{contains(fparts,'dps')},'dps',''),'n','-'));
