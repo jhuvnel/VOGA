@@ -33,7 +33,7 @@
 % back to 0.
 % Make sure to add the current version into the commit for ease of tracking in the
 % future.
-current_ver = 'v5.19.0'; %CHANGE ME before each new commit
+current_ver = 'v5.20.0'; %CHANGE ME before each new commit
 % % VOGA Menu Options
 % It unwieldy to have all of the possible functionalities in the main menu
 % so they are split by the options needed in typical folder analysis and 

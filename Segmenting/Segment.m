@@ -120,13 +120,15 @@ if contains(exp_uniq,'Activation') % IN PROGRESS %
     xlabel(ax,'Time (min)');
     set(gca,'YLim',[-30 30])
     starts = NaN(length(stim_info),1);
+    ends = NaN(length(stim_info),1);
+    disp('Make sure segments do not start or end on blinks.')
     for i = 1:length(stim_info)
-        input(['Hit enter to select the starting point of segment: ',stim_info{i}]);
-        vals = ginput(1);
+        input(['Hit enter to select the starting and ending point of segment: ',stim_info{i}])
+        vals = ginput(2);
         [~,temp] = min(abs(t2-vals(1,1)));
-        starts(i) = round(temp,0);
-    end
-    ends = [starts(2:end);length(t)];
+        [~,temp2] = min(abs(t2-vals(2,1)));
+        starts(i) = round(temp,0); ends(i) = round(temp2,0);
+    end  
     xlabel(ax,'Time (s)'); %Turn it back for the summary graph
 end
 if any(contains(exp_uniq,{'eeVOR PulseTrain','eeVOR Autoscan'}))

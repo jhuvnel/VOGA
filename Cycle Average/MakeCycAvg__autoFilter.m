@@ -36,6 +36,9 @@ switch type %Update velocity filtering
         end
     case 2
         filt.vel.irlssmooth(traces_vel) = 200;
+        if contains(Data.info.dataType,'Light') %4 min for activation
+            filt.vel.irlssmooth(traces_vel) = 400;
+        end
     case 3
         filt.vel.sgolay(traces_vel) = 5;
         filt.vel.irlssmooth(traces_vel) = 3;

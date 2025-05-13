@@ -4,7 +4,7 @@ info = Data.info;
 Fs = Data.Fs;
 %Set time values
 Data.te = Data.Time_Eye - Data.Time_Eye(1);
-    Data.ts = Data.Time_Stim - Data.Time_Stim(1);
+Data.ts = Data.Time_Stim - Data.Time_Stim(1);
 if contains(fname,'Activation') %Preserve time to rejoin them later
     Data.te = Data.Time_Eye;
     Data.ts = Data.Time_Stim;    
@@ -163,9 +163,11 @@ elseif contains(info.dataType,'Sine')&&~contains(info.dataType,'eeVOR')
 elseif contains(info.dataType,'eeVOR')&&contains(info.dataType,'Step')
     stim = stims;
 end
-t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);
 Data.stim = stim;
-Data.t_snip = t_snip;
+Data.t_snip = reshape(median(diff(ts))*(0:ends(1)-starts(1)),1,[]);
+if contains(fname,'Activation') %Preserve time to rejoin them later
+    Data.t_snip = Data.te;
+end
 Data.stims = stims;
 Data.keep_inds = keep_inds;
 %Find the detected impulses in the GNO system

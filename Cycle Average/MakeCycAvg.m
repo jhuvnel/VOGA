@@ -58,7 +58,7 @@ end
 % Plot defaults
 all_traces = {'LX','RX','LY','RY','LZ','RZ','LLARP','RLARP','LRALP','RRALP'};
 traces_pos1 = all_traces(1:6); %XYZ pos
-if contains(fname,{'X','Y'})
+if contains(fname,{'X','Y','Activation'})
     traces_vel1 = all_traces(1:6);
 elseif contains(fname,{'GNO','ESC3'})
     traces_vel1 = all_traces(4+2*find(cellfun(@(x) contains(fname,x),{{'LH','RH'};{'LA','RP'};{'RA','LP'}})));

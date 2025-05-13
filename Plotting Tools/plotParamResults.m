@@ -12,7 +12,7 @@ load('VNELcolors.mat','colors')
 all_canals = {'LA';'RP';'LP';'RA';'LH';'RH';'-X';'+X';'-Y';'+Y'};
 all_canals(:,2) = reshape(repmat({'LARP','RALP','LHRH','X','Y'},2,1),[],1);
 all_canals(:,3) = reshape(repmat({'l','r','z','x','y'},2,1),[],1);
-all_markers = split('o d ^ p > h < s v _ * | . o d ^ p > h < s v _ * | . o d ^ p > h < s v _ * | .');
+all_markers = repmat(split('o d ^ p > h < s v _ * | .'),1,3);
 %Process arguements from params input
 Path = params.Path;
 Cyc_Path = params.Cyc_Path;
@@ -39,6 +39,107 @@ all_results.DateStr = cellstr(all_results.Date,'yyyyMMdd');
 exp_types = {'Sine','HIT','Exp','PulseTrain'};
 plot_types = {'CycAvg','MaxVel','Param'};
 all_plot_tabs = cell2table(cell(length(exp_types),length(plot_types)),'VariableNames',plot_types,'RowNames',exp_types);
+%% Activation
+%This module make its own figure outstide of the rest of the structure of
+%this code because the plots also require more analysis
+if any(contains(all_results.Type,'Activation'))
+    %Isolate relevant table entries and put them in order for plotting by
+    %pulse frequency
+    tab = sortrows(all_results(contains(all_results.Type,'Activation'),:),'PulseFreq','ascend');
+    tab.PulseFreqStr = strcat(strrep(cellstr(num2str(tab.PulseFreq)),' ',''),'pps');
+    tab.ConditionNum = strrep(extract(tab.File,digitsPattern+'.mat'),'.mat','');
+    [~,iC] = unique(tab.File); %Remove duplicates of the same file
+    tab = sortrows(tab(iC,:),"ConditionNum","ascend"); %Order in order of time
+    fn = size(tab,1);
+    %Make one figure for each group of cycle averages (same subject, visit,
+    %date, goggle, and pulse frequency across condition)
+    rel_labs = {'Subject','Visit','DateStr','Experiment','Type','Goggle','PulseFreqStr'};
+    [~,rel_col] = ismember(rel_labs,tab.Properties.VariableNames);
+    file_parts = table2cell(tab(:,rel_col));
+    %Parts applicable to each file
+    common_cond_i = all(strcmp(file_parts,repmat(file_parts(1,:),fn,1)),1);
+    common_cond = strjoin(file_parts(1,common_cond_i));
+    rel_file_parts = join(file_parts(:,~common_cond_i),2);
+    [conds,~,IC] = unique(rel_file_parts,'stable');
+    tr = {'t','lx_cyc','ly_cyc','lz_cyc','rx_cyc','ry_cyc','rz_cyc'};
+    %2nd order exponential fit
+    options = optimset('Display','off'); %suppress output from fminsearch
+    exp_fit = @(tt,p) p(1).*exp(-p(2).*tt)+p(3).*exp(-p(4).*tt);
+    makefit = @(trace,T) fminsearchbnd(@(p) sum((exp_fit(T,p)-trace).^2,'omitnan'),...
+        [trace(1)/2,1,trace(1)/2,60],[-inf,0,-inf,0],[inf,inf,inf,inf],options);
+    %Intialize figure
+    fig = figure('Units','inches','Position',[0.5,0.5,6,4],'Color',[1,1,1]);
+    load('VNELcolors.mat','colors')
+    for i = 1:max(IC)
+        clf;
+        rel_files = tab.File(IC==i);
+        fig_name = strrep(common_cond,' ','-');
+        if ~isempty(conds{1}) %Multiple plots
+            fig_name = strrep([common_cond,' ',conds{i}],' ','-');
+        end
+        data = []; %intialize struct with all of the data to plot
+        for j = 1:length(tr)
+            data.(tr{j}) = cell(length(rel_files),1);
+        end
+        starts = NaN(length(rel_files),1); ends = NaN(length(rel_files),1);
+        for ii = 1:length(rel_files) %Extract the eye movement data from the Cycle Averages
+            load([Cyc_Path,filesep,rel_files{ii}],'CycAvg')
+            for j = 1:length(tr)
+                data.(tr{j}){ii} = reshape(CycAvg.(tr{j}),[],1);
+            end
+            starts(ii) = CycAvg.t(1); ends(ii) = CycAvg.t(end);
+        end
+        %Fix time to be relative to onset of device use
+        dark_starts = (starts(contains(tab.File(IC==i),'Dark'))-starts(2))/60;
+        dark_ends = (ends(contains(tab.File(IC==i),'Dark'))-starts(2))/60;
+        data.all_t = (vertcat(data.t{:})-starts(2))/60; 
+        temp = data.t(2:2:end); %Only the dark segments after onset of device use
+        data.dark_t = (vertcat(temp{:})-starts(2))/60; 
+        data.fit_params = NaN(5,length(tr)-1); %Initialize matrix with the fit parameters
+        for j = 2:length(tr) 
+            %Concatenate vectors with all data and with data from only dark
+            data.(['all_',tr{j}]) = vertcat(data.(tr{j}){:});
+            temp = data.(tr{j})(2:2:end); %Only the dark segments after onset of device use
+            data.(['dark_',tr{j}]) = vertcat(temp{:});
+            %Make exponential fits to the dark data
+            data.([tr{j},'_fit']) = exp_fit(data.all_t,makefit(data.dark_t,data.(['dark_',tr{j}])));
+            data.fit_params(:,j-1) = [makefit(data.dark_t,data.(['dark_',tr{j}])),...
+                sqrt(mean((exp_fit(data.dark_t,makefit(data.dark_t,data.(['dark_',tr{j}])))-data.(['dark_',tr{j}])).^2,'omitnan'))]';
+        end
+        %Save these values
+        save([fig_name,'.mat'],'data')
+        %Make plot
+        h = gobjects(9,1);
+        s = unique(round(linspace(1,length(data.all_t),1000))); %plot a subset of points (1000) if there are more than 1000 points
+        YLim = [-75 75];
+        annotation('textbox',[0 .9 1 .1],'String',fig_name,'FontSize',14,...
+            'HorizontalAlignment','center','EdgeColor','none');
+        annotation('textbox',[0 0 1 1],'String',[Path,newline,'Plotting Scripts',filesep,'plotParamResults.m',newline,...
+            'VOGA',params.version,newline,params.Experimenter],'FontSize',5,'EdgeColor','none','interpreter','none');
+        cla;
+        hold on
+        for j = 1:length(dark_starts) %Now plot all fills
+            h(7) = fill([dark_starts(j);dark_ends(j);dark_ends(j);dark_starts(j)],YLim([2;2;1;1]),0.85*[1,1,1]);
+        end
+        h(8) = fill([starts(end);ends(end);ends(end);starts(end)],YLim([2;2;1;1]),1*[1,1,1]); %Off screen
+        h(9) = fill([data.dark_t(1),data.all_t(end),data.all_t(end),data.dark_t(1)],YLim([2;2;2;2])-[0,0,1,1],0*[1,1,1]); 
+        for j = 2:length(tr) 
+            plot(data.all_t(s),data.(['all_',tr{j}])(s),'.','Color',colors.([tr{j}(1),'_',tr{j}(2),'_s']))
+        end
+        for j = 2:length(tr) 
+            plot(data.dark_t,data.(['dark_',tr{j}]),'.','Color',colors.([tr{j}(1),'_',tr{j}(2)]),'LineWidth',0.5)
+            h(j-1) = plot(data.all_t,data.([tr{j},'_fit']),'-','Color',colors.([tr{j}(1),'_',tr{j}(2)]),'LineWidth',1);
+        end
+        hold off
+        xlabel('Time (minutes)')
+        ylabel('Slow Phase Eye Velocity (°/s)')
+        axis([data.all_t(1),data.all_t(end),YLim])
+        legend(h,{'LX','LY','LZ','RX','RY','RZ','Dark','Light','Stimulation'},'Location','southeast','NumColumns',3)
+        savefig(fig,[Path,filesep,'Figures',filesep,fig_name,'.fig'])
+        saveas(fig,[Path,filesep,'Figures',filesep,fig_name,'.svg'])
+    end
+    close;
+end
 %% Sinusoids
 if any(contains(all_results.Type,'Sine'))
     %Isolate relevant table entries and put them in order for plotting by amplitude and frequency
@@ -264,7 +365,6 @@ if any(contains(all_results.Type,'Impulse'))
     tab = all_results(contains(all_results.Type,'Impulse'),:);
     [~,Ic] = ismember(tab.AxisName,canals(:,1));
     tab.Ic = Ic;
-    
     fn = size(tab,1);
     GainMax = 0.1*ceil(max(tab.Gain+tab.Gain_sd)/0.1);
     %Make one figure for each group of cycle averages (same subject, visit,
@@ -451,9 +551,9 @@ if any(contains(all_results.Condition,'Autoscan'))
     dat.PhaseDur = tab.PhaseDurStr(ic);
     dat.Electrode = tab.Electrode(ic);
     dat.Canal = tab.AxisName(ic);
-    dat.Enum = tab.Enum(ic);    
+    dat.Enum = tab.Enum(ic);
     for i = 1:enum
-    	inds = find(IC==i);
+        inds = find(IC==i);
         tab.CurrentAmpNorm(inds) = round(100*(tab.CurrentAmp(inds)-tab.CurrentAmp(inds(1)))/diff(tab.CurrentAmp(inds([1,end]))));
         %Remove duplicate experiments by choosing the one with the
         %closest time stamp to the others
@@ -518,7 +618,7 @@ if any(contains(all_results.Condition,'Autoscan'))
     [~,indC] = ismember(sub_tab.Canal,sub_t);
     rel_tab = cell(length(YVar),length(sub_t));
     rel_leg = cell(length(YVar),length(sub_t));
-    for ii = 1:length(sub_t) 
+    for ii = 1:length(sub_t)
         rel_leg{1,ii} = leg_tab(indC==ii,:);
         for j = 1:length(YVar)
             n_tab = table();
@@ -529,7 +629,7 @@ if any(contains(all_results.Condition,'Autoscan'))
             n_tab.Y = sub_tab.(YVar{j})(indC==ii);
             n_tab.Y_sd = sub_tab.([YVar{j},'_sd'])(indC==ii);
             rel_tab{j,ii} = n_tab;
-        end        
+        end
     end
     param_plots.SubNames{1} = sub_t;
     param_plots.YLim{1} = [0,YMax;0,180;-10,110];
@@ -544,11 +644,9 @@ if any(contains(all_results.Condition,'Autoscan'))
     save([cd,filesep,'AutoscanParameters.mat'],'dat')
 end
 %% Make all plots
-all_cycavg_plots = vertcat(all_plot_tabs.CycAvg{:});
-all_maxvel_plots = vertcat(all_plot_tabs.MaxVel{:});
-all_param_plots = vertcat(all_plot_tabs.Param{:});
 % Group Cyc Avg
 if isfolder(Cyc_Path) %Otherwise, skip these and go to the parameterized versions
+    all_cycavg_plots = vertcat(all_plot_tabs.CycAvg{:});
     for k = 1:size(all_cycavg_plots,1)
         plot_info = all_cycavg_plots(k,:);
         fig = plotGroupCycAvg(plot_info,params);
@@ -559,6 +657,7 @@ if isfolder(Cyc_Path) %Otherwise, skip these and go to the parameterized version
     end
 end
 % MaxVel Parameterized
+all_maxvel_plots = vertcat(all_plot_tabs.MaxVel{:});
 for k = 1:size(all_maxvel_plots,1)
     plot_info = all_maxvel_plots(k,:);
     fig = plotMaxVelAllEyeComp(plot_info,params);
@@ -568,6 +667,7 @@ for k = 1:size(all_maxvel_plots,1)
     close;
 end
 % Parameterized Figures
+all_param_plots = vertcat(all_plot_tabs.Param{:});
 for k = 1:size(all_param_plots,1)
     plot_info = all_param_plots(k,:);
     fig = plotTabParam(plot_info,params);
