@@ -19,10 +19,10 @@ function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
 options = optimset('Display','off'); %suppress output from fminsearch
 traces = {'lz','rz','ll','rl','lr','rr','lx','rx','ly','ry'};
 cell_labs = {'File','Subject','Visit','Date','Goggle','Experiment',...
-    'Type','Condition','AxisName','AxisLetter','StimAxis','Electrode'};
+    'Type','Condition','AxisName','AxisLetter','StimAxis','Electrode','MaxAxis_L','MaxAxis_R'};
 param_tr = {'MaxVel','Gain','Tau','Latency','Phase','RMSE'};
 sub_num_labs = [reshape(strcat(repmat(param_tr,length(traces),1),'_',repmat(upper(traces)',1,length(param_tr))),[],1)',...
-    {'Align_L','Align_R','Disc'},param_tr,{'Align'}];
+    {'Align_L','Align_R','Disc','MaxEyeMovement_L','MaxEyeMovement_R'},param_tr,{'Align'}];
 num_labs = [{'Frequency';'Amplitude';'PulseFreq';'PhaseDur';'CurrentAmp';'Cycles'};...
     reshape([sub_num_labs;strcat(sub_num_labs,'_sd')],[],1)]';
 %Load in file name and use to figure out how many rows are needed in the table
@@ -48,7 +48,7 @@ results.Properties.VariableUnits(contains(results.Properties.VariableNames,'Phas
 results.Properties.VariableUnits(contains(results.Properties.VariableNames,'CurrentAmp')) = {'uA'};
 results.Properties.VariableUnits(contains(results.Properties.VariableNames,'Tau')) = {'s'};
 results.Properties.VariableUnits(contains(results.Properties.VariableNames,'Latency')) = {'ms'};
-results.Properties.VariableUnits(contains(results.Properties.VariableNames,{'Amplitude','MaxVel','RMSE'})) = {'deg/s'};
+results.Properties.VariableUnits(contains(results.Properties.VariableNames,{'Amplitude','MaxVel','RMSE','MaxEyeMovement'})) = {'deg/s'};
 results.Properties.VariableUnits(contains(results.Properties.VariableNames,{'Phase','Align','Disc'})) = {'deg'};
 %% Extract the relevant descriptive parameters
 results.File(:) = {old_fname};
@@ -273,7 +273,71 @@ switch type
                 CycAvg.([traces{tr},'_cycavg_fit']) = tr_fit;
             end
         end
-        % Misalignment
+        %% Maximum eye movement
+        % Initialize arrays to store the axis vectors at maximum magnitude
+        % pointsfor each eye, cycle, and phase
+        max_axis_l_neg = zeros(height(CycAvg.ll_cyc), 3);
+        max_axis_r_neg = zeros(height(CycAvg.ll_cyc), 3);
+        max_axis_l_pos = zeros(height(CycAvg.ll_cyc), 3);
+        max_axis_r_pos = zeros(height(CycAvg.ll_cyc), 3);
+        % Find magnitude of each cycle and phase
+        for cycidx = 1:height(CycAvg.ll_cyc)
+            cyc_eyemove_l_neg(cycidx,:) = vecnorm([CycAvg.ll_cyc(cycidx,Stim_CycAvg<0); CycAvg.lr_cyc(cycidx,Stim_CycAvg<0); CycAvg.lz_cyc(cycidx,Stim_CycAvg<0)]);
+            cyc_eyemove_r_neg(cycidx,:) = vecnorm([CycAvg.rl_cyc(cycidx,Stim_CycAvg<0); CycAvg.rr_cyc(cycidx,Stim_CycAvg<0); CycAvg.rz_cyc(cycidx,Stim_CycAvg<0)]);
+            cyc_eyemove_l_pos(cycidx,:) = vecnorm([CycAvg.ll_cyc(cycidx,Stim_CycAvg>0); CycAvg.lr_cyc(cycidx,Stim_CycAvg>0); CycAvg.lz_cyc(cycidx,Stim_CycAvg>0)]);
+            cyc_eyemove_r_pos(cycidx,:) = vecnorm([CycAvg.rl_cyc(cycidx,Stim_CycAvg>0); CycAvg.rr_cyc(cycidx,Stim_CycAvg>0); CycAvg.rz_cyc(cycidx,Stim_CycAvg>0)]);
+            % Find the index of maximum magnitude for each eye and phase
+            [~, max_idx_l_neg] = max(cyc_eyemove_l_neg(cycidx,1:44));
+            [~, max_idx_r_neg] = max(cyc_eyemove_r_neg(cycidx,1:44));
+            [~, max_idx_l_pos] = max(cyc_eyemove_l_pos(cycidx,1:44));
+            [~, max_idx_r_pos] = max(cyc_eyemove_r_pos(cycidx,1:44));
+
+            % Separate into phases
+            neg_indices = find(Stim_CycAvg < 0);
+            pos_indices = find(Stim_CycAvg > 0);
+
+            % Extract the axis vector at the maximum magnitude point
+            % For left eye, negative phase
+            max_axis_l_neg(cycidx,:) = [
+                CycAvg.ll_cyc(cycidx, neg_indices(max_idx_l_neg)),
+                CycAvg.lr_cyc(cycidx, neg_indices(max_idx_l_neg)),
+                CycAvg.lz_cyc(cycidx, neg_indices(max_idx_l_neg))
+                ];
+
+            % For right eye, negative phase
+            max_axis_r_neg(cycidx,:) = [
+                CycAvg.rl_cyc(cycidx, neg_indices(max_idx_r_neg)),
+                CycAvg.rr_cyc(cycidx, neg_indices(max_idx_r_neg)),
+                CycAvg.rz_cyc(cycidx, neg_indices(max_idx_r_neg))
+                ];
+
+            % For left eye, positive phase
+            max_axis_l_pos(cycidx,:) = [
+                CycAvg.ll_cyc(cycidx, pos_indices(max_idx_l_pos)),
+                CycAvg.lr_cyc(cycidx, pos_indices(max_idx_l_pos)),
+                CycAvg.lz_cyc(cycidx, pos_indices(max_idx_l_pos))
+                ];
+
+            % For right eye, positive phase
+            max_axis_r_pos(cycidx,:) = [
+                CycAvg.rl_cyc(cycidx, pos_indices(max_idx_r_pos)),
+                CycAvg.rr_cyc(cycidx, pos_indices(max_idx_r_pos)),
+                CycAvg.rz_cyc(cycidx, pos_indices(max_idx_r_pos))
+                ];
+        end
+        results.MaxEyeMovement_L(2) = mean(max(cyc_eyemove_l_neg(:,1:44)'));
+        results.MaxEyeMovement_R(2) = mean(max(cyc_eyemove_r_neg(:,1:44)'));
+        results.MaxEyeMovement_L_sd(2) = std(max(cyc_eyemove_l_neg(:,1:44)'));
+        results.MaxEyeMovement_R_sd(2) = std(max(cyc_eyemove_r_neg(:,1:44)'));
+        results.MaxEyeMovement_L(1) = mean(max(cyc_eyemove_l_pos(:,1:44)'));
+        results.MaxEyeMovement_R(1) = mean(max(cyc_eyemove_r_pos(:,1:44)'));
+        results.MaxEyeMovement_L_sd(1) = std(max(cyc_eyemove_l_pos(:,1:44)'));
+        results.MaxEyeMovement_R_sd(1) = std(max(cyc_eyemove_r_pos(:,1:44)'));
+        results.MaxAxis_L{2} = max_axis_l_neg;
+        results.MaxAxis_R{2} = max_axis_r_neg;
+        results.MaxAxis_L{1} = max_axis_l_pos;
+        results.MaxAxis_R{1} = max_axis_r_pos;
+        %% Misalignment
         [~,I1] = max(max([-results.StimAxis{1}*[CycAvg.ll_cycavg;CycAvg.lr_cycavg;CycAvg.lz_cycavg];...
             -results.StimAxis{1}*[CycAvg.rl_cycavg;CycAvg.rr_cycavg;CycAvg.rz_cycavg]]));
         [~,I2] = max(max([-results.StimAxis{2}*[CycAvg.ll_cycavg;CycAvg.lr_cycavg;CycAvg.lz_cycavg];...

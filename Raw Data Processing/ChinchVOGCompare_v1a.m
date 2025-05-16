@@ -2,16 +2,16 @@ clear; clc
 
 
 
-cal_data = [-10 -85 44; % L eye y0 z0 theta
-    75 -25 -44]; % R eye y0 z0 theta
-Lrefindx =  17203;
-Rrefindx = 17203;
+cal_data = [65 -90 44; % L eye y0 z0 theta
+    40 -70 -44]; % R eye y0 z0 theta
+Lrefindx =  68;
+Rrefindx = 68;
 
 
 
 % [chairfiles,filepaths] = uigetfile('*CHAIR*','Select Files With Chair Data.','MultiSelect','on');
-filepaths = 'E:\20250319_TEST\PRE\';
-chairfiles = {'20250225_Ch316_15uA_SINE_CHAIR_FIXED'};
+filepaths = 'R:\Fernandez Brillet\DCData\Ch316 anod\20250225_CH316_POSTGENT\';
+chairfiles = {'20250225_Ch316_25uA_SINE_CHAIR_FIXED'};
 if ischar(chairfiles)
     chairfiles = {chairfiles};  % Convert to cell array if only one file is selected
 end
@@ -505,9 +505,13 @@ ylabel('Angular position data')
 
 
 sp5 = subplot(5,1,5);
-plot(interp_time,LE_vel_LRZ);
+plot(interp_time,LE_vel_LRZ(1,:),'Color','#336E01');
 hold on
-plot(interp_time,RE_vel_LRZ);
+plot(interp_time,LE_vel_LRZ(2,:),'Color','#220D9C');
+plot(interp_time,LE_vel_LRZ(3,:),'Color','#A10909');
+plot(interp_time,RE_vel_LRZ(1,:),'Color','#67D609');
+plot(interp_time,RE_vel_LRZ(2,:),'Color','#37D8DB');
+plot(interp_time,RE_vel_LRZ(3,:),'Color','#F88CF0');
 legend({'LE L','LE R', 'LE Z','RE L','RE R','RE Z'})
 ylabel('Angular velocity data')
 ylim([-100 100])
