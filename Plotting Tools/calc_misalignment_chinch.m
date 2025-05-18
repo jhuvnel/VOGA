@@ -4,9 +4,16 @@ function results = calc_misalignment_chinch(data,plotfromday0)
     currents = unique(data.CurrentAmp);
     
     % Ensure the reference date (day 1) is the first date
-    reference_date = datetime('06-Feb-2025');
-    if ~any(dates == reference_date)
-        error('Reference date 06-Feb-2025 not found in data');
+    try
+        reference_date = datetime('06-Feb-2025');
+        if ~any(dates == reference_date)
+            error('Reference date 06-Feb-2025 not found in data');
+        end
+    catch
+        reference_date = datetime('22-Nov-2024');
+        if ~any(dates == reference_date)
+            error('Reference date 22-Nov-2024 not found in data');
+        end
     end
     
     % Initialize results structure
@@ -78,10 +85,16 @@ function results = calc_misalignment_chinch(data,plotfromday0)
                 comp_axes_L = data.MaxAxis_L(comp_indices, :);
                 comp_axes_R = data.MaxAxis_R(comp_indices, :);
             end
-            
             % Calculate misalignment
             [L_mean, L_std, L_all] = calc_misalignment(mean_ref_axis_L, comp_axes_L);
             [R_mean, R_std, R_all] = calc_misalignment(mean_ref_axis_R, comp_axes_R);
+            R_all = rmoutliers(R_all,'percentiles',[10 80]);
+            R_mean = mean(R_all);
+            R_std = std(R_all);
+            L_all = rmoutliers(L_all,'percentiles',[10 80]);
+            L_mean = mean(L_all);
+            L_std = std(L_all);
+            
             
             % Figure out the date index (since we're skipping ref date)
             date_idx = find(dates == comparison_date);% - sum(dates(1:find(dates == comparison_date)) == reference_date);
