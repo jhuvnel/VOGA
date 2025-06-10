@@ -18,13 +18,14 @@ Path = params.Path;
 Cyc_Path = params.Cyc_Path;
 sub_info = params.Cyc_Path(29:33);
 % sub_info = params.sub_info;
-if contains(lower(sub_info),'ch')
-    Subs = sub_info;
-    Ears = 'L';
-else
-    Subs = sub_info.Subject;
-    Ears = sub_info.Ear;
-end
+% if contains(lower(sub_info),'ch')
+%     Subs = sub_info;
+%     Ears = 'L';
+% else
+%     Subs = sub_info.Subject;
+%     Ears = sub_info.Ear;
+% end
+
 % Load table in question
 res_file = extractfield(dir([Path,filesep,'*Results.mat']),'name')';
 if isempty(res_file)

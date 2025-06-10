@@ -19,7 +19,7 @@ function [CycAvg,type] = ParameterizeCycAvg(CycAvg)
 options = optimset('Display','off'); %suppress output from fminsearch
 traces = {'lz','rz','ll','rl','lr','rr','lx','rx','ly','ry'};
 cell_labs = {'File','Subject','Visit','Date','Goggle','Experiment',...
-    'Type','Condition','AxisName','AxisLetter','StimAxis','Electrode','MaxAxis_L','MaxAxis_R'};
+    'Type','Condition','AxisName','AxisLetter','StimAxis','Electrode','MaxAxis_L','MaxAxis_R','MaxEyeMovement_idx'};
 param_tr = {'MaxVel','Gain','Tau','Latency','Phase','RMSE'};
 sub_num_labs = [reshape(strcat(repmat(param_tr,length(traces),1),'_',repmat(upper(traces)',1,length(param_tr))),[],1)',...
     {'Align_L','Align_R','Disc','MaxEyeMovement_L','MaxEyeMovement_R'},param_tr,{'Align'}];
@@ -290,6 +290,8 @@ switch type
         rpe = start_end_idx(3,2);
         lps = start_end_idx(4,1);
         lpe = start_end_idx(4,2);
+        results.MaxEyeMovement_idx{1} = [rps rpe; lps lpe];
+        results.MaxEyeMovement_idx{2} = [rns rne; lns lne];
         % Initialize arrays to store the axis vectors at maximum magnitude
         % pointsfor each eye, cycle, and phase
         max_axis_l_neg = zeros(height(CycAvg.ll_cyc), 3);
