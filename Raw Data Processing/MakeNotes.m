@@ -76,7 +76,7 @@ end
 LogtoNotes(Raw_Path,ImplantSide)
 %% Find Files to Make Notes
 %These are the keywords in the file names that indicate it's a VOG file
-VOG_fname_pat = {'SESSION','Lateral.txt','LARP.txt','RALP.txt','.dat','.mat','ImuData'};
+VOG_fname_pat = {'SESSION','Lateral.txt','LARP.txt','RALP.txt','.dat','.mat','ImuData','Custom Test'};
 rel_dir = dir(Raw_Path);
 rel_dir(extractfield(rel_dir,'isdir')) = []; %remove folders
 file_names = extractfield(rel_dir,'name');
@@ -310,12 +310,22 @@ else %LDVOG and NKI
             GyroX = VOG_data{1:length(Time_Eye),XvelHeadIndex};
             GyroY = VOG_data{1:length(Time_Eye),YvelHeadIndex};
             GyroZ = -VOG_data{1:length(Time_Eye),ZvelHeadIndex};
-        elseif contains(fname,'.dat') %NKI
+        elseif contains(fname,'.dat') || contains(fname,'Custom Test') %NKI
             %Load file
             warning('off')
+            % sometimes has an error where it doesn't recognize the 3rd row
+            % as column labels
             VOG_data = readtable([Raw_Path,filesep,fname],'ReadVariableNames',true);
+            % if contains(fname,'.dat')
+            %     VOG_data = readtable([Raw_Path,filesep,fname],'ReadVariableNames',true,'Range',[2 1]);
+            % elseif contains(fname,'.csv')
+            %     VOG_data = readtable([Raw_Path,filesep,fname],'ReadVariableNames',true,'Range',[3 1]);
+            % end
             warning('on')
             VOG_data.Properties.VariableNames{1} = 'EyeTime';
+            % VOG_data.Properties.VariableNames{19} = 'EyeTime';
+            % VOG_data.Properties.VariableNames{20} = 'EyeTime';
+            % VOG_data.Properties.VariableNames{21} = 'EyeTime';
             %Make date and other labels
             VOG_time = datetime(VOG_files_date{i}); %use file creation/saving time since NKI doesn't output time stamps
             VOG_time.Format = 'yyyy-MM-dd HH:mm:ss.SSS';
