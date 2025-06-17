@@ -10,7 +10,7 @@ end
 fname = [Seg_Path,filesep,exp_names{indx}];
 load(fname,'Data');
 fig = plotSegment(Data);
-t = Data.Time_Eye - Data.Time_Eye(1);
+t = Data.Time_Eye;
 tot = t(end)-t(1);
 set(fig,'units','inches','position',[0 0 13 9])
 set(gca,'XLim',[t(1)-0.1*tot, t(end)+0.1*tot])
@@ -22,8 +22,8 @@ while strcmp(good_rng,'Redo')
        good_rng = 'Done';
     else
         hold on
-        h1 = xline(str2num(t_bound{1}),'LineWidth',10);
-        h2 = xline(str2num(t_bound{2}),'LineWidth',10);
+        h1 = xline(str2double(t_bound{1}),'LineWidth',10);
+        h2 = xline(str2double(t_bound{2}),'LineWidth',10);
         good_rng = questdlg('Keep or redo the range?','','Keep','Redo','Redo');  
         delete(h1)
         delete(h2)
@@ -32,8 +32,8 @@ while strcmp(good_rng,'Redo')
     end 
 end
 if strcmp(good_rng,'Keep')
-    [~,t1] = min(abs(t-str2num(t_bound{1})));
-    [~,t2] = min(abs(t-str2num(t_bound{2})));
+    [~,t1] = min(abs(t-str2double(t_bound{1})));
+    [~,t2] = min(abs(t-str2double(t_bound{2})));
     fields = fieldnames(Data);
     old_size = length(t);
     for i = 1:length(fields)
