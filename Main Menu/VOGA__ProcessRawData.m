@@ -66,7 +66,7 @@ if ~isempty(file_Path)
         end 
         for j = 1:length(rel_file)
             disp(['File ',num2str(j),'/',num2str(length(rel_file))])
-            splitGNOfile(Path,rel_file{j},0) %Already deidentified above
+            SplitGNOfile(Path,rel_file{j},0) %Already deidentified above
             movefile([Path,filesep,rel_file{j}],[Raw_Path,filesep,'Combined Files',filesep,'Processed_',rel_file{j}]) %Add this prefix to not redo files that have already been processed
         end
         disp('Done splitting GNO files.')

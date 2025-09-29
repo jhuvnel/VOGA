@@ -1053,7 +1053,7 @@ elseif contains(sel,'vHIT')
     % Create subject marker legend
     leg_cell = {'',''};
     for i = 1:n_subs
-        if i < n_subs/2 + 1
+        if i < n_subs/2 + 2
             leg_cell{1} = [leg_cell{1},sub_mark(i),': ',num2str(i),'  '];
         else
             leg_cell{2} = [leg_cell{2},sub_mark(i),': ',num2str(i)];
@@ -1063,7 +1063,7 @@ elseif contains(sel,'vHIT')
         end
     end
     
-    leg2 = annotation(fig5,'textbox',[0.288, 0.915, 0.34, 0.05],'String',leg_cell,'FontSize',8,'LineStyle','none');
+    leg2 = annotation(fig5,'textbox',[0.288, 0.915, 0.4, 0.05],'String',leg_cell,'FontSize',8,'LineStyle','none');
     
     annotation('textbox','Position',[0.345,0.484,0.11,0.047],'String',{'Canal:'},...
         'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',8,'EdgeColor','none')
@@ -1138,7 +1138,7 @@ elseif contains(sel,'vHIT')
     % Create subject marker legend
     leg_cell = {'',''};
     for i = 1:n_subs
-        if i < n_subs/2 + 1
+        if i < n_subs/2 + 2
             leg_cell{1} = [leg_cell{1},sub_mark(i),': ',num2str(i),'  '];
         else
             leg_cell{2} = [leg_cell{2},sub_mark(i),': ',num2str(i)];
@@ -1148,7 +1148,7 @@ elseif contains(sel,'vHIT')
         end
     end
     
-    leg2 = annotation(fig6,'textbox',[0.335,0.56,0.34,0.05],'String',leg_cell,'FontSize',8,'LineStyle','none');
+    leg2 = annotation(fig6,'textbox',[0.335,0.56,0.4,0.05],'String',leg_cell,'FontSize',8,'LineStyle','none');
     
     annotation('textbox','Position',[0.345,0.484,0.11,0.047],'String',{'Canal:'},...
         'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',8,'EdgeColor','none')
