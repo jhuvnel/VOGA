@@ -53,6 +53,12 @@ for i = 1:length(files)
         save(files{i},'CycAvg')
     end
     tabs{i} = CycAvg.parameterized;
+    % % Add IRLS filter parameters to parameterized summary table
+    % IRLSfiltvel = cell(size(tabs{i},1),1);
+    % for j = 1:length(IRLSfiltvel)
+    %     IRLSfiltvel{j} = CycAvg.filt.vel.irlssmooth;
+    % end
+    % tabs{i} = addvars(tabs{i}, IRLSfiltvel, 'NewVariableNames', 'IRLS_vel_filt');
     cyc_params(i,1) = files(i);
     cyc_params{i,2} = CycAvg.cycle_params;
 end

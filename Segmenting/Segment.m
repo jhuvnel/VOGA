@@ -138,11 +138,11 @@ if any(contains(exp_uniq,{'eeVOR PulseTrain','eeVOR Autoscan'}))
     all_starts = temp;
     all_ends = all_starts+median(temp2);
     [~,ind] = sort(temp2,'descend');
-    ind2 = sort(ind(1:sum(contains(stim_info,{'eeVOR PulseTrain','eeVOR Autoscan'}))-1));
+    ind2 = sort(ind(1:sum(contains(stim_info,{'eeVOR-PulseTrain','eeVOR-Autoscan'}))-1));
     starts = [starts;all_starts([1;ind2+1])-round(0.5*median(diff(temp)))];
     ends = [ends;all_ends([ind2;end])+round(0.5*median(diff(temp)))];
 end
-if contains(exp_uniq,'eeVOR Sine')
+if contains(exp_uniq,'eeVOR-Sine')
     %Every trigger toggle is a cycle
     thresh_tol = Fs*0.4; %tolerance for differences in cyc length (always at least 400ms of break)
     temp = find(abs(diff(Stim))==1);
@@ -151,7 +151,7 @@ if contains(exp_uniq,'eeVOR Sine')
     all_starts = unique(temp([1;find(temp2<-thresh_tol)+1;find(temp2>thresh_tol)+2]));        
     starts = [starts;all_starts-5]; ends = [ends;all_ends+5];  
 end
-if contains(exp_uniq,{'eeVOR VelStep','eeVOR MultiVector'})
+if contains(exp_uniq,{'eeVOR-VelStep','eeVOR-MultiVector'})
     %These files have trigger toggles for the "ramp" of every cycle
     if Stim(1)==1 %If Stim started "high", the first ramp is missing so add it back in
         temp = diff(find(abs(diff(Stim))==1));
@@ -164,7 +164,7 @@ if contains(exp_uniq,{'eeVOR VelStep','eeVOR MultiVector'})
     all_starts = temp(1:2:end); all_ends = temp2(2:2:end); 
     temp2 = [temp(3:2:end);length(Stim)]-all_starts;
     [~,ind] = sort(temp2,'descend');
-    ind2 = sort(ind(1:sum(contains(stim_info,{'eeVOR VelStep','eeVOR MultiVector'})))); %Find the breaks that correspond to the number of notes
+    ind2 = sort(ind(1:sum(contains(stim_info,{'eeVOR-VelStep','eeVOR-MultiVector'})))); %Find the breaks that correspond to the number of notes
     cyc_per_seg = diff([0;ind2]);
     seg_starts = [all_starts([1;ind2(1:end-1)+1])-1;length(t)];
     seg_ends = all_ends(ind2);
