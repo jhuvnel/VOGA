@@ -132,9 +132,11 @@ end1 = ondur_samp;
 %Left eye
 all_max_l = zeros(1,3);
 all_inds_l = zeros(1,3);
-[all_max_l(1),all_inds_l(1)] = max(abs(CycAvg.lz_cycavg(start1:end1)));
-[all_max_l(2),all_inds_l(2)] = max(abs(CycAvg.lr_cycavg(start1:end1)));
-[all_max_l(3),all_inds_l(3)] = max(abs(CycAvg.ll_cycavg(start1:end1)));
+% look for the max of the trace in direction that pure excitatory stim
+% would cause an eye movement for that canal
+[all_max_l(1),all_inds_l(1)] = max(w(3)*CycAvg.lz_cycavg(start1:end1));
+[all_max_l(2),all_inds_l(2)] = max(w(2)*CycAvg.lr_cycavg(start1:end1));
+[all_max_l(3),all_inds_l(3)] = max(w(1)*CycAvg.ll_cycavg(start1:end1));
 [~,i_m] = max(all_max_l);
 Imax_l = all_inds_l(i_m) + start1 -1 ;
 VORdat_l = [CycAvg.ll_cycavg(Imax_l) CycAvg.lr_cycavg(Imax_l) CycAvg.lz_cycavg(Imax_l)];
@@ -177,9 +179,11 @@ Z2 = cumsum(Z2,3);
 %Right eye
 all_max_r = zeros(1,3);
 all_inds_r = zeros(1,3);
-[all_max_r(1),all_inds_r(1)] = max(abs(CycAvg.rl_cycavg(start1:end1)));
-[all_max_r(2),all_inds_r(2)] = max(abs(CycAvg.rz_cycavg(start1:end1)));
-[all_max_r(3),all_inds_r(3)] = max(abs(CycAvg.rr_cycavg(start1:end1)));
+% look for the max of the trace in direction that pure excitatory stim
+% would cause an eye movement for that canal
+[all_max_r(1),all_inds_r(1)] = max(w(1)*CycAvg.rl_cycavg(start1:end1));
+[all_max_r(2),all_inds_r(2)] = max(w(3)*CycAvg.rz_cycavg(start1:end1));
+[all_max_r(3),all_inds_r(3)] = max(w(2)*CycAvg.rr_cycavg(start1:end1));
 [~,i_m] = max(all_max_r);
 Imax_r = all_inds_r(i_m) + start1 - 1;
 VORdat_r = [CycAvg.rl_cycavg(Imax_r) CycAvg.rr_cycavg(Imax_r) CycAvg.rz_cycavg(Imax_r)];

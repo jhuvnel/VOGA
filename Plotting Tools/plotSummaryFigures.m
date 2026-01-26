@@ -1046,24 +1046,24 @@ elseif contains(sel,'vHIT')
     hold off
     leg = legend(ha(end,end),h1,{'Horizontal','Anterior','Posterior'},'NumColumns',length(h1),'box','off','Location','north');
     leg.ItemTokenSize(1) = 7;
-    annotation('textbox','Position',[0.23,0.915,0.14,0.047],'String',{'Subject:'},...
-        'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',8,'EdgeColor','none')
+    % annotation('textbox','Position',[0.23,0.915,0.14,0.047],'String',{'Subject:'},...
+    %     'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',8,'EdgeColor','none')
     % leg.Position = [0.99-0.33,0.005,0.33,0.047];
     
-    % Create subject marker legend
-    leg_cell = {'',''};
-    for i = 1:n_subs
-        if i < n_subs/2 + 2
-            leg_cell{1} = [leg_cell{1},sub_mark(i),': ',num2str(i),'  '];
-        else
-            leg_cell{2} = [leg_cell{2},sub_mark(i),': ',num2str(i)];
-            if i ~= n_subs
-                leg_cell{2} = [leg_cell{2},'  '];
-            end
-        end
-    end
-    
-    leg2 = annotation(fig5,'textbox',[0.288, 0.915, 0.4, 0.05],'String',leg_cell,'FontSize',8,'LineStyle','none');
+    % % Create subject marker legend
+    % leg_cell = {'',''};
+    % for i = 1:n_subs
+    %     if i < n_subs/2 + 2
+    %         leg_cell{1} = [leg_cell{1},sub_mark(i),': ',num2str(i),'  '];
+    %     else
+    %         leg_cell{2} = [leg_cell{2},sub_mark(i),': ',num2str(i)];
+    %         if i ~= n_subs
+    %             leg_cell{2} = [leg_cell{2},'  '];
+    %         end
+    %     end
+    % end
+    % 
+    % leg2 = annotation(fig5,'textbox',[0.288, 0.915, 0.4, 0.05],'String',leg_cell,'FontSize',8,'LineStyle','none');
     
     annotation('textbox','Position',[0.345,0.484,0.11,0.047],'String',{'Canal:'},...
         'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',8,'EdgeColor','none')
@@ -1131,24 +1131,24 @@ elseif contains(sel,'vHIT')
     hold off
     leg = legend(ha(end,end),h1,{'Horizontal','Anterior','Posterior'},'NumColumns',length(h1),'box','off','Location','south');
     leg.ItemTokenSize(1) = 7;
-    annotation('textbox','Position',[0.28,0.56,0.14,0.047],'String',{'Subject:'},...
-        'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',8,'EdgeColor','none')
+    % annotation('textbox','Position',[0.28,0.56,0.14,0.047],'String',{'Subject:'},...
+    %     'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',8,'EdgeColor','none')
     % leg.Position = [0.99-0.33,0.005,0.33,0.047];
     
-    % Create subject marker legend
-    leg_cell = {'',''};
-    for i = 1:n_subs
-        if i < n_subs/2 + 2
-            leg_cell{1} = [leg_cell{1},sub_mark(i),': ',num2str(i),'  '];
-        else
-            leg_cell{2} = [leg_cell{2},sub_mark(i),': ',num2str(i)];
-            if i ~= n_subs
-                leg_cell{2} = [leg_cell{2},'  '];
-            end
-        end
-    end
-    
-    leg2 = annotation(fig6,'textbox',[0.335,0.56,0.4,0.05],'String',leg_cell,'FontSize',8,'LineStyle','none');
+    % % Create subject marker legend
+    % leg_cell = {'',''};
+    % for i = 1:n_subs
+    %     if i < n_subs/2 + 2
+    %         leg_cell{1} = [leg_cell{1},sub_mark(i),': ',num2str(i),'  '];
+    %     else
+    %         leg_cell{2} = [leg_cell{2},sub_mark(i),': ',num2str(i)];
+    %         if i ~= n_subs
+    %             leg_cell{2} = [leg_cell{2},'  '];
+    %         end
+    %     end
+    % end
+    % 
+    % leg2 = annotation(fig6,'textbox',[0.335,0.56,0.4,0.05],'String',leg_cell,'FontSize',8,'LineStyle','none');
     
     annotation('textbox','Position',[0.345,0.484,0.11,0.047],'String',{'Canal:'},...
         'HorizontalAlignment','left','VerticalAlignment','middle','FontSize',8,'EdgeColor','none')

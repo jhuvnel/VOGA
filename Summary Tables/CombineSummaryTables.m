@@ -42,6 +42,8 @@ else
 end
 for i = 1:length(subjects)
     disp([subjects{i},':'])
+    tic
+    try
     % Make a new pooled MVI subject file with these VOG directories
     VOG_fnames = [dir([MVI_path,filesep,MVI_subs{i},filesep,'Visit*',filesep,'eeVOR',filesep,'*Results.mat']);...
         dir([MVI_path,filesep,MVI_subs{i},filesep,'Visit*',filesep,'Rotary Chair',filesep,'*Results.mat']);...
@@ -59,11 +61,11 @@ for i = 1:length(subjects)
         disp([num2str(j),'/',num2str(length(VOG_fnames)),': ',VOG_fnames(j).folder])
         cyc_param_fname = extractfield(dir([VOG_fnames(j).folder,filesep,'*CycParam.mat']),'name');
         if redo_folder(j)
-            VOGA__makeFolders(VOG_fnames(j).folder,1,0);
+            MakeFolders(VOG_fnames(j).folder,1,0);
             [all_results,cyc_params] = MakeCycleSummaryTable(VOG_fnames(j).folder,[VOG_fnames(j).folder,filesep,'Cycle Averages'],1);
             params.Path = VOG_fnames(j).folder;
             params.Cyc_Path = [VOG_fnames(j).folder,filesep,'Cycle Averages'];
-            plotParamResults(params);
+            % plotParamResults(params);
         elseif isempty(cyc_param_fname) %Will make the cyc_params struct if missing
             [all_results,cyc_params] = MakeCycleSummaryTable(VOG_fnames(j).folder,[VOG_fnames(j).folder,filesep,'Cycle Averages'],1);
         else %Load
@@ -79,6 +81,10 @@ for i = 1:length(subjects)
     all_sub_tab{i} = all_results;
     cyc_params = vertcat(one_sub_params{j});
     save([MVI_path,filesep,MVI_subs{i},filesep,subjects{i},'_VOGCycParam.mat'],'cyc_params')
+    catch ME
+        warning(['Error: ',ME.identifier,'\n',ME.message,'\n\n'])
+    end
+    toc
 end
 all_results = vertcat(all_sub_tab{:});
 save([MVI_path,filesep,'ALLMVI-VOGResults.mat'],'all_results')
