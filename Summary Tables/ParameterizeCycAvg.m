@@ -709,16 +709,18 @@ for i = 1:size(results,1)
     end
 end  
 
-% Add IRLS filter parameters to parameterized summary table
-IRLSfiltvel = cell(size(results,1),1);
-for i = 1:size(results,1)
-    if isfield(CycAvg, 'filt')
-        if ~isempty(CycAvg.filt.vel)
-            IRLSfiltvel{i} = CycAvg.filt.vel.irlssmooth;
-        end
-    end
-end
-results = addvars(results, IRLSfiltvel, 'NewVariableNames', 'IRLS_vel_filt');
+% This was a temporary feature to save IRLS filter parameters - do not use
+% because it changes the size of the summary table.
+% % Add IRLS filter parameters to parameterized summary table
+% IRLSfiltvel = cell(size(results,1),1);
+% for i = 1:size(results,1)
+%     if isfield(CycAvg, 'filt')
+%         if ~isempty(CycAvg.filt.vel)
+%             IRLSfiltvel{i} = CycAvg.filt.vel.irlssmooth;
+%         end
+%     end
+% end
+% results = addvars(results, IRLSfiltvel, 'NewVariableNames', 'IRLS_vel_filt');
 
 % Make the table and cell
 CycAvg.parameterized = results;
