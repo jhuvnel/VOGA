@@ -34,9 +34,9 @@ starts = NaN(1,length(stim_info));
 ends = NaN(1,length(stim_info));
 for i = 1:length(starts)
     vals = ginput(2);
-    [~,temp] = min(abs(Time_Eye-vals(1,1)));
+    [~,temp] = min(abs(t-vals(1,1)));
     starts(i) = round(temp,0);
-    [~,temp] = min(abs(Time_Eye-vals(2,1)));
+    [~,temp] = min(abs(t-vals(2,1)));
     ends(i) = round(temp,0);        
     hold on
     fill(t([starts(i);ends(i);ends(i);starts(i)]),YLim([2;2;1;1]),'g');

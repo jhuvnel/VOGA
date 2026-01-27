@@ -55,6 +55,7 @@ exp_types2(contains(exp_types2,'trash')) = [];
 exp_uniq = unique(exp_types2);
 starts = []; ends = []; %Initialize segment starts and end indices
 %% Find the start and end of each segment based on experiment type
+try 
 if contains(exp_uniq,'RotaryChair VelStep')
     %Expecting a constant velocity for ~60 seconds followed by no motion for ~60
     %seconds. Often LH followed by RH in the same file.
@@ -142,7 +143,7 @@ if any(contains(exp_uniq,{'eeVOR PulseTrain','eeVOR Autoscan'}))
     starts = [starts;all_starts([1;ind2+1])-round(0.5*median(diff(temp)))];
     ends = [ends;all_ends([ind2;end])+round(0.5*median(diff(temp)))];
 end
-if contains(exp_uniq,'eeVOR-Sine')
+if contains(exp_uniq,'eeVOR Sine')
     %Every trigger toggle is a cycle
     thresh_tol = Fs*0.4; %tolerance for differences in cyc length (always at least 400ms of break)
     temp = find(abs(diff(Stim))==1);
@@ -151,7 +152,7 @@ if contains(exp_uniq,'eeVOR-Sine')
     all_starts = unique(temp([1;find(temp2<-thresh_tol)+1;find(temp2>thresh_tol)+2]));        
     starts = [starts;all_starts-5]; ends = [ends;all_ends+5];  
 end
-if contains(exp_uniq,{'eeVOR-VelStep','eeVOR-MultiVector'})
+if contains(exp_uniq,{'eeVOR VelStep','eeVOR MultiVector'})
     %These files have trigger toggles for the "ramp" of every cycle
     if Stim(1)==1 %If Stim started "high", the first ramp is missing so add it back in
         temp = diff(find(abs(diff(Stim))==1));
@@ -177,6 +178,11 @@ if contains(exp_uniq,{'eeVOR-VelStep','eeVOR-MultiVector'})
     end
     starts = [starts;seg_starts(1:end-1)]; ends = [ends;seg_ends]; 
 end
+catch
+    disp('There was an issue automatically segmenting. Click on the start and stop of each segment.')
+    ManuallySegment(In_Path,Seg_Path); 
+    return;
+end
 %% Check to see if it can be saved
 %Make sure none of the indices are out of bounds
 starts(starts<0) = 1; ends(ends>length(t)) = length(t);
@@ -194,7 +200,7 @@ if isempty(stim_info)
 end
 %If you can't automatically segment, do it manually
 if length(starts)~=length(ends)||length(stim_info)>length(starts) 
-    disp('There was an issue automatically segmenting.')
+    disp('There was an issue automatically segmenting. Click on the start and stop of each segment.')
     ManuallySegment(In_Path,Seg_Path); 
     return;
 elseif length(stim_info)<length(starts) %Extra segments detected
