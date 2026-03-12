@@ -157,6 +157,7 @@ if contains(exp_uniq,{'eeVOR VelStep','eeVOR MultiVector'})
     if Stim(1)==1 %If Stim started "high", the first ramp is missing so add it back in
         temp = diff(find(abs(diff(Stim))==1));
         Stim(1:(find(diff(Stim)==-1,1,'first')-temp(2))) = 0;
+        DATA.Trigger = Stim;
     end
     temp = find(diff(Stim)==1)-1; %Start of the ramp
     temp2 = find(diff(Stim)==-1)+1; %End of the ramp
@@ -167,7 +168,7 @@ if contains(exp_uniq,{'eeVOR VelStep','eeVOR MultiVector'})
     [~,ind] = sort(temp2,'descend');
     ind2 = sort(ind(1:sum(contains(stim_info,{'eeVOR-VelStep','eeVOR-MultiVector'})))); %Find the breaks that correspond to the number of notes
     cyc_per_seg = diff([0;ind2]);
-    seg_starts = [all_starts([1;ind2(1:end-1)+1])-1;length(t)];
+    seg_starts = [all_starts([1;ind2(1:end-1)+1]);length(t)];
     seg_ends = all_ends(ind2);
     for i = 1:length(seg_ends) %Add padding to the last cycle to not cut off those data
         if cyc_per_seg(i) == 1 %Vel Step

@@ -43,6 +43,7 @@ while(~done)
     for i = 1:length(exp_types)
         rel_file(contains(ptab.Segment,exp_types{i}(1:8))&contains(ptab.Segment,exp_types{i}(9:end))) = 1;
     end
+    ptab = ptab(rel_file,:);
     ind = [find(~ptab{:,2}&~ptab{:,3});find(ptab{:,2}|ptab{:,3})]; %put unanalyzed files at the top
     % Change color of option depending on whether it's been analyzed
     % Unattempted = Black, Analyzed = Green, Not Analyzeable = Red
