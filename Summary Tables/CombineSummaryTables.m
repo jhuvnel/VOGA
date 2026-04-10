@@ -61,7 +61,7 @@ for i = 1:length(subjects)
         disp([num2str(j),'/',num2str(length(VOG_fnames)),': ',VOG_fnames(j).folder])
         cyc_param_fname = extractfield(dir([VOG_fnames(j).folder,filesep,'*CycParam.mat']),'name');
         if redo_folder(j)
-            MakeFolders(VOG_fnames(j).folder,1,0);
+            MakeFolders(VOG_fnames(j).folder,1,0)  ;
             [all_results,cyc_params] = MakeCycleSummaryTable(VOG_fnames(j).folder,[VOG_fnames(j).folder,filesep,'Cycle Averages'],1);
             params.Path = VOG_fnames(j).folder;
             params.Cyc_Path = [VOG_fnames(j).folder,filesep,'Cycle Averages'];

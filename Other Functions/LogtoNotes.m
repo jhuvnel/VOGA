@@ -260,9 +260,15 @@ for f = 1:length(logfiles)
                     col_labs = stim_tab(1,:);
                     col_labs(cellfun(@isempty,col_labs)) = [];
                     %Figure out what type of experiment it is
+
+                    rel_dat_stim_start = rel_dat_stim_inds(stim_starts(j))-1;
+                    if rel_dat_stim_start == 0
+                        rel_dat_stim_start = 1;
+                    end
+
                     if isempty(col_labs)
                         disp([fname,': Experiment type was not detected.'])
-                    elseif any(contains(col_labs,'Depth of Modulation'))&&any(contains(rel_dat_full(rel_dat_stim_inds(stim_starts(j))-1,2),'VelocityStep-LHRH')) % checks name of the stim file that was just started
+                    elseif any(contains(col_labs,'Depth of Modulation'))&&any(contains(rel_dat_full(rel_dat_stim_start,2),'VelocityStep-LHRH')) % checks name of the stim file that was just started
                         experiments(j) = {[{'Experiment eeVOR-VelStep-LH-240dps'};{'Experiment eeVOR-VelStep-RH-240dps'}]};
                     elseif any(contains(col_labs,'Depth of Modulation'))
                         experiments(j) = {strcat('Experiment eeVOR-MultiVector-[',stim_tab(2:end,2),',',stim_tab(2:end,3),',',stim_tab(2:end,4),']')};

@@ -181,25 +181,34 @@ if any(contains(VOG_files,{'Lateral.txt','LARP.txt','RALP.txt'})) %GNO
         end
         if ~isempty(xml_file) %XML file with experiment notes exists!
             fdata = cellstr(readlines([Raw_Path,filesep,xml_file]));
-            exp_info = strrep(extractXMLdataline(fdata{contains(fdata,'<Remarks>')}),' ','');
-            if contains(lower(exp_info),'ahit') %Experiment
-                type = 'aHIT';
-            elseif contains(lower(exp_info),'chair')
-                type = 'RotaryChair';
-            end
-            %Set condition
-            if contains(lower(exp_info),{'off','nostim','preop','preact','pre-op'})||contains(Raw_Path,'Visit 0')
-                cond = 'NoStim';
-            elseif contains(lower(exp_info),{'constant','baseline'})
-                cond = 'ConstantRate';
-            elseif contains(lower(exp_info),{'motionmod','mod','accel'})
-                cond = 'MotionMod';
+            if any(contains(fdata,'<Remarks>')) % check if remarks field is empty
+                exp_info = strrep(extractXMLdataline(fdata{contains(fdata,'<Remarks>')}),' ','');
+                if contains(lower(exp_info),'ahit') %Experiment
+                    type = 'aHIT';
+                elseif contains(lower(exp_info),'chair')
+                    type = 'RotaryChair';
+                end
+                %Set condition
+                if contains(lower(exp_info),{'off','nostim','preop','preact','pre-op'})||contains(Raw_Path,'Visit 0')
+                    cond = 'NoStim';
+                elseif contains(lower(exp_info),{'constant','baseline'})
+                    cond = 'ConstantRate';
+                elseif contains(lower(exp_info),{'motionmod','mod','accel'})
+                    cond = 'MotionMod';
+                end
+            else
+                exp_info = 'NO REMARKS RECORDED';
             end
             %Find which goggle set #
             gog_line = fdata{contains(fdata,'GogglesSN')};
             gog = ['GNO',num2str(find(ismember(GNO_SerialNums,gog_line(ismember(gog_line,'0123456789')))))]; 
         end
         exp = [type,'-Impulse-',cond,'-',canal,'-150dps'];
+
+        if ~any(contains(fdata,'<Remarks>')) % if no remarks are recorded, default to excluding these data
+            exp = 'trash';
+        end
+
         w_notes = {['Subject ',sub];['Ear ',ear];['Visit ',vis];['Date ',date];['Goggle ',gog];['Angle ',ang];['Experiment ',exp]};
         prompt = ['File Name: ',fname,newline,'Experimenter Remarks: ',exp_info,newline,newline,'Check Notes: ',newline,'Ex: aHIT-Impulse-NoStim-LHRH-150dps-pseudorandom'];
         notes_check = inputdlg(prompt,'Set VOG File Parameters',[length(w_notes),80],{strjoin(w_notes,'\n')});
