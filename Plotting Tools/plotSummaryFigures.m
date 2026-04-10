@@ -3,16 +3,32 @@ function plotSummaryFigures(params)
 % recent visit
 % Figure options
 opts = {'Rotary Chair Sine','vHIT GNO','Candidate: Rotary Chair Sine','Candidate: vHIT GNO'};
-% Rotary Chair figure groupings, change as needed with the addition of more subjects
-rotchair_each_unique_fig_text = {'MVI1-5','MVI6-10','MVI11-15', 'MVI16-17'};
-rotchair_each_sub_num = [{1:5},{6:10},{11:15},{16:17}];
+
 % Use MVI001's preop rotary chair testing done elsewhere for his figure
 MVI001_preop_freqs = [0.01;0.02;0.04;0.08;0.16;0.32;0.64];
 MVI001_preop_gains = [0.0083;0.0250;0.0292;0.0458;0.0500;0.0333;0.0625];
+
 %Subject info
 sub_info = params.sub_info;
 all_subs = sub_info.Subject;
 sub_ears = sub_info.Ear;
+subsToExtract = str2num(cell2mat(extract(extract(all_subs,'MVI' + digitsPattern), digitsPattern)));
+
+% Rotary Chair figure groupings (breaks into groups of 5)
+rotchair_each_sub_num = cell(1,ceil(length(subsToExtract)/5));
+rotchair_each_unique_fig_text = rotchair_each_sub_num;
+ii = 1;
+for i = 1:length(rotchair_each_sub_num)
+    if length(subsToExtract) >= ii + 4
+        rotchair_each_sub_num{i} = subsToExtract(ii:ii+4);
+        rotchair_each_unique_fig_text{i} = ['MVI',num2str(subsToExtract(ii)),'-',num2str(subsToExtract(ii+4))];
+    else
+        rotchair_each_sub_num{i} = subsToExtract(ii:end);
+        rotchair_each_unique_fig_text{i} = ['MVI',num2str(subsToExtract(ii)),'-',num2str(subsToExtract(end))];
+    end
+    ii = ii + 5;
+end
+
 % Select figure
 [ind,tf] = nmlistdlg('PromptString','Select an plot to make:',...
     'SelectionMode','single','ListSize',[200 125],'ListString',opts);
