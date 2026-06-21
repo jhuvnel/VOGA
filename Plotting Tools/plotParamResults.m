@@ -467,7 +467,7 @@ if any(contains(all_results.Type,'Exponential'))
     tab = sortrows(all_results(contains(all_results.Type,'Exponential')&~strcmp(all_results.AxisName,''),:),'Amplitude','ascend');
     tab.AmpStr = strcat(strrep(cellstr(num2str(tab.Amplitude)),' ',''),'dps');
     fn = size(tab,1);
-    YMax = 10*ceil(max(tab.MaxVel)/10);
+    YMax = 10*ceil(max(abs(tab.MaxVel))/10);
     %Make one figure for each group of cycle averages (same subject, visit,
     %date, goggle, axis, and amplitude across condition)
     rel_labs = {'Subject','Visit','DateStr','Experiment','Type','Condition','Goggle','AmpStr'};

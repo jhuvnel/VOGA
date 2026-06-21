@@ -12,7 +12,7 @@ xml_files = extractfield(dir([Path,filesep,'*.xml']),'name');
 if isempty(xml_files)
     disp(['No .xml files were found on the path: ',Path])
     tab = [];
-    Data = [];
+    Data = [];  
     return;
 end
 notes_files = extractfield(dir([Path,filesep,'*-Notes.txt']),'name');
