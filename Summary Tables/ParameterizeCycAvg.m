@@ -317,27 +317,40 @@ switch type
         tt = t(sub_i);
         high_i = t(find(Stim==1,1,'first'));
         low_i = t(find(Stim==0,1,'first'));
+        mult = [-1;1];
+        if contains(results.AxisName(1),{'RH','LA','LP'}) %Negative directions
+            mult = [1;-1];
+        end    
         % Find exponential fits: Different Model Types
         %2nd order exponential fit same syntax as matlab's built-in
         makefit = @(tt,p) p(:,1).*exp(p(:,2).*tt)+p(:,3).*exp(p(:,4).*tt);
         %1order exponential fit with decay to 0
         exp_fit1 = @(tt,p) p(1).*exp(-tt./p(2));
         makefit2 = @(trace,T) fminsearch(@(p) sum((exp_fit1(T,p)-trace).^2,'omitnan')+sum(p.^2),[median(trace(1));1],options);
+        % EOV on 2026-08-11. After discussing with Charley, we agree that
+        % an exponential fit with a decay not forced to 0 is a better
+        % model, so I switched the fitting function to this. 
         %1order exponential fit with decay not forced to 0.
         exp_fit2 = @(tt,p) p(1).*exp(-tt./p(2)) + p(3);
-        makefit3 = @(trace,T) fminsearch(@(p) sum((exp_fit2(T,p)-trace).^2,'omitnan')+sum(p.^2),[median(trace);1;0],options);
+        % initial conditions set to 
+        % [k0 (exponential constant) = median of first 10th of trace - median of last 4th of trace, 
+        % tau0 (time constant) = 10, 
+        % c0 (plateau) = median of last 4th of trace]
+        makefit3 = @(trace,T) fminsearch(@(p) sum((exp_fit2(T,p)-trace).^2 + sum(abs(p)),'omitnan'),...
+            [median(trace(1:round(length(trace)/10))) - median(trace(end-round(length(trace)/4):end));...
+            10;median(trace(end-round(length(trace)/4):end))],options);
+        % makefit3 = @(trace,T) fminsearch(@(p) sum((exp_fit2(T,p)-trace).^2,'omitnan')+sum(p.^2),[median(trace);1;0],options);
         %Intialize arrays for the different fits
         all_fits = NaN(length(traces),length(t));
         all_fits2 = NaN(length(traces),length(t));
         all_fits3 = NaN(length(traces),length(t));
+        all_fits4 = NaN(length(traces),length(t));
         %Intialize tables for the different model types
         params = array2table(NaN(8,length(traces)),'VariableNames',traces,'RowNames',{'K1_High','Tau1_High','K2_High','Tau2_High','K1_Low','Tau1_Low','K2_Low','Tau2_Low'});
         params2 = array2table(NaN(4,length(traces)),'VariableNames',traces,'RowNames',{'K_High','Tau_High','K_Low','Tau_Low'});
         params3 = array2table(NaN(6,length(traces)),'VariableNames',traces,'RowNames',{'K_High','Tau_High','C_High','K_Low','Tau_Low','C_Low'});
-        mult = [-1;1];
-        if contains(results.AxisName(1),{'RH','LA','LP'}) %Negative directions
-            mult = [1;-1];
-        end        
+        params4 = array2table(NaN(6,length(traces)),'VariableNames',traces,'RowNames',{'K_High','Tau_High','C_High','K_Low','Tau_Low','C_Low'});
+            
         for i = 1:length(traces)
             if isfield(CycAvg,[traces{i},'_cyc'])
                 results.(['RMSE_',upper(traces{i}),'_sd'])(:) = 0; %Only 1 cyc
@@ -359,7 +372,11 @@ switch type
                 all_fits(i,Stim==1) = makefit(t(Stim==1)-high_i,params{1:4,i}');
                 all_fits2(i,Stim==1) = exp_fit1(t(Stim==1)-high_i,params2{1:2,i}');
                 all_fits3(i,Stim==1) = exp_fit2(t(Stim==1)-high_i,params3{1:3,i}');
-                gof_h.rmse = sqrt(mean((all_fits2(i,Stim==1)-long_dat(Stim==1)').^2,'omitnan'));
+                gof_h.rmse = sqrt(mean((all_fits3(i,Stim==1)-long_dat(Stim==1)').^2,'omitnan'));
+
+                [params4{1:3,i}, ~, gof_h, fitobj_h] = expcfit(t_high, dat_high);
+                all_fits4(i,Stim==1) = fitobj_h(t(Stim==1)-high_i);
+
                 %Stim is low
                 %dconfint_l = NaN*dconfint_h;
                 %gof_l = gof_h;
@@ -373,7 +390,11 @@ switch type
                     all_fits(i,Stim==0) = makefit(t(Stim==0)-low_i,params{5:8,i}');
                     all_fits2(i,Stim==0) = exp_fit1(t(Stim==0)-low_i,params2{3:4,i}');
                     all_fits3(i,Stim==0) = exp_fit2(t(Stim==0)-low_i,params3{4:6,i}');
-                    gof_l.rmse = sqrt(mean((all_fits2(i,Stim==0)-long_dat(Stim==0)').^2,'omitnan'));
+            % EOV 2026-08-11 switched to exp_fit2 and makefit3 and allfits3
+                    gof_l.rmse = sqrt(mean((all_fits3(i,Stim==0)-long_dat(Stim==0)').^2,'omitnan'));
+
+                    [params4{4:6,i}, ~, gof_l, fitobj_l] = expcfit(t_low, dat_low);
+                    all_fits4(i,Stim==0) = fitobj_l(t(Stim==0)-low_i);
                 end                
                 results.(['RMSE_',upper(traces{i})]) = [gof_h.rmse;gof_l.rmse];
                 results.(['MaxVel_',upper(traces{i})]) = params2{[1,3],i};
@@ -381,10 +402,15 @@ switch type
                 results.(['Gain_',upper(traces{i})]) = results.(['MaxVel_',upper(traces{i})])./(results.Amplitude(1)*mult);                                 
                 CycAvg.([traces{i},'_cycavg_fit']) = all_fits2(i,:);
                 CycAvg.([traces{i},'_cyc_fit']) = all_fits2(i,:);
+                % results.(['MaxVel_',upper(traces{i})]) = params4{[1,4],i} + params4{[3,6],i};
+                % results.(['Tau_',upper(traces{i})]) = params4{[2,5],i};
+                % results.(['Gain_',upper(traces{i})]) = results.(['MaxVel_',upper(traces{i})])./(results.Amplitude(1)*mult);                                 
+                % CycAvg.([traces{i},'_cycavg_fit']) = all_fits4(i,:);
+                % CycAvg.([traces{i},'_cyc_fit']) = all_fits4(i,:);
             end
         end
         % Misalignment
-        all_high_L = all_fits([3,5,1],Stim==1);
+         all_high_L = all_fits([3,5,1],Stim==1);
         all_low_L = all_fits([3,5,1],Stim==0);
         all_high_R = all_fits([4,6,2],Stim==1);
         all_low_R = all_fits([4,6,2],Stim==0);
@@ -401,6 +427,8 @@ switch type
         cycle_params.exp_ord1_fits = all_fits2;
         cycle_params.exp_ord1_const_params = params3;
         cycle_params.exp_ord1_const_fits = all_fits3;
+        cycle_params.exp_ord1_const_imp_params = params4;
+        cycle_params.exp_ord1_const_imp_fits = all_fits4;
     case 3
         %% Impulse
         % Process Inputs
@@ -725,4 +753,29 @@ end
 % Make the table and cell
 CycAvg.parameterized = results;
 CycAvg.cycle_params = cycle_params;
+end
+
+% helper function
+function [params, yfit, gof, exp1_c_fitobj] = expcfit(x, y)
+% Fits to the function y = k.*exp(-x./tau) + c.
+% Parameter bounds and initial conditions are based on expected velocity
+% step experiment results.
+% Returns the parameters ([k, tau, c]), fitted curve over inputs x,
+% goodness of fit metrics, and the fit object.
+    
+    exp1_c_fit = @(k,tau,c,x) k.*exp(-x./tau) + c;
+    % initial conditions set to:
+        % [k0 (exponential constant) = median of first 10th of trace - c0, 
+        % tau0 (time constant) = 10, 
+        % c0 (plateau) = median of last 4th of trace]
+    p0 = [median(y(1:round(length(y)/10))) - median(y(end-round(length(y)/4):end)),...
+        10,median(y(end-round(length(y)/4):end))];
+    [exp1_c_fitobj, gof] = fit(x,y, exp1_c_fit, 'Lower', [-300 0.0001 -300], 'Upper', [300 100 300], 'StartPoint', p0);
+
+    yfit = exp1_c_fitobj(x);
+    params = nan(3,1);
+    params(1) = exp1_c_fitobj.k;
+    params(2) = exp1_c_fitobj.tau;
+    params(3) = exp1_c_fitobj.c;
+
 end

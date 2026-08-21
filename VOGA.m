@@ -65,7 +65,9 @@ while tf
         case 'Parameterize and Plot'
             VOGA__SummaryTable('Folder (Load)') %Parameterize
             VOGA__MakePlots('Parameterized') %Plot        
-        case {'Update VOG Trigger','Recalibrate LDVOG','Rename Files','Trim Segment'}
+        case {'Update VOG Trigger'}
+            UpdateTrigger();
+        case {'Recalibrate LDVOG','Rename Files','Trim Segment'}
             run(strrep(resp,' ','')) %Scripts where the menu option is the name of the script
         otherwise
             run(['VOGA__',strrep(resp,' ','')]) %Scripts where VOGA__ and then the menu option is the name of the script

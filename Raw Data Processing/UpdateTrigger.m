@@ -1,4 +1,4 @@
-function UpdateRawVOGTrigger(Raw_Path,In_Path,TEMP_In_Path)
+function UpdateTrigger(Raw_Path,In_Path,TEMP_In_Path)
 if nargin < 1
     Raw_Path = cd;
     if isfolder([cd,filesep,'Raw Files'])
@@ -7,7 +7,9 @@ if nargin < 1
 end
 all_files = extractfield(dir(Raw_Path),'name',find(~extractfield(dir(Raw_Path),'isdir')));
 LDVOG_files = all_files(contains(all_files,'SESSION')&contains(all_files,'.txt')&~contains(all_files,'Notes.txt'));
-NKI_files = all_files(contains(all_files,'.dat'));
+NKI_files = all_files(contains(all_files,'.csv')); % updated 2026-08-17 by EOV since we use calibrated data in csv's now
+% NKI_files = all_files(contains(all_files,'.dat'));
+
 VOG_files = [LDVOG_files;NKI_files];
 %% Initialize Figure
 fig = figure(1);
@@ -192,6 +194,9 @@ while ~strcmp(opts{ind},'Save')
         end
         template = 0*template;
         template((1:len)+rel_shift) = small_template;
+    elseif strcmp(opts{ind},'Add 2nd Trigger')
+        % Add a second trigger signal after the first ended, such as if you
+        % repeated two files
     end        
     XLim = get(gca,'XLim');
     YLim = get(gca,'YLim'); 
